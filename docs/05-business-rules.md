@@ -23,19 +23,19 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 ## 2. Quản lý Gói tập & Thành viên (Membership & Subscription Rules)
 
 ### [BR-04] - Ràng buộc gói tập kích hoạt đồng thời (Single Active Subscription)
-- **Mô tả nghiệp vụ:** Trong phạm vi phiên bản MVP, mỗi hội viên chỉ được sở hữu duy nhất một gói tập đang ở trạng thái kích hoạt (ACTIVE) tại một thời điểm cụ thể.
-- **Hiện thực hóa kỹ thuật:** Triển khai kiểm tra logic nghiệp vụ tại tầng Service trước khi tạo mới một Subscription: Truy vấn xem hội viên có gói tập nào có trạng thái `ACTIVE` và ngày kết thúc (`end_date`) lớn hơn ngày hiện tại hay không. Nếu có, ném ra ngoại lệ `ActiveSubscriptionException`.
+- **Mô tả nghiệp vụ:** Trong phạm vi phiên bản MVP, mỗi hội viên chỉ được sở hữu duy nhất một gói tập đang ở trạng thái kích hoạt (ACTIVE) tại một thời điểm cụ thể. Hội viên cũng chỉ được có tối đa một yêu cầu đăng ký mới ở trạng thái `PENDING` chưa được xử lý, tránh gửi lặp cùng một nghiệp vụ.
+- **Hiện thực hóa kỹ thuật:** Trước khi tạo yêu cầu đăng ký mới, Service kiểm tra Subscription `ACTIVE` có `endDate > currentDate`; nếu có, trả `SUB-004`. Nếu đã có yêu cầu đăng ký mới `PENDING`, trả `SUB-006`. Khi Admin phê duyệt, Service khóa phạm vi subscription của Member và kiểm tra lại điều kiện một lần nữa trong transaction; nếu đã phát sinh gói ACTIVE thì từ chối phê duyệt bằng `SUB-004`, không tạo ACTIVE song song.
 
 ### [BR-05] - Hạn chế đăng ký gói tập đã ngừng kích hoạt (Inactive Package Registration Block)
 - **Mô tả nghiệp vụ:** Người dùng không được phép đăng ký mua hoặc gia hạn các gói dịch vụ/gói tập đã bị chuyển trạng thái ngưng hoạt động (INACTIVE) bởi quản trị viên.
-- **Hiện thực hóa kỹ thuật:** Sử dụng validation kiểm tra trường trạng thái `status` hoặc `is_active` của thực thể `MembershipPackage` ở tầng Service. Ném ra ngoại lệ `InactivePackageException` nếu phát hiện gói dịch vụ đã bị vô hiệu hóa.
+- **Hiện thực hóa kỹ thuật:** Chuẩn hóa một trường `isActive` ở Entity và cột `is_active` tại Database. Service trả `SUB-002` nếu không tìm thấy package và trả `SUB-003` nếu package có `isActive = false`; không dùng hai nguồn trạng thái `status` và `is_active` song song.
 
 ---
 
 ## 3. Lập lịch & Quản lý Bài tập (Workout & Exercise Rules)
 
 ### [BR-06] - Số lượng buổi tập tối thiểu trong giáo án (Minimum Workout Days)
-- **Mô tả nghiệp vụ:** Mỗi giáo án tập luyện (Workout Plan) được khởi tạo bởi hệ thống hoặc người dùng bắt buộc phải chứa ít nhất một ngày tập (Workout Day).
+- **Mô tả nghiệp vụ:** Mỗi giáo án tập luyện (Workout Plan) được tạo từ AI hoặc Fallback Template trong MVP bắt buộc phải chứa ít nhất một ngày tập (Workout Day). Chức năng Member tự soạn giáo án thủ công không thuộc phạm vi MVP.
 - **Hiện thực hóa kỹ thuật:** Áp dụng Validation ở Java Beans (`@NotEmpty` hoặc `@Size(min = 1)`) trên danh sách `workoutDays` trong DTO/Entity của Workout Plan.
 
 ### [BR-07] - Số lượng bài tập tối thiểu trong ngày tập (Minimum Exercises Per Day)
@@ -55,7 +55,7 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 - **Hiện thực hóa kỹ thuật:** Áp dụng tại WorkoutLog DTO: `@Min(1) @Max(10)` trên `actualSets`, `@Min(1) @Max(100)` trên `actualReps`, `@Min(1) @Max(10)` trên `actualRpe`, `@DecimalMin("0.0")` trên `weightUsedKg`.
 
 ### [BR-09C] - Quyền sở hữu số liệu dinh dưỡng định lượng của Backend (Backend-owned Nutrition Targets)
-- **Mô tả nghiệp vụ:** BMI, BMR, TDEE, `dailyCaloriesKcal`, `proteinGrams`, `carbGrams` và `fatGrams` là số liệu định lượng do Backend tính toán theo công thức đã chọn. AI chỉ được đề xuất cấu trúc lịch tập và danh sách bữa ăn; không được trả, thay đổi hoặc quyết định các chỉ số này.
+- **Mô tả nghiệp vụ:** BMI, BMR, TDEE, `dailyCaloriesKcal`, `proteinGrams`, `carbGrams` và `fatGrams` là số liệu định lượng do Backend tính toán theo công thức đã chọn. AI chỉ được đề xuất `workoutSchedule` và `nutritionPlan.mealStructure`; không được trả, thay đổi hoặc quyết định các chỉ số này.
 - **Hiện thực hóa kỹ thuật:** JSON Schema của AI không chứa các trường số liệu định lượng. Sau khi AI response hợp lệ, `RecommendationService` ghép `calculatedTargets` do `CalculationService` tạo vào response trả Client; payload AI có trường ngoài schema bị từ chối và kích hoạt luồng retry/fallback.
 
 ---
@@ -68,7 +68,7 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 
 ### [BR-11] - Cơ chế dự phòng khi AI lỗi (Resilience Fallback Strategy)
 - **Mô tả nghiệp vụ:** Trong trường hợp dịch vụ AI bên ngoài gặp sự cố, không phản hồi hoặc phản hồi sai cấu trúc JSON, hệ thống phải tự động chuyển sang cơ chế tạo lịch tập mặc định dựa trên các giáo án mẫu tĩnh (Rule-based Templates).
-- **Hiện thực hóa kỹ thuật:** Sử dụng cấu trúc `try-catch` bao bọc lấy khối gọi API AI bên ngoài, kết hợp thiết lập cơ chế Circuit Breaker hoặc Fallback Method trong Spring Boot (sử dụng Resilience4j hoặc tự triển khai) để trả về một giáo án mẫu lưu sẵn trong DB.
+- **Hiện thực hóa kỹ thuật:** Fallback workout template phải được lọc lại bằng chính `exerciseIdWhitelist` của Member và hậu kiểm BR-09A/BR-10; fallback meal template phải có `dietaryTags`/`allergenTags` để lọc theo `dietaryPreference`, `foodAllergies`, `excludedFoods` và đúng `mealsPerDay`. Template không được bỏ qua chống chỉ định, thiết bị hoặc hạn chế ăn uống. Dùng Resilience4j Circuit Breaker/TimeLimiter để chuyển luồng. Nếu không có template an toàn hoặc nguồn template lỗi, không lưu dữ liệu một phần và trả `AI-001` (HTTP 502).
 
 ---
 
@@ -83,8 +83,8 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 - **Hiện thực hóa kỹ thuật:** Triển khai kiểm tra logic tại Service bằng cách so sánh `userId` của bản ghi cần cập nhật với `userId` trích xuất từ Principal trong Security Context của JWT Token hiện hành. Có thể sử dụng annotation `@PostAuthorize("returnObject.user.email == authentication.name")` ở tầng Repository hoặc Service.
 
 ### [BR-14] - Xóa mềm danh mục bài tập (Soft Delete for Master Data)
-- **Mô tả nghiệp vụ:** Quản trị viên không được phép xóa cứng (Hard Delete) các bài tập đã có liên kết lịch sử với nhật ký tập luyện của hội viên. Các bài tập này chỉ được chuyển sang trạng thái ngưng hoạt động (INACTIVE) để tránh đứt gãy dữ liệu lịch sử.
-- **Hiện thực hóa kỹ thuật:** Áp dụng cơ chế Soft Delete toàn diện. Thêm trường `is_active` hoặc `deleted` (boolean) vào bảng `exercises`. Trong Spring Boot 3.x (tích hợp Hibernate 6), sử dụng trực tiếp annotation `@SoftDelete` tại JPA Entity để hệ thống tự động hóa luồng chuyển đổi lệnh DELETE thành lệnh UPDATE trạng thái và tự động lọc bỏ các bản ghi đã xóa khi thực hiện truy vấn.
+- **Mô tả nghiệp vụ:** Trong MVP, mọi thao tác xóa Exercise đều là xóa mềm, không phân biệt bài tập đã có liên kết lịch sử hay chưa. Bài tập được chuyển sang trạng thái ngưng hoạt động (`isActive = false`) để bảo toàn tham chiếu và giữ hành vi API nhất quán.
+- **Hiện thực hóa kỹ thuật:** Chuẩn hóa một cột duy nhất `is_active` (boolean). Với Hibernate từ 6.4, có thể dùng `@SoftDelete(strategy = SoftDeleteType.ACTIVE, columnName = "is_active")`; nếu phiên bản Hibernate chưa hỗ trợ, Service thực hiện `UPDATE exercises SET is_active = false` và mọi truy vấn danh mục hiện hành bắt buộc có điều kiện `is_active = true`. Không đồng thời dùng cả `is_active` và `deleted`, tránh hai nguồn trạng thái mâu thuẫn.
 
 
 ### [BR-15] - Kiểm thử đăng ký (Registration Validation)
@@ -93,19 +93,19 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 
 ### [BR-16] - Kiểm thử trạng thái khóa tài khoản (Locked Account Testing)
 - **Mô tả nghiệp vụ:** Hệ thống ngăn chặn rõ ràng tài khoản LOCKED khỏi đăng nhập và sử dụng dịch vụ, kể cả khi họ cung cấp đúng mật khẩu.
-- **Hiện thực hóa kỹ thuật:** Tầng Security/UserDetails layer được cấu hình để kiểm tra `accountStatus` cho mỗi request cần xác thực. Nếu `accountStatus == LOCKED` → ném `LockedException`, trả về HTTP 403 với Error Code `ACC-004`. Token hiện hành của tài khoản LOCKED cũng bị từ chối.
+- **Hiện thực hóa kỹ thuật:** Khi đăng nhập, `UserDetailsService` kiểm tra `accountStatus`. Trên request cần xác thực, `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái; nếu `LOCKED` → trả HTTP 403 với `ACC-004`. JWT Filter chỉ xác thực chữ ký/hạn dùng. Nếu Guard dùng cache, thao tác lock/unlock phải cập nhật hoặc evict cache trạng thái đồng bộ sau transaction để request tiếp theo quan sát ngay trạng thái mới.
 
 ### [BR-17] - Dọn dẹp tài khoản chưa hoàn tất đăng ký (Stale Registration Cleanup)
 - **Mô tả nghiệp vụ:** Nếu trong tương lai hệ thống áp dụng luồng xác nhận email (OTP/Token), các tài khoản chưa xác thực email sau **24 giờ** phải bị xóa tự động để giải phóng chỗ cho Email/Username trùng lặp.
 - **Hiện thực hóa kỹ thuật:** Triển khai `@Scheduled` Job chạy hằng ngày; truy vấn các tài khoản `status=PENDING` và `createdAt < now() - 24h`; thực hiện DELETE. **Quy tắc này là Should-have trong MVP.**
 
 ### [BR-18] - Chính sách mật khẩu (Password Policy)
-- **Mô tả nghiệp vụ:** Mật khẩu tối thiểu **8 ký tự**, tối đa **72 ký tự** (giới hạn BCrypt), không chứa toàn khoảng trắng, chứa ít nhất 1 chữ hoa và 1 chữ số. Không lưu trữ mật khẩu dưới dạng plaintext.
-- **Hiện thực hóa kỹ thuật:** Không trim hoặc thay đổi mật khẩu do người dùng nhập. Từ chối mật khẩu có khoảng trắng ở đầu/cuối và kiểm tra cú pháp bằng `@Pattern(regexp = "^(?!\\s)(?!.*\\s$)(?=.*[A-Z])(?=.*\\d).{8,72}$")` tại DTO lớp `RegisterRequest`. Mã hóa bằng `BCryptPasswordEncoder(12)` trước khi lưu vào DB.
+- **Mô tả nghiệp vụ:** Mật khẩu tối thiểu **8 ký tự**, tối đa **72 ký tự** (giới hạn BCrypt), không chứa toàn khoảng trắng, chứa ít nhất 1 chữ hoa và 1 chữ số. Trường `confirmPassword` trong đăng ký công khai phải khớp chính xác với `password`. Không lưu trữ mật khẩu dưới dạng plaintext.
+- **Hiện thực hóa kỹ thuật:** Không trim hoặc thay đổi mật khẩu do người dùng nhập. Từ chối mật khẩu có khoảng trắng ở đầu/cuối và kiểm tra cú pháp bằng `@Pattern(regexp = "^(?!\\s)(?!.*\\s$)(?=.*[A-Z])(?=.*\\d).{8,72}$")` tại DTO lớp `RegisterRequest`. Validate chéo `password.equals(confirmPassword)` trước khi mã hóa; `confirmPassword` không được lưu, log hoặc trả về response. Mã hóa bằng `BCryptPasswordEncoder(12)` trước khi lưu vào DB.
 
 ### [BR-19] - Giải quyết xung đột dữ liệu tiến trình (Progress Data Conflict Resolution)
-- **Mô tả nghiệp vụ:** Nếu hội viên cập nhật nhật ký tập luyện có thời điểm `workoutDate` trùng với một bản ghi đã tồn tại, hệ thống kích hoạt chế độ **Update-in-place** (ghi đè bản ghi cũ) thay vì tạo bản sao mới. Timestamp `updatedAt` được cập nhật tự động qua JPA Auditing.
-- **Hiện thực hóa kỹ thuật:** Logic tại `WorkoutLogService.saveOrUpdate()`: nếu tồn tại bản ghi `(userId, workoutDate, exerciseId)` → gọi `.save()` trên đối tượng Entity đã tải nhằm đảm bảo JPA Dirty-Checking được kích hoạt đúng.
+- **Mô tả nghiệp vụ:** Nếu hội viên cập nhật nhật ký tập luyện có `logDate` và `exerciseId` trùng với một bản ghi của chính hội viên đã tồn tại, hệ thống kích hoạt chế độ **Update-in-place** thay vì tạo bản sao mới. Timestamp `updatedAt` được cập nhật tự động qua JPA Auditing.
+- **Hiện thực hóa kỹ thuật:** Logic tại `WorkoutLogService.saveOrUpdate()`: nếu tồn tại bản ghi `(memberId, logDate, exerciseId)` → gọi `.save()` trên Entity đã tải để JPA Dirty-Checking cập nhật. Thiết lập unique constraint `(member_id, log_date, exercise_id)` ở Database để chống race condition.
 
 ### [BR-20] - Chuẩn hóa Email (Email Trim & Lowercase)
 - **Mô tả nghiệp vụ:** Trước bất kỳ thao tác nào (kiểm tra tồn tại, đăng nhập, lưu mới), Email phải được **trim khoảng trắng đầu/cuối** và **chuyển lowercase** để kiểm tra trùng có ý nghĩa. Quy tắc này bổ sung thêm chi tiết thực hiện cho BR-01.
@@ -113,11 +113,37 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 
 ### [BR-21] - Chặn tài khoản DISABLED (Permanently Disabled Account Block)
 - **Mô tả nghiệp vụ:** Tài khoản ở trạng thái `DISABLED` (vô hiệu hóa vĩnh viễn, khác `LOCKED` có thể mở lại) không được đăng nhập, và token của tài khoản đã `DISABLED` cũng phải bị hệ thống từ chối trên mọi request yêu cầu xác thực.
-- **Hiện thực hóa kỹ thuật:** Enum `AccountStatus`: `ACTIVE`, `LOCKED`, `DISABLED`. Tầng Security/UserDetails layer kiểm tra `accountStatus` cho mỗi request; nếu `DISABLED` → ném `DisabledException` (hoặc custom exception tương ứng), trả HTTP 403 với Error Code `ACC-006`. Không gọi đây là kiểm tra nghiệp vụ subscription (subscription kiểm tra riêng bằng Method Security).
+- **Hiện thực hóa kỹ thuật:** Enum `AccountStatus`: `ACTIVE`, `LOCKED`, `DISABLED`. Khi đăng nhập, `UserDetailsService` kiểm tra trạng thái tài khoản. Trên mỗi endpoint yêu cầu xác thực, `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái; nếu `DISABLED` → ném `DisabledException` (hoặc custom exception tương ứng), trả HTTP 403 với Error Code `ACC-006`. JWT Security Filter không truy vấn Database; subscription được kiểm tra riêng bằng Method Security.
 
 ### [BR-22] - Chỉ duy nhất một bản ghi tiến trình thể trạng trong một ngày (Body Progress Daily Uniqueness)
-- **Mô tả nghiệp vụ:** Mỗi hội viên chỉ có tối đa một bản ghi `BodyProgress` (cân nặng, các chỉ số thể trạng) trong một ngày cụ thể. Nếu hội viên nhập lại trong cùng ngày, hệ thống **cập nhận (Update-in-place)** bản ghi cũ, không tạo mới.
-- **Hiện thực hóa kỹ thuật:** Tại `BodyProgressService.save()`: tìm kiếm bản ghi `(userId, recordDate)` — nếu tồn tại → gọi `.save()` trên Entity đã tải (JPA Dirty-Checking); nếu không → tạo mới. `updatedAt` được tự động cập nhận qua `@LastModifiedDate` (JPA Auditing).
+- **Mô tả nghiệp vụ:** Mỗi hội viên chỉ có tối đa một bản ghi `BodyProgress` (cân nặng, các chỉ số thể trạng) trong một ngày cụ thể. Nếu hội viên nhập lại trong cùng ngày, hệ thống **cập nhật (Update-in-place)** bản ghi cũ, không tạo mới.
+- **Hiện thực hóa kỹ thuật:** `recordDate` là ngày nghiệp vụ theo timezone `Asia/Ho_Chi_Minh` và lưu bằng kiểu SQL `DATE`; `createdAt`/`updatedAt` lưu UTC. Tại `BodyProgressService.save()`: tìm kiếm bản ghi `(memberId, recordDate)` — nếu tồn tại → gọi `.save()` trên Entity đã tải (JPA Dirty-Checking); nếu không → tạo mới. Thiết lập unique constraint `(member_id, record_date)` ở Database để chống race condition; `updatedAt` được tự động cập nhật qua `@LastModifiedDate`.
+
+---
+
+### [BR-23] - Chuẩn hóa và Kiểm duyệt Hồ sơ Thể chất (Physical Profile Validation Rules)
+- **Mô tả nghiệp vụ:** Hồ sơ dùng cho tính toán sinh học và AI Recommendation phải hợp lệ trước khi được lưu hoặc gửi sang AI Engine. `activityLevel` chỉ nhận `SEDENTARY`, `LIGHTLY_ACTIVE`, `MODERATELY_ACTIVE`, `VERY_ACTIVE`; `dietaryPreference` chỉ nhận `OMNIVORE`, `VEGETARIAN`, `VEGAN`; `mealsPerDay` phải từ **1 đến 6**. Hai danh sách `foodAllergies` và `excludedFoods` chứa tối đa **10** phần tử mỗi danh sách, mỗi phần tử tối đa **50** ký tự.
+- **Hiện thực hóa kỹ thuật:** Backend trim từng phần tử, loại bỏ ký tự điều khiển nguy hiểm (control characters) trước khi lưu/prompting, loại bỏ phần tử rỗng và validate giới hạn số phần tử/độ dài ở DTO. Chỉ sau khi toàn bộ trường hợp lệ, `RecommendationService` mới được tạo AI Payload; nếu không, trả lỗi validation và tuyệt đối không gọi AI Engine.
+
+### [BR-24] - Quy trình gia hạn Gói dịch vụ (Subscription Renewal Constraint)
+- **Mô tả nghiệp vụ:** BR-04 áp dụng cho đăng ký gói mới và cấm tạo thêm Subscription `ACTIVE` song song. Khi hội viên đã có một Subscription `ACTIVE` hợp lệ và yêu cầu gia hạn, hệ thống tạo một bản ghi yêu cầu gia hạn ở trạng thái `PENDING`, liên kết tới Subscription `ACTIVE` hiện tại; yêu cầu này không tạo thêm gói `ACTIVE`. Mỗi Subscription chỉ được có tối đa một Renewal Request `PENDING` tại một thời điểm.
+- **Hiện thực hóa kỹ thuật:** Trước khi tạo Renewal Request, nếu đã tồn tại yêu cầu `PENDING` cho cùng Subscription thì trả `SUB-006`. Khi Admin duyệt, thực hiện transaction cập nhật trực tiếp Subscription `ACTIVE` hiện tại theo công thức `newEndDate = currentEndDate + packageDurationDays`, sau đó đánh dấu yêu cầu gia hạn đã được xử lý. Không tạo một thực thể `ACTIVE` thứ hai; chỉ cho phép gia hạn package có `isActive = true` theo BR-05.
+
+### [BR-25] - Hiệu lực động của Subscription ACTIVE (Active Subscription Validity)
+- **Mô tả nghiệp vụ:** Một Subscription chỉ cấp quyền sử dụng tính năng cao cấp khi đồng thời thỏa mãn `status = ACTIVE`, `startDate <= currentDate` và `currentDate < endDate`. `endDate` là mốc hết hiệu lực dạng **exclusive**; từ đầu ngày `endDate`, subscription không còn hợp lệ dù bản ghi chưa được Scheduled Job chuyển sang `EXPIRED`.
+- **Hiện thực hóa kỹ thuật:** `currentDate` được xác định theo timezone nghiệp vụ `Asia/Ho_Chi_Minh`. `SubscriptionGuard` hoặc Method Security phải truy vấn theo toàn bộ điều kiện hiệu lực ở mỗi request cần gói ACTIVE. Scheduled Job chạy hằng ngày có thể cập nhật các bản ghi quá hạn sang `EXPIRED` để đồng bộ dữ liệu, nhưng quyết định phân quyền không được chỉ dựa vào Job. Member hết hạn vẫn được đăng nhập, xem dữ liệu lịch sử và gửi yêu cầu gia hạn; chỉ các thao tác tạo recommendation AI, kích hoạt giáo án và ghi workout log mới bị chặn bằng `SUB-001`.
+
+### [BR-26] - Vòng đời và kích hoạt giáo án (Workout Plan Lifecycle)
+- **Mô tả nghiệp vụ:** Giáo án có ba trạng thái `DRAFT`, `ACTIVE`, `ARCHIVED`. Recommendation hợp lệ hoặc fallback tạo giáo án ở trạng thái `DRAFT`. Mỗi Member chỉ có tối đa một giáo án `ACTIVE`; khi kích hoạt một giáo án `DRAFT`, hệ thống chuyển giáo án `ACTIVE` cũ (nếu có) sang `ARCHIVED`, rồi chuyển giáo án đích sang `ACTIVE` trong cùng transaction.
+- **Hiện thực hóa kỹ thuật:** Chỉ chủ sở hữu có Subscription hợp lệ theo BR-25 mới được kích hoạt giáo án. Service khóa các bản ghi liên quan hoặc dùng optimistic locking để ngăn hai giáo án cùng được kích hoạt đồng thời. Không dùng trạng thái `INACTIVE`; giáo án không còn hiện hành phải là `ARCHIVED`.
+
+### [BR-27] - Kiểm duyệt danh mục gói tập (Membership Package Validation)
+- **Mô tả nghiệp vụ:** Tên gói tập sau khi trim phải dài 3–100 ký tự và duy nhất không phân biệt hoa/thường; `durationDays` từ 1–3650; `price` không âm; `description` tối đa 1000 ký tự. Vô hiệu hóa gói không làm mất hiệu lực các Subscription đã ACTIVE trước đó, nhưng chặn đăng ký/gia hạn mới theo BR-05.
+- **Hiện thực hóa kỹ thuật:** Chuẩn hóa tên trước khi kiểm tra và tạo unique index trên giá trị tên chuẩn hóa. Trùng tên trả `SUB-007` (HTTP 409); các vi phạm giới hạn còn lại trả `VAL-001` (HTTP 400). Khi cập nhật, loại trừ chính `packageId` hiện hành khỏi truy vấn kiểm tra trùng; request update không được thay đổi `isActive`.
+
+### [BR-28] - Toàn vẹn tham chiếu Workout Log (Workout Log Reference Integrity)
+- **Mô tả nghiệp vụ:** Khi ghi nhật ký, `workoutPlanDetailId` phải thuộc giáo án `ACTIVE` của chính Member; `exerciseId` phải đúng với bài tập gắn trên chi tiết giáo án đó; `logDate` không được ở tương lai theo timezone nghiệp vụ. Member không thể dùng ID của giáo án hoặc chi tiết thuộc người khác.
+- **Hiện thực hóa kỹ thuật:** Service tải chi tiết bằng truy vấn kết hợp `detailId`, `memberId` và `planStatus = ACTIVE`; không tìm thấy trả `WRK-001` (HTTP 404). Nếu `exerciseId` không khớp chi tiết hoặc `logDate > currentDate`, trả `VAL-001` (HTTP 400). Chỉ sau các kiểm tra này mới áp dụng BR-19 để tạo mới hoặc update-in-place.
 
 ---
 
@@ -127,14 +153,28 @@ Bảng này xác lập các `ErrorCode` cần kết xuất trong phản hồi AP
 
 | Mã lỗi | Nhóm | HTTP Status | Mô tả ngắn |
 | :--- | :--- | :---: | :--- |
-| `ACC-001` | Tài khoản | 400 | Email đã được dùng |
+| `ACC-001` | Tài khoản | 409 | Email đã được dùng |
 | `ACC-002` | Tài khoản | 400 | Định dạng mật khẩu không hợp lệ |
-| `ACC-003` | Tài khoản | 400 | Số điện thoại đã tồn tại |
 | `ACC-004` | Tài khoản | 403 | Tài khoản bị khóa (LOCKED) |
 | `ACC-005` | Tài khoản | 401 | JWT Token hết hạn hoặc không hợp lệ |
 | `ACC-006` | Tài khoản | 403 | Tài khoản đã bị vô hiệu hóa vĩnh viễn (DISABLED) |
+| `ACC-007` | Tài khoản | 401 | Email hoặc mật khẩu đăng nhập không chính xác |
 | `SUB-001` | Gói tập | 403 | Không có gói tập Active |
 | `SUB-002` | Gói tập | 404 | Không tìm thấy gói tập |
+| `SUB-003` | Gói tập | 409 | Gói tập đã ngừng hoạt động, không thể đăng ký hoặc gia hạn |
+| `SUB-004` | Gói tập | 409 | Đã có gói tập ACTIVE, không thể đăng ký gói mới |
+| `SUB-005` | Gói tập | 404 | Không tìm thấy Subscription hoặc Subscription không thuộc Member hiện hành |
+| `SUB-006` | Gói tập | 409 | Đã tồn tại yêu cầu đăng ký mới hoặc gia hạn cùng loại ở trạng thái PENDING |
+| `SUB-007` | Gói tập | 409 | Tên gói tập đã tồn tại |
 | `EXR-001` | Bài tập | 404 | ID bài tập không tồn tại |
-| `AI-001` | AI Engine | 502 | Dịch vụ AI không phản hồi (timeout/server error) |
-| `AI-002` | AI Engine | 200 | AI Response không hợp lệ (ID ngoài Whitelist hoặc sai cấu trúc) — trả Fallback kèm `warningCode: AI_RESPONSE_INVALID` |
+| `EXR-002` | Bài tập | 409 | Tên bài tập đã tồn tại |
+| `WRK-001` | Giáo án | 404 | Không tìm thấy giáo án/chi tiết giáo án hoặc tài nguyên không thuộc Member hiện hành |
+| `VAL-001` | Validation | 400 | Dữ liệu đầu vào hoặc trạng thái request không hợp lệ |
+| `AI-001` | AI Engine | 502 | Không thể tạo recommendation vì cả AI Engine và cơ chế fallback đều thất bại |
+
+### Warning Code Registry cho response fallback HTTP 200
+
+| Warning Code | Điều kiện | HTTP Status | Ý nghĩa |
+| :--- | :--- | :---: | :--- |
+| `AI_TIMEOUT` | AI timeout, HTTP 429 hoặc lỗi 5xx sau chính sách retry | 200 | Backend trả recommendation từ template tĩnh |
+| `AI_RESPONSE_INVALID` | AI trả sai JSON Schema, ID ngoài whitelist hoặc planned values sai | 200 | Backend từ chối payload AI và trả template tĩnh |

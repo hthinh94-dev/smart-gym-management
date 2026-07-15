@@ -12,7 +12,7 @@ Là đối tượng có đặc quyền cao nhất trong hệ thống, đảm nhi
 - **Quản lý tài khoản:** Tạo mới, khóa hoặc mở khóa tài khoản người dùng (PT, Member) dựa trên tình trạng vi phạm nội quy phòng tập (lưu ý không khóa tài khoản người dùng chỉ vì hội viên hết hạn gói tập).
 - **Quản lý cấu hình dịch vụ:** Khởi tạo, chỉnh sửa cấu hình danh mục các gói tập của phòng gym.
 - **Thiết lập thư viện bài tập gốc:** Xây dựng danh mục các bài tập (tên bài, nhóm cơ tác động chính, hướng dẫn thực hiện) làm cơ sở dữ liệu cho AI Engine và PT tham chiếu.
-- **Giám sát vận hành:** Khai thác các dữ liệu báo cáo thống kê tổng quan (tổng giá trị subscription đã xác nhận mô phỏng, lượng hội viên kích hoạt, mức độ phân bổ gói tập).
+- **Giám sát vận hành:** Trong MVP, xem số liệu đếm/tổng hợp cơ bản (Member, Subscription ACTIVE, Exercise và tổng giá trị subscription đã xác nhận mô phỏng). Biểu đồ theo thời gian và phân bổ gói thuộc Should-have.
 
 ### 2.2. Huấn luyện viên cá nhân (Personal Trainer - PT)
 > **Trạng thái triển khai: Should-have.** Vai trò PT được thiết kế sẵn cấu trúc trong bảo mật RBAC và Database từ ban đầu, nhưng không phải điều kiện bắt buộc để luồng MVP hoạt động. Các API và giao diện nghiệp vụ của PT sẽ được hiện thực hóa cuốn chiếu sau khi luồng Admin và Member đã ổn định.
@@ -38,7 +38,7 @@ Là tác nhân chưa xác thực danh tính trên hệ thống. **Lưu ý:** Gue
 
 ## 3. Ma trận phân quyền (Permission Matrix)
 
-Ký hiệu: 
+Ký hiệu:
 - ✔️: Cho phép truy cập / Thực hiện.
 - ❌: Bị từ chối truy cập / Không có quyền.
 - 🟡: Cho phép có điều kiện giới hạn phạm vi (chỉ áp dụng đối với dữ liệu liên quan trực tiếp đến tài khoản đó).
@@ -49,21 +49,22 @@ Ký hiệu:
 | | Đăng nhập hệ thống (JWT) | ✔️ | ✔️ | ✔️ | ❌ |
 | | Cấu hình phân quyền hệ thống | ✔️ | ❌ | ❌ | ❌ |
 | | Khóa / Mở khóa tài khoản | ✔️ | ❌ | ❌ | ❌ |
-| **Hồ sơ & Thể trạng** | Xem thông tin hồ sơ của mọi người dùng | ✔️ | ❌ | ❌ | ❌ |
-| | Cập nhật hồ sơ thể chất cá nhân | ❌ | 🟡 | ✔️ | ❌ |
-| | Xem hồ sơ thể chất hội viên | ✔️ | 🟡 | ❌ | ❌ |
+| **Hồ sơ & Thể trạng** | Xem danh sách tài khoản cơ bản, không gồm hồ sơ sức khỏe chi tiết | ✔️ | ❌ | ❌ | ❌ |
+| | Cập nhật hồ sơ thể chất cá nhân | ❌ | ❌ | ✔️ | ❌ |
+| | Xem hồ sơ thể chất hội viên được phân công (Should-have) | ❌ | 🟡 | ❌ | ❌ |
 | **Quản lý Gói tập** | Thêm / Sửa / Xóa cấu hình gói tập | ✔️ | ❌ | ❌ | ❌ |
 | | Xem danh sách gói tập công khai | ✔️ | ✔️ | ✔️ | ✔️ |
 | | Mua / Gia hạn gói tập trực tuyến | ❌ | ❌ | ✔️ | ❌ |
 | **Bài tập & Giáo án** | Cấu hình thư viện bài tập gốc | ✔️ | ❌ | ❌ | ❌ |
 | | Xem thư viện bài tập | ✔️ | ✔️ | ✔️ | ❌ |
-| | Lập & Chỉnh sửa giáo án tập luyện | ❌ | 🟡 | 🟡 | ❌ |
+| | Kích hoạt giáo án DRAFT làm giáo án hiện hành | ❌ | ❌ | ✔️ | ❌ |
+| | Góp ý/Chỉnh sửa chuyên môn giáo án (Should-have) | ❌ | 🟡 | ❌ | ❌ |
 | | Ghi nhật ký buổi tập (Logs) | ❌ | ❌ | ✔️ | ❌ |
 | | Xem nhật ký buổi tập của hội viên | ❌ | 🟡 | ❌ | ❌ |
 | **Tích hợp AI Engine** | Yêu cầu AI gợi ý lịch tập & dinh dưỡng | ❌ | ❌ | ✔️ | ❌ |
 | | Xem/Duyệt đề xuất dinh dưỡng & lịch tập | ❌ | 🟡 | ✔️ | ❌ |
 | **Thống kê & Báo cáo** | Xem số liệu đếm cơ bản (Tổng user, gói tập, bài tập) | ✔️ | ❌ | ❌ | ❌ |
-| | Xem Dashboard biểu đồ tổng giá trị subscription đã xác nhận mô phỏng & vận hành | ✔️ | ❌ | ❌ | ❌ |
+| | Xem Dashboard biểu đồ nâng cao (Should-have) | ✔️ | ❌ | ❌ | ❌ |
 | | Xem biểu đồ tiến trình cá nhân | ❌ | 🟡 | ✔️ | ❌ |
 
 ---
@@ -74,23 +75,25 @@ Ký hiệu:
 Hệ thống phân tách rõ ràng trách nhiệm giữa hai tầng kiểm soát:
 
 - **JWT Filter (Xác thực danh tính):** Chịu trách nhiệm duy nhất là xác minh chữ ký JWT Token và trích xuất thông tin User và Role đưa vào Security Context. Filter này không thực hiện các kiểm tra trạng thái tài khoản hay các nghiệp vụ khác.
-- **Security/UserDetails Layer (Kiểm tra trạng thái tài khoản):** Spring Security thông qua tầng UserDetails / UserDetailsService sẽ kiểm tra thuộc tính `AccountStatus` (`ACTIVE`, `LOCKED`, `DISABLED`) khi người dùng đăng nhập hoặc gửi request cần xác thực. Tài khoản `LOCKED` và `DISABLED` không được đăng nhập. Token của tài khoản đã bị `DISABLED` cũng sẽ bị từ chối tại đây.
+- **Account Status Guard (Kiểm tra trạng thái tài khoản):** Khi đăng nhập, `UserDetailsService` kiểm tra `AccountStatus` (`ACTIVE`, `LOCKED`, `DISABLED`). Trên các endpoint yêu cầu xác thực, `AccountStatusGuard` (Custom Interceptor/Guard) hoặc Method Security kiểm tra trạng thái tài khoản và từ chối `LOCKED`/`DISABLED`. JWT Security Filter không truy vấn Database để làm việc này.
 - **Method Security (Kiểm tra nghiệp vụ):** Việc kiểm tra gói tập ACTIVE tại các API chức năng cao cấp được xử lý thông qua Method Security Annotation thay vì kiểm tra ở JWT Filter:
 
 ```java
 @PreAuthorize("@subscriptionGuard.hasActiveSubscription(authentication)")
 ```
 
-- **Scheduled Job (Cập nhật trạng thái):** Một tiến trình chạy ngầm hằng ngày quét và cập nhật trạng thái EXPIRED cho các Subscription có `endDate` đã qua, thay vì thực hiện kiểm tra này trên từng HTTP Request. Tiến trình này chỉ thay đổi trạng thái của Subscription, hoàn toàn không khóa tài khoản người dùng (`accountStatus` của người dùng vẫn giữ nguyên là `ACTIVE` và họ vẫn có thể đăng nhập bình thường để gia hạn gói tập).
+- **Subscription Guard và Scheduled Job:** Tại mỗi request tạo recommendation AI, kích hoạt giáo án hoặc ghi workout log mới, `SubscriptionGuard` kiểm tra động điều kiện `status = ACTIVE`, `startDate <= currentDate < endDate`; `endDate` là biên exclusive. Scheduled Job chạy hằng ngày chỉ hỗ trợ đồng bộ các bản ghi quá hạn sang `EXPIRED`, không thay thế kiểm tra động và không khóa tài khoản người dùng. Member hết hạn vẫn đăng nhập và xem dữ liệu lịch sử bình thường.
 
 ### 4.2. Trạng thái Luồng Đề xuất AI trong MVP và khi có PT
 
 ```text
 Luồng MVP (không có PT):
-AI_GENERATED → AVAILABLE_TO_MEMBER (trực tiếp)
+AI_GENERATED/FALLBACK_TEMPLATE → DRAFT_AVAILABLE_TO_MEMBER
+→ MEMBER_ACTIVATES → ACTIVE
 
 Khi có PT Module (Should-have):
-AI_GENERATED → [PT_OPTIONAL_REVIEW] → APPROVED/ADJUSTED → AVAILABLE_TO_MEMBER
+AI_GENERATED/FALLBACK_TEMPLATE → DRAFT_AVAILABLE_TO_MEMBER
+→ [PT_OPTIONAL_REVIEW/ADJUSTMENT] → MEMBER_ACTIVATES → ACTIVE
 ```
 
 Bước PT review là **tùy chọn**, không phải điều kiện bắt buộc để Hội viên nhận giáo án.

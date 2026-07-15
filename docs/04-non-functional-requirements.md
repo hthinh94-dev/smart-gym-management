@@ -42,11 +42,11 @@ Tài liệu này xác lập các tiêu chí đo lường chất lượng hệ th
 
 ### [NFR-07] - Kiểm soát truy cập tài nguyên (Resource Ownership Control)
 - **Mô tả:** Người dùng chỉ được phép đọc, sửa, xóa tài nguyên thuộc chính tài khoản của mình. Nghiêm cấm truy cập ngang hàng (Horizontal Privilege Escalation).
-- **Hiện thực hóa kỹ thuật:** Kiểm tra `userId` trong Service Layer bằng cách so sánh với `Principal` từ Security Context. Bổ sung `@PostAuthorize("returnObject.userId == principal.id")` nếu áp dụng tại Repository.
+- **Hiện thực hóa kỹ thuật:** Mọi truy vấn tài nguyên cá nhân phải nhận `memberId` từ Principal trong Security Context và đưa trực tiếp vào điều kiện truy vấn tại Repository/Service. Không nhận `memberId` tùy ý từ Client và không dựa vào việc lọc kết quả sau khi đã tải dữ liệu của người khác.
 
 ### [NFR-08] - Ngăn chặn Prompt Injection (Prompt Injection Prevention)
 - **Mô tả:** Mọi dữ liệu đầu vào từ người dùng trước khi được nhúng vào Prompt gửi đến LLM phải được làm sạch (sanitize) để giảm thiểu nguy cơ Prompt Injection.
-- **Hiện thực hóa kỹ thuật:** Triển khai một `PromptSanitizerService` trung tâm; loại bỏ các ký tự đặc biệt và hướng dẫn lồng nhúng (như `\nSystem:`, `Ignore previous instructions`) trước khi xây dựng Prompt.
+- **Hiện thực hóa kỹ thuật:** Triển khai `PromptSanitizerService` trung tâm; chỉ chấp nhận các trường cấu trúc theo allowlist/Enum, giới hạn độ dài, loại bỏ control characters và không hỗ trợ `customPrompt` tự do trong MVP. Dữ liệu người dùng được serialize thành một data block tách biệt với System Prompt; Backend vẫn hậu kiểm toàn bộ output dù nhà cung cấp báo schema hợp lệ.
 
 ---
 

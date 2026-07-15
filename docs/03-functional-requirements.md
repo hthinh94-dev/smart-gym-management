@@ -30,8 +30,11 @@ sequenceDiagram
     Backend->>AI: 6. POST request with JSON Schema enforcement
     AI-->>Backend: 7. Return structured JSON payload (Schedule + Meals proposal)
     Note over Backend: 8. Post-Validation (check exercise ID existence & RPE/set ranges)
-    Backend->>DB: 9. Save validated Workout Plan & Nutrition to Database
+    Backend->>DB: 9. Save validated Workout Plan as DRAFT & save Nutrition
     Backend-->>Client: 10. Return completed JSON payload with calculated details
+    Client->>Backend: 11. Activate accepted DRAFT Workout Plan
+    Backend->>DB: 12. Archive previous ACTIVE plan & activate selected plan
+    Backend-->>Client: 13. Return activation result
 ```
 
 ### 2.2. Phân định vai trò và Trách nhiệm xử lý
@@ -46,7 +49,7 @@ Người dùng cập nhật thông tin cá nhân lên Client, dữ liệu đư�
 
 #### B. Trách nhiệm xử lý độc lập của Backend (Spring Boot)
 Tầng Backend đảm nhận vai trò bộ lọc bảo mật, xử lý số liệu chính xác và kiểm soát nghiệp vụ:
-1. **Xác thực & Phân quyền:** Xác minh JWT Token hợp lệ, kiểm tra gói tập của Member có đang kích hoạt (Active) hay không.
+1. **Xác thực & Phân quyền:** Xác minh JWT Token hợp lệ; `SubscriptionGuard` kiểm tra động gói tập theo điều kiện `status = ACTIVE`, `startDate <= currentDate < endDate` tại các thao tác tạo recommendation, kích hoạt giáo án và ghi workout log mới.
 2. **Tính toán chỉ số sinh học cứng (Deterministic Logic):**
    - Áp dụng công thức Mifflin-St Jeor để tính chỉ số trao đổi chất cơ bản BMR.
    - Nhân hệ số vận động để ra chỉ số tiêu thụ năng lượng hàng ngày TDEE.
@@ -57,9 +60,11 @@ Tầng Backend đảm nhận vai trò bộ lọc bảo mật, xử lý số li�
 5. **Hậu kiểm dữ liệu (Post-Validation Hook):** Khi nhận được phản hồi từ AI, Backend tiến hành bóc tách thực thể JSON, thực hiện kiểm tra chéo và chuẩn hóa:
    - Nếu phản hồi từ AI chứa **bất kỳ** `exerciseId` nào nằm ngoài danh sách Whitelist, Backend **từ chối toàn bộ AI Response** và tiến hành Retry tối đa 1 lần. Nếu Retry vẫn thất bại, kích hoạt cơ chế Fallback giáo án mẫu cố định từ DB. **Không tự động tìm bài tập tương đương trong MVP.**
    - Số lượng `plannedSets` (1–5), `plannedReps` (1–30), mức `plannedRpe` (6–9), thời gian nghỉ `restSeconds` (30–300 giây) có nằm trong ngưỡng an toàn hay không.
+   - `workoutSchedule` phải có đúng `workoutDaysPerWeek` phần tử; `dayNumber` phải duy nhất, liên tục từ 1 đến `workoutDaysPerWeek` và mỗi ngày phải có ít nhất một bài tập.
+   - `nutritionPlan.mealStructure` phải có đúng `mealsPerDay` phần tử; các món ăn phải vượt qua kiểm tra lại theo `dietaryPreference`, `foodAllergies` và `excludedFoods` trước khi được lưu.
    - Khi hội viên ghi nhật ký, Backend validate riêng dữ liệu thực tế: `actualSets` (1–10), `actualReps` (1–100), `actualRpe` (1–10) và `weightUsedKg` (≥ 0). Các giá trị này không thuộc AI Output Schema.
    - **Quy tắc chuẩn hóa dữ liệu tĩnh:** Tầng Backend chỉ trích xuất `exerciseId` từ payload của AI gửi về để kiểm tra chéo với Whitelist. Sau đó, hệ thống tự động thực hiện Map/Join dữ liệu để lấy ra `exerciseName` chuẩn gốc từ Master Data trong MySQL của hệ thống trước khi lưu, thay vì tin cậy hoàn toàn vào chuỗi ký tự `exerciseName` do AI sinh ra.
-6. **Lưu trữ dữ liệu:** Lưu thông tin giáo án và thực đơn đã được kiểm chứng vào Database thông qua JPA Repository.
+6. **Lưu trữ dữ liệu:** Lưu giáo án đã được kiểm chứng ở trạng thái `DRAFT` và lưu thực đơn vào Database thông qua JPA Repository. Khi Member chấp nhận giáo án, Backend chuyển giáo án `ACTIVE` cũ sang `ARCHIVED` và kích hoạt giáo án `DRAFT` mới trong cùng transaction; mỗi Member chỉ có tối đa một giáo án `ACTIVE`.
 
 #### C. Trách nhiệm xử lý của AI Engine (Mô hình LLM thương mại)
 AI đóng vai trò như một bộ máy lập lịch trình và định dạng dữ liệu (Optimizer & Formatter). **AI không được phép tự tính toán BMR, TDEE hay tổng Calorie:**
@@ -73,7 +78,7 @@ AI đóng vai trò như một bộ máy lập lịch trình và định dạng d
 Nhằm giảm thiểu hiện tượng ảo giác (Hallucination) của AI tạo sinh trong bối cảnh dữ liệu sức khỏe và thể chất, hệ thống triển khai 3 rào cản phòng vệ:
 1. **Cô lập tính toán số liệu học thuật:** AI không được tự tính toán BMR, TDEE hay Calorie. Các chỉ số này được Backend tính toán theo công thức khoa học cứng (Mifflin-St Jeor, hệ số hoạt động), tạo ra kết quả **tất định, nhất quán và có thể kiểm thử theo công thức đã lựa chọn**, rồi chuyển sang cho AI dưới dạng tham số bất biến.
 2. **Kẹp chặt phạm vi dữ liệu bài tập (ID Whitelisting):** AI không được tự ý sinh tên bài tập lạ. AI chỉ được sắp xếp các bài tập trong danh sách ID mà Backend cung cấp. **Toàn bộ phản hồi chứa bất kỳ ID nào nằm ngoài whitelist sẽ bị từ chối** — không lọc bỏ từng phần tử.
-3. **Ép kiểu phản hồi có cấu trúc (Strict JSON Schema):** Sử dụng tính năng Structured Outputs của các LLM API hiện đại, ép buộc mô hình phải trả về JSON tuân thủ chính xác Schema định nghĩa trước. Nếu cấu trúc trả về sai định dạng, Backend từ chối lưu trữ và kích hoạt cơ chế Fallback Template.
+3. **Ép kiểu phản hồi có cấu trúc (Strict JSON Schema):** Sử dụng tính năng Structured Outputs của các LLM API hiện đại, ép buộc mô hình phải trả về JSON tuân thủ chính xác Schema định nghĩa trước. Nếu cấu trúc trả về sai định dạng, Backend từ chối toàn bộ phản hồi, Retry tối đa 1 lần; nếu lần Retry vẫn thất bại thì mới kích hoạt Fallback Template an toàn.
 
 ---
 
@@ -91,8 +96,8 @@ AI Engine bắt buộc chỉ trả về phần `workoutSchedule` và `nutritionP
   "required": ["splitModel", "explanation", "workoutSchedule", "nutritionPlan"],
   "additionalProperties": false,
   "properties": {
-    "splitModel": { "type": "string", "minLength": 1 },
-    "explanation": { "type": "string", "minLength": 10 },
+    "splitModel": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "explanation": { "type": "string", "minLength": 10, "maxLength": 1000 },
     "workoutSchedule": {
       "type": "array",
       "minItems": 1,
@@ -102,7 +107,7 @@ AI Engine bắt buộc chỉ trả về phần `workoutSchedule` và `nutritionP
         "additionalProperties": false,
         "properties": {
           "dayNumber": { "type": "integer", "minimum": 1 },
-          "dayName": { "type": "string" },
+          "dayName": { "type": "string", "minLength": 1, "maxLength": 100 },
           "exercises": {
             "type": "array",
             "minItems": 1,
@@ -116,7 +121,7 @@ AI Engine bắt buộc chỉ trả về phần `workoutSchedule` và `nutritionP
                 "plannedReps": { "type": "integer", "minimum": 1, "maximum": 30 },
                 "plannedRpe": { "type": "integer", "minimum": 6, "maximum": 9 },
                 "restSeconds": { "type": "integer", "minimum": 30, "maximum": 300 },
-                "notes": { "type": "string" }
+                "notes": { "type": "string", "maxLength": 500 }
               }
             }
           }
@@ -131,19 +136,24 @@ AI Engine bắt buộc chỉ trả về phần `workoutSchedule` và `nutritionP
         "mealStructure": {
           "type": "array",
           "minItems": 1,
+          "maxItems": 6,
           "items": {
             "type": "object",
-            "required": ["mealName", "timeSuggest", "foods"],
+            "required": ["mealName", "timeSuggest", "foods", "description"],
             "additionalProperties": false,
             "properties": {
-              "mealName": { "type": "string" },
-              "timeSuggest": { "type": "string" },
+              "mealName": { "type": "string", "minLength": 1, "maxLength": 100 },
+              "timeSuggest": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              },
               "foods": {
                 "type": "array",
                 "minItems": 1,
-                "items": { "type": "string" }
+                "maxItems": 20,
+                "items": { "type": "string", "minLength": 1, "maxLength": 100 }
               },
-              "description": { "type": "string" }
+              "description": { "type": "string", "minLength": 1, "maxLength": 500 }
             }
           }
         }
@@ -212,8 +222,87 @@ Khi Fallback được kích hoạt (AI lỗi hoặc bị từ chối sau retry):
 {
   "recommendationSource": "FALLBACK_TEMPLATE",
   "warningCode": "AI_RESPONSE_INVALID",
-  "calculatedTargets": { "..." : "..." },
-  "aiSuggestion": { "(giáo án mẫu cố định từ DB)" : "" }
+  "calculatedTargets": {
+    "bmr": 1750,
+    "tdee": 2275,
+    "dailyCaloriesKcal": 2200,
+    "proteinGrams": 165,
+    "carbGrams": 220,
+    "fatGrams": 73
+  },
+  "aiSuggestion": {
+    "splitModel": "Full Body 3 Days",
+    "explanation": "Giáo án mẫu tĩnh phù hợp với hội viên mới tập ba buổi mỗi tuần.",
+    "workoutSchedule": [
+      {
+        "dayNumber": 1,
+        "dayName": "Buổi 1: Full Body A",
+        "exercises": [
+          {
+            "exerciseId": 101,
+            "exerciseName": "Flat Dumbbell Press",
+            "plannedSets": 3,
+            "plannedReps": 10,
+            "plannedRpe": 7,
+            "restSeconds": 90,
+            "notes": "Kiểm soát biên độ chuyển động và giữ nhịp thở ổn định."
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "dayName": "Buổi 2: Full Body B",
+        "exercises": [
+          {
+            "exerciseId": 205,
+            "exerciseName": "Cable Seated Row",
+            "plannedSets": 3,
+            "plannedReps": 12,
+            "plannedRpe": 7,
+            "restSeconds": 90,
+            "notes": "Giữ thân người ổn định và kéo bằng cơ lưng."
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "dayName": "Buổi 3: Full Body C",
+        "exercises": [
+          {
+            "exerciseId": 309,
+            "exerciseName": "Goblet Squat",
+            "plannedSets": 3,
+            "plannedReps": 10,
+            "plannedRpe": 7,
+            "restSeconds": 90,
+            "notes": "Giữ cột sống trung lập và thực hiện trong biên độ phù hợp."
+          }
+        ]
+      }
+    ],
+    "nutritionPlan": {
+      "mealStructure": [
+        {
+          "mealName": "Bữa sáng",
+          "timeSuggest": "07:30",
+          "foods": ["3 quả trứng gà luộc", "100g yến mạch"],
+          "description": "Bữa sáng mẫu giàu protein và carbohydrate phức hợp."
+        },
+        {
+          "mealName": "Bữa trưa",
+          "timeSuggest": "12:00",
+          "foods": ["200g ức gà", "150g cơm gạo lứt", "Rau xanh"],
+          "description": "Bữa chính mẫu hỗ trợ cung cấp năng lượng cho buổi tập."
+        },
+        {
+          "mealName": "Bữa tối",
+          "timeSuggest": "19:00",
+          "foods": ["150g cá hồi", "100g khoai lang", "Salad rau xanh"],
+          "description": "Bữa tối mẫu hỗ trợ phục hồi sau tập luyện."
+        }
+      ]
+    }
+  }
 }
 ```
 
@@ -231,7 +320,7 @@ Khi Fallback được kích hoạt (AI lỗi hoặc bị từ chối sau retry):
 | `secondaryMuscleGroups` | `Set<Enum>` | Nhóm cơ phụ |
 | `movementPattern` | `Enum` | Kiểu chuyển động (PUSH, PULL, HINGE, SQUAT, CARRY, ROTATION) |
 | `targetBodyRegions` | `Set<Enum>` | Vùng cơ thể tác động (UPPER_BODY, LOWER_BODY, CORE, FULL_BODY) |
-| `equipmentRequired` | `Set<Enum>` | Thiết bị cần thiết (BARBELL, DUMBBELL, MACHINE, BODYWEIGHT, ...) |
+| `equipmentRequired` | `Set<Enum>` | Thiết bị vật lý cần thiết (BARBELL, DUMBBELL, CABLE, MACHINE, BENCH, ...); bài bodyweight dùng tập rỗng |
 | `difficultyLevel` | `Enum` | Độ khó (BEGINNER, INTERMEDIATE, ADVANCED) |
 | `contraindicationTags` | `Set<Enum>` | Danh sách chống chỉ định — **cột quan trọng nhất để lọc** |
 | `instructionText` | `Text` | Hướng dẫn thực hiện |
