@@ -60,7 +60,7 @@ Tầng Backend đảm nhận vai trò bộ lọc bảo mật, xử lý số li�
 5. **Hậu kiểm dữ liệu (Post-Validation Hook):** Khi nhận được phản hồi từ AI, Backend tiến hành bóc tách thực thể JSON, thực hiện kiểm tra chéo và chuẩn hóa:
    - Nếu phản hồi từ AI chứa **bất kỳ** `exerciseId` nào nằm ngoài danh sách Whitelist, Backend **từ chối toàn bộ AI Response** và tiến hành Retry tối đa 1 lần. Nếu Retry vẫn thất bại, kích hoạt cơ chế Fallback giáo án mẫu cố định từ DB. **Không tự động tìm bài tập tương đương trong MVP.**
    - Số lượng `plannedSets` (1–5), `plannedReps` (1–30), mức `plannedRpe` (6–9), thời gian nghỉ `restSeconds` (30–300 giây) có nằm trong ngưỡng an toàn hay không.
-   - `workoutSchedule` phải có đúng `workoutDaysPerWeek` phần tử; `dayNumber` phải duy nhất, liên tục từ 1 đến `workoutDaysPerWeek` và mỗi ngày phải có ít nhất một bài tập.
+- `workoutSchedule` phải có đúng `workoutDaysPerWeek` phần tử; `dayNumber` phải duy nhất, liên tục từ 1 đến `workoutDaysPerWeek`; mỗi ngày phải có ít nhất một bài tập và không được lặp cùng `exerciseId` trong một ngày.
    - `nutritionPlan.mealStructure` phải có đúng `mealsPerDay` phần tử; các món ăn phải vượt qua kiểm tra lại theo `dietaryPreference`, `foodAllergies` và `excludedFoods` trước khi được lưu.
    - Khi hội viên ghi nhật ký, Backend validate riêng dữ liệu thực tế: `actualSets` (1–10), `actualReps` (1–100), `actualRpe` (1–10) và `weightUsedKg` (≥ 0). Các giá trị này không thuộc AI Output Schema.
    - **Quy tắc chuẩn hóa dữ liệu tĩnh:** Tầng Backend chỉ trích xuất `exerciseId` từ payload của AI gửi về để kiểm tra chéo với Whitelist. Sau đó, hệ thống tự động thực hiện Map/Join dữ liệu để lấy ra `exerciseName` chuẩn gốc từ Master Data trong MySQL của hệ thống trước khi lưu, thay vì tin cậy hoàn toàn vào chuỗi ký tự `exerciseName` do AI sinh ra.
@@ -316,9 +316,9 @@ Khi Fallback được kích hoạt (AI lỗi hoặc bị từ chối sau retry):
 | :--- | :--- | :--- |
 | `id` | `Long` | Khóa chính |
 | `name` | `String` | Tên bài tập chuẩn |
-| `primaryMuscleGroup` | `Enum` | Nhóm cơ chính tác động |
-| `secondaryMuscleGroups` | `Set<Enum>` | Nhóm cơ phụ |
-| `movementPattern` | `Enum` | Kiểu chuyển động (PUSH, PULL, HINGE, SQUAT, CARRY, ROTATION) |
+| `primaryMuscleGroup` | `Enum` | Nhóm cơ chính tác động (CHEST, BACK, SHOULDERS, ARMS, LEGS, GLUTES, CORE, CARDIO, FULL_BODY) |
+| `secondaryMuscleGroups` | `Set<Enum>` | Các nhóm cơ phụ, dùng cùng tập giá trị với `primaryMuscleGroup` |
+| `movementPattern` | `Enum` | Kiểu chuyển động (PUSH, PULL, HINGE, SQUAT, LUNGE, CARRY, ROTATION) |
 | `targetBodyRegions` | `Set<Enum>` | Vùng cơ thể tác động (UPPER_BODY, LOWER_BODY, CORE, FULL_BODY) |
 | `equipmentRequired` | `Set<Enum>` | Thiết bị vật lý cần thiết (BARBELL, DUMBBELL, CABLE, MACHINE, BENCH, ...); bài bodyweight dùng tập rỗng |
 | `difficultyLevel` | `Enum` | Độ khó (BEGINNER, INTERMEDIATE, ADVANCED) |

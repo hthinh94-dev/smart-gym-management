@@ -76,7 +76,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Mức ưu tiên:** Must-have
 **Actor:** Member
 **Mô tả:** Hội viên cập nhật các thông số thể chất cơ bản như chiều cao, cân nặng, chấn thương và thiết bị sẵn có. Hệ thống lưu lại và kích hoạt luồng tính toán chỉ số dinh dưỡng mới.
-**Input chính:** `gender`, `dateOfBirth`, `heightCm`, `weightKg`, `activityLevel`, `workoutDaysPerWeek`, `maxSessionMinutes`, `availableEquipment`, `targetMuscleGroups`, `injuryConstraints`
+**Input chính:** `gender` (Enum: `MALE`, `FEMALE`), `dateOfBirth`, `heightCm`, `weightKg`, `activityLevel`, `workoutDaysPerWeek`, `maxSessionMinutes`, `availableEquipment`, `targetMuscleGroups`, `injuryConstraints`
 **Output:** Hồ sơ thể chất mới được lưu trữ trong DB, tự động kích hoạt tính toán lại BMI, BMR, TDEE, Calories và Macros.
 **Business Rules liên quan:** BR-13 (Quyền sở hữu dữ liệu), BR-22 (Chỉ có 1 bản ghi tiến độ thể chất trong ngày), BR-23 (Kiểm duyệt hồ sơ thể chất).
 **Ghi chú kỹ thuật:** Khi thay đổi cân nặng ở hồ sơ thể chất, hệ thống đồng thời tạo hoặc cập nhật một bản ghi tiến trình thể trạng (`BodyProgress`) cho ngày hiện tại để vẽ biểu đồ tiến độ.
@@ -153,7 +153,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Input chính:** `requestId` (path variable), `requestType` (Enum trong request body: `NEW_SUBSCRIPTION` hoặc `RENEWAL`)
 **Output:** Với đăng ký mới, Subscription chuyển thành `ACTIVE`, `startDate = ngày phê duyệt`, `endDate = startDate + durationDays`. Với gia hạn, Renewal Request chuyển thành `PROCESSED` và Subscription `ACTIVE` hiện tại được cộng dồn `endDate` mà không tạo bản ghi ACTIVE mới.
 **Business Rules liên quan:** BR-03 (Quyền Admin), BR-04 (Một Subscription ACTIVE), BR-24 (Gia hạn cộng dồn), BR-25 (Hiệu lực động của Subscription).
-**Ghi chú kỹ thuật:** `requestType` loại bỏ sự mơ hồ khi ID của Subscription Request và Renewal Request thuộc hai tập dữ liệu khác nhau. Thực hiện toàn bộ thay đổi trong một transaction. Với đăng ký mới, chuyển Subscription `PENDING` thành `ACTIVE`; với yêu cầu gia hạn, khóa và kiểm tra lại Subscription đích còn hiệu lực, chuyển Renewal Request `PENDING` thành `PROCESSED`, chỉ cập nhật `endDate` của Subscription `ACTIVE` liên kết và ghi nhận `approvedBy`.
+**Ghi chú kỹ thuật:** `requestType` loại bỏ sự mơ hồ khi ID của Subscription Request và Renewal Request thuộc hai tập dữ liệu khác nhau. Thực hiện toàn bộ thay đổi trong một transaction. Với đăng ký mới, khóa các subscription của Member, chuyển bản ghi còn mang `status = ACTIVE` nhưng có `endDate <= currentDate` sang `EXPIRED`, sau đó kiểm tra lại điều kiện một ACTIVE trước khi chuyển yêu cầu `PENDING` thành `ACTIVE`. Với yêu cầu gia hạn, khóa và kiểm tra lại Subscription đích còn hiệu lực, chuyển Renewal Request `PENDING` thành `PROCESSED`, chỉ cập nhật `endDate` của Subscription `ACTIVE` liên kết và ghi nhận `approvedBy`. `MemberSubscription`, `SubscriptionRenewalRequest` dùng `@Version`; lỗi khóa hoặc version conflict trả `CON-001` (HTTP 409), không dùng `SUB-006`.
 
 ### [FR-SUB-07] Hệ thống kiểm tra subscription ACTIVE
 **Mức ưu tiên:** Must-have
@@ -191,7 +191,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Input chính:** `name`, `primaryMuscleGroup`, `secondaryMuscleGroups`, `movementPattern`, `targetBodyRegions`, `equipmentRequired`, `difficultyLevel`, `contraindicationTags`, `instructionText`
 **Output:** Bản ghi Exercise mới được lưu trong database với trạng thái mặc định `isActive = true`.
 **Business Rules liên quan:** BR-03 (Quyền Admin).
-**Ghi chú kỹ thuật:** Validate tên bài tập là duy nhất (Unique) trước khi lưu. Các danh mục nhóm cơ, thiết bị, chuyển động phải khớp chính xác với cấu trúc Enums định nghĩa sẵn.
+**Ghi chú kỹ thuật:** Validate tên bài tập là duy nhất (Unique) trước khi lưu. `MuscleGroup` dùng `CHEST`, `BACK`, `SHOULDERS`, `ARMS`, `LEGS`, `GLUTES`, `CORE`, `CARDIO`, `FULL_BODY`; `MovementPattern` dùng `PUSH`, `PULL`, `HINGE`, `SQUAT`, `LUNGE`, `CARRY`, `ROTATION`. Các danh mục thiết bị, vùng cơ thể, độ khó và chống chỉ định phải khớp chính xác với các Enum đã chốt.
 
 ### [FR-EXR-02] Admin chỉnh sửa bài tập
 **Mức ưu tiên:** Must-have
@@ -258,7 +258,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Output:** Lưu lịch tập ở trạng thái `DRAFT` nếu vượt qua hậu kiểm, ngược lại kích hoạt luồng Retry hoặc Fallback.
 **Business Rules liên quan:** BR-08 (RPE kế hoạch từ 6-9), BR-09A (Giới hạn thông số planned), BR-10 (Xác thực bài tập AI phải có trong Whitelist).
 **NFR liên quan:** NFR-13 (Chính sách retry và ngân sách thời gian).
-**Ghi chú kỹ thuật:** Kiểm tra nghiêm ngặt: `plannedSets` (1-5), `plannedReps` (1-30), `plannedRpe` (6-9), `restSeconds` (30-300); số phần tử `workoutSchedule` phải đúng `workoutDaysPerWeek`, `dayNumber` duy nhất và liên tục từ 1. Nếu bất kỳ bài tập nào có ID ngoài Whitelist hoặc bất kỳ điều kiện nào sai -> từ chối toàn bộ phản hồi.
+**Ghi chú kỹ thuật:** Kiểm tra nghiêm ngặt: `plannedSets` (1-5), `plannedReps` (1-30), `plannedRpe` (6-9), `restSeconds` (30-300); số phần tử `workoutSchedule` phải đúng `workoutDaysPerWeek`, `dayNumber` duy nhất và liên tục từ 1, đồng thời không được lặp cùng `exerciseId` trong một workout day. Nếu bất kỳ bài tập nào có ID ngoài Whitelist hoặc bất kỳ điều kiện nào sai -> từ chối toàn bộ phản hồi.
 
 ### [FR-WORKOUT-03] Backend tạo fallback workout plan
 **Mức ưu tiên:** Must-have
@@ -286,7 +286,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Input chính:** `workoutPlanId`
 **Output:** Giáo án đích chuyển từ `DRAFT` sang `ACTIVE`; giáo án `ACTIVE` cũ của hội viên (nếu có) chuyển sang `ARCHIVED`.
 **Business Rules liên quan:** BR-13 (Quyền sở hữu), BR-25 (Subscription hợp lệ), BR-26 (Vòng đời và tính duy nhất của giáo án ACTIVE).
-**Ghi chú kỹ thuật:** Thực hiện archive giáo án cũ và kích hoạt giáo án mới trong cùng transaction; không sử dụng trạng thái `INACTIVE`.
+**Ghi chú kỹ thuật:** Thực hiện archive giáo án cũ và kích hoạt giáo án mới trong cùng transaction; không sử dụng trạng thái `INACTIVE`. Service khóa danh sách Workout Plan của Member và dùng `@Version` trên `WorkoutPlan`; xung đột khóa/version trả `CON-001` (HTTP 409).
 
 ### [FR-WORKOUT-06] Member ghi nhật ký buổi tập
 **Mức ưu tiên:** Must-have
@@ -321,7 +321,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Mức ưu tiên:** Must-have
 **Actor:** Hệ thống
 **Mô tả:** Hệ thống tự động tính toán tỷ lệ trao đổi chất cơ bản (Basal Metabolic Rate - BMR) theo công thức khoa học cứng để xác định mức năng lượng tối thiểu của cơ thể.
-**Input chính:** `gender`, `dateOfBirth`, `heightCm`, `weightKg`
+**Input chính:** `gender` (Enum: `MALE`, `FEMALE`), `dateOfBirth`, `heightCm`, `weightKg`
 **Output:** Chỉ số BMR (Calories/ngày).
 **Business Rules liên quan:** BR-09C (Backend sở hữu tính toán).
 **Ghi chú kỹ thuật:** Sử dụng công thức Mifflin-St Jeor:

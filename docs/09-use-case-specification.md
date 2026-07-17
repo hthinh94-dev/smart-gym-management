@@ -121,7 +121,7 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   - Tự động tính toán và cập nhật lại BMI, BMR, TDEE, Calories/Macros đích tại Backend.
   - Tự động ghi nhận một bản ghi biến động cân nặng (`BodyProgress`) cho ngày hiện hành trong DB.
 - **Luồng chính (Basic Flow):**
-  1. Hội viên truy cập trang Cấu hình hồ sơ và nhập đầy đủ: `heightCm`, `weightKg`, `fitnessGoal`, `fitnessLevel`, `activityLevel`, `dietaryPreference`, `foodAllergies`, `excludedFoods`, `mealsPerDay`; đồng thời có thể cập nhật `gender`, `dateOfBirth`, `workoutDaysPerWeek`, `maxSessionMinutes`, `availableEquipment`, `targetMuscleGroups`, `injuryConstraints`.
+  1. Hội viên truy cập trang Cấu hình hồ sơ và nhập đầy đủ: `heightCm`, `weightKg`, `fitnessGoal`, `fitnessLevel`, `activityLevel`, `dietaryPreference`, `foodAllergies`, `excludedFoods`, `mealsPerDay`; đồng thời có thể cập nhật `gender` (`MALE` hoặc `FEMALE`), `dateOfBirth`, `workoutDaysPerWeek`, `maxSessionMinutes`, `availableEquipment`, `targetMuscleGroups`, `injuryConstraints`.
   2. Hội viên nhấn nút Lưu.
   3. Hệ thống xác thực tính hợp lệ của dữ liệu đầu vào.
   4. Backend tính toán chỉ số BMI, BMR (Mifflin-St Jeor), TDEE (dựa theo activityLevel) và Calories/Macros (thâm hụt/thặng dư theo mục tiêu).
@@ -129,7 +129,7 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   6. Hệ thống trả về cấu trúc hồ sơ đầy đủ cùng các chỉ số vừa tính toán.
 - **Luồng ngoại lệ (Alternative / Exception Flows):**
   - **[Ngoại lệ 03.a] - Dữ liệu không hợp lệ:**
-    - Cân nặng/chiều cao âm hoặc rỗng; `mealsPerDay` ngoài khoảng 1–6; `activityLevel`, `fitnessGoal`, `fitnessLevel` hoặc `dietaryPreference` không thuộc Enum; danh sách dị ứng/thực phẩm loại trừ vượt giới hạn BR-23.
+  - Cân nặng/chiều cao âm hoặc rỗng; `gender` khác `MALE`/`FEMALE`; `dateOfBirth` ở tương lai; `workoutDaysPerWeek` ngoài khoảng 1–7; `maxSessionMinutes` không dương; `mealsPerDay` ngoài khoảng 1–6; `activityLevel`, `fitnessGoal`, `fitnessLevel` hoặc `dietaryPreference` không thuộc Enum; danh sách dị ứng/thực phẩm loại trừ vượt giới hạn BR-23.
     - Hệ thống ném mã lỗi `VAL-001` (HTTP 400 Bad Request) kèm thông báo lỗi chi tiết các trường.
 - **Business Rules liên quan:** BR-13, BR-22, BR-23.
 - **Acceptance Criteria (BDD):**
@@ -207,7 +207,7 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   1. Admin truy cập danh sách yêu cầu đăng ký gói tập chờ xử lý.
   2. Admin chọn yêu cầu của Hội viên và nhấn "Phê duyệt"; Client gửi kèm `requestType = NEW_SUBSCRIPTION` hoặc `RENEWAL` theo loại yêu cầu đang hiển thị.
   3. Hệ thống dùng `requestType` để tải đúng Subscription Request hoặc Renewal Request và kiểm tra trạng thái `PENDING`.
-  4. Với đăng ký mới, hệ thống chuyển Subscription `PENDING` thành `ACTIVE`; với gia hạn, hệ thống chuyển Renewal Request `PENDING` thành `PROCESSED`.
+  4. Với đăng ký mới, hệ thống khóa các subscription của Member, chuyển mọi bản ghi còn mang `status = ACTIVE` nhưng đã có `endDate <= currentDate` sang `EXPIRED`, rồi kiểm tra lại điều kiện một Subscription ACTIVE trước khi chuyển yêu cầu `PENDING` thành `ACTIVE`; với gia hạn, hệ thống chuyển Renewal Request `PENDING` thành `PROCESSED`.
   5. Hệ thống tính toán thời hạn:
      - Đăng ký mới: `startDate = ngày phê duyệt`, `endDate = startDate + durationDays` của gói.
      - Gia hạn gói đang hoạt động: thời gian kết thúc mới được cộng nối tiếp `newEndDate = currentEndDate + durationDays`.
@@ -222,6 +222,9 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   - **[Ngoại lệ 05.c] - Subscription đích gia hạn không còn hiệu lực:**
     - Với Renewal Request, Subscription liên kết đã bị hủy, hết hạn hoặc không còn tồn tại tại thời điểm phê duyệt.
     - Hệ thống rollback transaction và trả `SUB-005` (HTTP 404 Not Found).
+  - **[Ngoại lệ 05.d] - Xung đột cập nhật đồng thời:**
+    - Một Admin hoặc transaction khác đã cập nhật Subscription, Renewal Request hoặc Workout Plan sau thời điểm request hiện tại nạp dữ liệu; hoặc request hiện tại không lấy được khóa ghi trong thời gian cấu hình.
+    - Hệ thống rollback toàn bộ transaction và trả `CON-001` (HTTP 409 Conflict). Client phải tải lại trạng thái mới nhất trước khi thử lại; không dùng `SUB-006` cho lỗi khóa/version.
 - **Business Rules liên quan:** BR-03, BR-04, BR-05, BR-24, BR-25.
 - **Acceptance Criteria (BDD):**
   - **AC-UC_05-01 (Xác nhận đăng ký mới thành công):**
@@ -232,6 +235,14 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
     - **Given** hội viên đang có Subscription `ACTIVE` hạn đến ngày `30/07/2026` và đã gửi yêu cầu gia hạn `PENDING` cho cùng gói tập (30 ngày).
     - **When** Admin nhấn phê duyệt yêu cầu gia hạn đó,
     - **Then** hệ thống không tạo thêm thực thể subscription `ACTIVE` song song mà cập nhật trực tiếp thời hạn gói hiện tại có `newEndDate = 29/08/2026` dạng exclusive (cộng thêm 30 ngày vào hạn cũ), đồng thời chuyển yêu cầu gia hạn từ `PENDING` sang `PROCESSED`.
+  - **AC-UC_05-03 (Chuẩn hóa trạng thái ACTIVE đã hết hạn trước khi duyệt đăng ký mới):**
+    - **Given** Member có một bản ghi còn mang `status = ACTIVE` nhưng `endDate <= currentDate` và có một yêu cầu đăng ký mới `PENDING`,
+    - **When** Admin phê duyệt yêu cầu đăng ký mới,
+    - **Then** hệ thống chuyển bản ghi cũ sang `EXPIRED` và kích hoạt yêu cầu mới trong cùng transaction, không vi phạm unique constraint một Subscription ACTIVE.
+  - **AC-UC_05-04 (Phát hiện cạnh tranh khi duyệt gia hạn):**
+    - **Given** transaction thứ nhất đang giữ khóa ghi trên Renewal Request và Subscription đích trong lúc duyệt gia hạn,
+    - **When** transaction thứ hai cố duyệt cùng request nhưng vượt quá thời gian chờ khóa cấu hình,
+    - **Then** transaction thứ hai bị rollback, trả HTTP 409 Conflict với `errorCode = CON-001`; `endDate` chỉ được cộng đúng một lần.
 
 ---
 
@@ -305,7 +316,7 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   6. Backend nhận JSON phản hồi và thực hiện hậu kiểm (Post-Validation Hook):
      - Xác minh toàn bộ `exerciseId` do AI trả về đều nằm trong whitelist của Backend.
      - Xác minh các thông số kế hoạch nằm trong ngưỡng: `plannedSets` (1-5), `plannedReps` (1-30), `plannedRpe` (6-9) và `restSeconds` (30-300 giây).
-     - Xác minh số ngày bằng `workoutDaysPerWeek`, `dayNumber` duy nhất/liên tục và mỗi ngày có ít nhất một bài tập.
+     - Xác minh số ngày bằng `workoutDaysPerWeek`, `dayNumber` duy nhất/liên tục, mỗi ngày có ít nhất một bài tập và không lặp cùng `exerciseId` trong một ngày.
      - Xác minh số bữa bằng `mealsPerDay`, đồng thời kiểm tra lại món ăn theo chế độ ăn, dị ứng và danh sách thực phẩm loại trừ.
   7. Backend tự ghép (Merge) chỉ số Calories/Macros do Backend tự tính toán ở Bước 2 vào JSON thực đơn của AI.
   8. Hệ thống lưu giáo án ở trạng thái `DRAFT`, lưu thực đơn với nguồn tạo `recommendationSource = AI_GENERATED` và trả kết quả cho Client.
@@ -321,6 +332,9 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   - **[Ngoại lệ 07.c] - Không thể tạo fallback an toàn:**
     - Backend không tìm được template có bài tập nằm hoàn toàn trong whitelist hoặc nguồn template gặp lỗi.
     - Hệ thống không lưu Workout Plan/Nutrition Plan một phần, trả `AI-001` (HTTP 502 Bad Gateway) và ghi log kỹ thuật đã che dữ liệu nhạy cảm.
+  - **[Ngoại lệ 07.d] - Hai request đồng thời kích hoạt giáo án:**
+    - Hai request cùng cố archive plan cũ và kích hoạt hai plan DRAFT khác nhau của một Member.
+    - Service khóa danh sách plan theo Member để tuần tự hóa hai transaction. Request đến sau chỉ xử lý trên trạng thái mới nhất; nếu hết thời gian chờ khóa hoặc phát sinh version conflict thì rollback và trả `CON-001` (HTTP 409). Trong mọi trường hợp không tồn tại hai plan ACTIVE.
 - **Business Rules liên quan:** BR-06, BR-07, BR-08, BR-09A, BR-09C, BR-10, BR-11, BR-12, BR-13, BR-23, BR-25, BR-26.
 - **NFR liên quan:** NFR-02 (Ngân sách phản hồi endpoint AI), NFR-13 (Timeout 15 giây mỗi attempt và retry tối đa một lần).
 - **Acceptance Criteria (BDD):**
@@ -348,6 +362,10 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
     - **Given** Member có Subscription hợp lệ, sở hữu một giáo án `DRAFT` mới và đang có một giáo án cũ ở trạng thái `ACTIVE`.
     - **When** Member kích hoạt giáo án `DRAFT` mới,
     - **Then** Backend chuyển giáo án cũ sang `ARCHIVED`, chuyển giáo án mới sang `ACTIVE` trong cùng transaction và bảo đảm Member chỉ còn đúng một giáo án `ACTIVE` theo BR-26.
+  - **AC-UC_07-07 (Chặn xung đột kích hoạt hai giáo án):**
+    - **Given** Member có hai giáo án `DRAFT` và hai request kích hoạt được gửi gần như đồng thời,
+    - **When** hai transaction cùng cố thay đổi tập Workout Plan của Member,
+    - **Then** khóa theo Member tuần tự hóa hai transaction và unique generated key bảo đảm tại mọi thời điểm chỉ có một plan `ACTIVE`; nếu request sau không lấy được khóa hoặc gặp version conflict thì trả HTTP 409 với `errorCode = CON-001`.
 
 ---
 

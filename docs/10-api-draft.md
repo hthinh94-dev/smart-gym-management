@@ -262,7 +262,7 @@ Trường `password` và `confirmPassword` chỉ tồn tại trong request DTO �
 ---
 
 ### PUT /api/v1/member/profile
-**Mô tả:** Cập nhật toàn bộ hồ sơ thể trạng và dinh dưỡng. Hệ thống tự động tính toán lại các chỉ số BMI, BMR, TDEE, Calories và Macros sau khi lưu. Validate nghiêm ngặt theo BR-23.
+**Mô tả:** Cập nhật toàn bộ hồ sơ thể trạng và dinh dưỡng. `gender` chỉ nhận `MALE` hoặc `FEMALE` để ánh xạ tất định vào hai công thức BMR Mifflin-St Jeor đã chốt. Hệ thống tự động tính toán lại các chỉ số BMI, BMR, TDEE, Calories và Macros sau khi lưu. Validate nghiêm ngặt theo BR-23.
 
 **Headers:**
 - `Authorization: Bearer <token>` (Role: MEMBER)
@@ -767,7 +767,7 @@ Trường `password` và `confirmPassword` chỉ tồn tại trong request DTO �
 ---
 
 ### POST /api/v1/admin/subscriptions/{id}/approve
-**Mô tả:** Admin phê duyệt một yêu cầu đang ở trạng thái `PENDING`. Client bắt buộc gửi `requestType` để Backend tải đúng loại bản ghi, tránh xung đột ID giữa Subscription Request và Renewal Request. Nếu là gia hạn, hệ thống cộng dồn thời hạn theo BR-24: `newEndDate = currentEndDate + durationDays`; không tạo thêm bản ghi ACTIVE thứ hai.
+**Mô tả:** Admin phê duyệt một yêu cầu đang ở trạng thái `PENDING`. Client bắt buộc gửi `requestType` để Backend tải đúng loại bản ghi, tránh xung đột ID giữa Subscription Request và Renewal Request. Với đăng ký mới, Backend khóa các subscription của Member và chuyển bản ghi còn mang `status = ACTIVE` nhưng `endDate <= currentDate` sang `EXPIRED` trong cùng transaction trước khi kiểm tra một ACTIVE. Nếu là gia hạn, hệ thống cộng dồn thời hạn theo BR-24: `newEndDate = currentEndDate + durationDays`; không tạo thêm bản ghi ACTIVE thứ hai.
 
 **Headers:**
 - `Authorization: Bearer <token>` (Role: ADMIN)
@@ -878,6 +878,20 @@ Trường `password` và `confirmPassword` chỉ tồn tại trong request DTO �
 }
 ```
 
+**Response lỗi - Xung đột cập nhật đồng thời (HTTP 409 Conflict):**
+```json
+{
+  "success": false,
+  "errorCode": "CON-001",
+  "message": "Dữ liệu yêu cầu đã được một transaction khác cập nhật. Vui lòng tải lại trạng thái trước khi thử lại.",
+  "details": {
+    "requestId": 88,
+    "resourceType": "SUBSCRIPTION_RENEWAL_REQUEST",
+    "retryAfterReload": true
+  }
+}
+```
+
 ---
 
 ### POST /api/v1/admin/subscriptions/{id}/cancel
@@ -917,6 +931,8 @@ Trường `password` và `confirmPassword` chỉ tồn tại trong request DTO �
 
 ## 6. Exercise API
 
+**Enum contract chung:** `MuscleGroup` nhận `CHEST`, `BACK`, `SHOULDERS`, `ARMS`, `LEGS`, `GLUTES`, `CORE`, `CARDIO`, `FULL_BODY`; `MovementPattern` nhận `PUSH`, `PULL`, `HINGE`, `SQUAT`, `LUNGE`, `CARRY`, `ROTATION`; `BodyRegion` nhận `UPPER_BODY`, `LOWER_BODY`, `CORE`, `FULL_BODY`; `Equipment` nhận `BARBELL`, `DUMBBELL`, `MACHINE`, `CABLE`, `BENCH`; `DifficultyLevel` nhận `BEGINNER`, `INTERMEDIATE`, `ADVANCED`; `ContraindicationTag` nhận `KNEE_FLEXION_LIMITED`, `OVERHEAD_MOVEMENT_LIMITED`, `LOWER_BACK_LOAD_LIMITED`, `WRIST_FLEXION_LIMITED`, `NECK_LOAD_LIMITED`. Bài bodyweight dùng `equipmentRequired = []` thay vì một giá trị Enum riêng.
+
 ### GET /api/v1/exercises
 **Mô tả:** Xem thư viện bài tập có tính năng phân trang và lọc động. Chỉ trả về các bài tập có `isActive = true`.
 
@@ -927,7 +943,7 @@ Trường `password` và `confirmPassword` chỉ tồn tại trong request DTO �
 - `page` (Integer, mặc định 0): Trang hiện tại.
 - `size` (Integer, mặc định 10): Số bài tập mỗi trang.
 - `search` (String, tùy chọn): Từ khóa tìm theo tên bài tập.
-- `muscleGroup` (Enum, tùy chọn): Lọc theo nhóm cơ chính (CHEST, BACK, LEGS, SHOULDERS, ARMS, CORE).
+- `muscleGroup` (Enum, tùy chọn): Lọc theo nhóm cơ chính (CHEST, BACK, SHOULDERS, ARMS, LEGS, GLUTES, CORE, CARDIO, FULL_BODY).
 - `equipment` (Enum, tùy chọn): Lọc theo thiết bị vật lý (BARBELL, DUMBBELL, MACHINE, CABLE, BENCH). Bài bodyweight có `equipmentRequired = []` và vẫn xuất hiện khi không áp dụng bộ lọc thiết bị.
 - `difficulty` (Enum, tùy chọn): Lọc theo độ khó (BEGINNER, INTERMEDIATE, ADVANCED).
 
@@ -1431,7 +1447,7 @@ Trường `password` và `confirmPassword` chỉ tồn tại trong request DTO �
 }
 ```
 
-Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerciseId` ngoài whitelist hoặc vi phạm giới hạn planned values, toàn bộ cấu trúc response giữ nguyên và `warningCode` bắt buộc là `AI_RESPONSE_INVALID`. Fallback workout template phải được lọc bằng whitelist và hậu kiểm planned values; fallback meal template phải được lọc theo `dietaryPreference`, `foodAllergies`, `excludedFoods` và `mealsPerDay` trước khi lưu. Nếu Fallback thành công, endpoint vẫn trả HTTP 200.
+Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerciseId` ngoài whitelist, lặp cùng `exerciseId` trong một workout day hoặc vi phạm giới hạn planned values, toàn bộ cấu trúc response giữ nguyên và `warningCode` bắt buộc là `AI_RESPONSE_INVALID`. Fallback workout template phải được lọc bằng whitelist, không lặp bài trong cùng ngày và được hậu kiểm planned values; fallback meal template phải được lọc theo `dietaryPreference`, `foodAllergies`, `excludedFoods` và `mealsPerDay` trước khi lưu. Nếu Fallback thành công, endpoint vẫn trả HTTP 200.
 
 **Response lỗi - AI và fallback đều thất bại (HTTP 502 Bad Gateway):**
 ```json
@@ -1708,6 +1724,20 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
   "message": "Bạn cần có Subscription ACTIVE còn hiệu lực để kích hoạt giáo án.",
   "details": {
     "requiredCondition": "status = ACTIVE and startDate <= currentDate < endDate"
+  }
+}
+```
+
+**Response lỗi - Xung đột kích hoạt đồng thời (HTTP 409 Conflict):**
+```json
+{
+  "success": false,
+  "errorCode": "CON-001",
+  "message": "Danh sách giáo án đã được request khác cập nhật. Vui lòng tải lại giáo án hiện hành trước khi thử lại.",
+  "details": {
+    "workoutPlanId": 301,
+    "resourceType": "WORKOUT_PLAN",
+    "retryAfterReload": true
   }
 }
 ```

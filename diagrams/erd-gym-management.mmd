@@ -1,0 +1,310 @@
+erDiagram
+    users {
+        BIGINT id PK "Primary key"
+        VARCHAR full_name "Full name of the user"
+        VARCHAR email UK "Unique email address (lowercase and trimmed)"
+        VARCHAR password_hash "BCrypt password hash"
+        VARCHAR account_status "ACTIVE, LOCKED, DISABLED"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    roles {
+        BIGINT id PK "Primary key"
+        VARCHAR name UK "ROLE_ADMIN, ROLE_MEMBER, ROLE_PT; no ROLE_GUEST"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    user_roles {
+        BIGINT user_id PK, FK "Composite primary key; FK to users.id"
+        BIGINT role_id PK, FK "Composite primary key; FK to roles.id"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    member_profiles {
+        BIGINT id PK "Primary key"
+        BIGINT user_id FK, UK "FK to users.id; one profile per user"
+        VARCHAR gender "MALE, FEMALE"
+        DATE date_of_birth "Date of birth"
+        DECIMAL height_cm "Height in cm"
+        DECIMAL weight_kg "Weight in kg"
+        VARCHAR fitness_goal "BULK, CUT, MAINTAIN"
+        VARCHAR fitness_level "BEGINNER, INTERMEDIATE, ADVANCED"
+        VARCHAR activity_level "SEDENTARY, LIGHTLY_ACTIVE, MODERATELY_ACTIVE, VERY_ACTIVE"
+        TINYINT workout_days_per_week "Workout frequency (1-7 days)"
+        SMALLINT max_session_minutes "Maximum duration per session"
+        VARCHAR dietary_preference "OMNIVORE, VEGETARIAN, VEGAN"
+        TINYINT meals_per_day "Meals per day (1-6)"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    member_available_equipment {
+        BIGINT member_profile_id PK, FK "Composite primary key; FK to member_profiles.id"
+        VARCHAR equipment PK "BARBELL, DUMBBELL, MACHINE, CABLE, BENCH"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    member_target_muscle_groups {
+        BIGINT member_profile_id PK, FK "Composite primary key; FK to member_profiles.id"
+        VARCHAR muscle_group PK "CHEST, BACK, SHOULDERS, ARMS, LEGS, GLUTES, CORE, CARDIO, FULL_BODY"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    member_injury_constraints {
+        BIGINT member_profile_id PK, FK "Composite primary key; FK to member_profiles.id"
+        VARCHAR constraint_tag PK "Canonical movement limitation tag"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    member_food_allergies {
+        BIGINT member_profile_id PK, FK "Composite primary key; FK to member_profiles.id"
+        VARCHAR allergy_name PK "Normalized allergy name; maximum 50 characters"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    member_excluded_foods {
+        BIGINT member_profile_id PK, FK "Composite primary key; FK to member_profiles.id"
+        VARCHAR food_name PK "Normalized excluded food; maximum 50 characters"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    membership_packages {
+        BIGINT id PK "Primary key"
+        VARCHAR name "Display name of the package"
+        VARCHAR normalized_name UK "Unique normalized name (lowercase and trimmed)"
+        VARCHAR description "Package description details"
+        SMALLINT duration_days "Validity duration in days"
+        DECIMAL price "Package price"
+        BOOLEAN is_active "Soft delete flag"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    member_subscriptions {
+        BIGINT id PK "Primary key"
+        BIGINT member_id FK "FK to users.id"
+        BIGINT package_id FK "FK to membership_packages.id"
+        VARCHAR package_name_snapshot "Package name snapshot at creation"
+        SMALLINT package_duration_days_snapshot "Duration snapshot at creation"
+        DECIMAL package_price_snapshot "Price snapshot at creation"
+        VARCHAR status "PENDING, ACTIVE, EXPIRED, CANCELLED"
+        DATE start_date "Subscription start date"
+        DATE end_date "Subscription end date (exclusive)"
+        BIGINT approved_by_user_id FK "FK to users.id (Admin)"
+        TIMESTAMP approved_at "Approval timestamp (UTC)"
+        BIGINT cancelled_by_user_id FK "FK to users.id (Admin)"
+        TIMESTAMP cancelled_at "Cancellation timestamp (UTC)"
+        BIGINT version "Optimistic lock version"
+        BIGINT active_member_key UK "Generated key; prevents two ACTIVE subscriptions"
+        BIGINT pending_member_key UK "Generated key; prevents two PENDING registrations"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    subscription_renewal_requests {
+        BIGINT id PK "Primary key"
+        BIGINT member_id FK "FK to users.id"
+        BIGINT active_subscription_id FK "FK to member_subscriptions.id"
+        BIGINT package_id FK "FK to membership_packages.id"
+        SMALLINT package_duration_days_snapshot "Duration snapshot for renewal"
+        VARCHAR status "PENDING, PROCESSED"
+        DATE previous_end_date "Subscription end date before extension"
+        DATE new_end_date "Extended subscription end date"
+        BIGINT processed_by_user_id FK "FK to users.id (Admin)"
+        TIMESTAMP processed_at "Processing timestamp (UTC)"
+        BIGINT version "Optimistic lock version"
+        BIGINT pending_subscription_key UK "Generated key; one PENDING renewal per subscription"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    exercises {
+        BIGINT id PK "Primary key"
+        VARCHAR name "Display name of the exercise"
+        VARCHAR normalized_name UK "Unique normalized name (lowercase and trimmed)"
+        VARCHAR primary_muscle_group "Primary muscle group target"
+        VARCHAR movement_pattern "PUSH, PULL, SQUAT, HINGE, LUNGE, CARRY, ROTATION"
+        VARCHAR difficulty_level "BEGINNER, INTERMEDIATE, ADVANCED"
+        TEXT instruction_text "Step-by-step description"
+        BOOLEAN is_active "Soft delete flag"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    exercise_secondary_muscles {
+        BIGINT exercise_id PK, FK "Composite primary key; FK to exercises.id"
+        VARCHAR muscle_group PK "Canonical secondary muscle group"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    exercise_equipment {
+        BIGINT exercise_id PK, FK "Composite primary key; FK to exercises.id"
+        VARCHAR equipment PK "BARBELL, DUMBBELL, MACHINE, CABLE, BENCH; empty collection means bodyweight"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    exercise_target_body_regions {
+        BIGINT exercise_id PK, FK "Composite primary key; FK to exercises.id"
+        VARCHAR body_region PK "UPPER_BODY, LOWER_BODY, CORE, FULL_BODY"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    exercise_contraindication_tags {
+        BIGINT exercise_id PK, FK "Composite primary key; FK to exercises.id"
+        VARCHAR contraindication_tag PK "Canonical movement limitation tag"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    workout_plans {
+        BIGINT id PK "Primary key"
+        BIGINT member_id FK "FK to users.id"
+        VARCHAR plan_name "Workout plan name"
+        VARCHAR split_model "Required schedule split model"
+        VARCHAR goal "BULK, CUT, MAINTAIN"
+        TEXT explanation "Optional validated professional explanation"
+        VARCHAR status "DRAFT, ACTIVE, ARCHIVED"
+        VARCHAR recommendation_source "MANUAL, AI_GENERATED, FALLBACK_TEMPLATE"
+        TIMESTAMP activated_at "Optional UTC activation timestamp"
+        BIGINT version "Optimistic lock version"
+        BIGINT active_member_key UK "Generated key; prevents two ACTIVE plans"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    workout_days {
+        BIGINT id PK "Primary key"
+        BIGINT workout_plan_id FK "FK to workout_plans.id"
+        TINYINT day_number "Order of day from 1 to 7; unique within plan"
+        VARCHAR day_name "Workout day name"
+        VARCHAR focus "Optional workout day focus"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    workout_plan_exercises {
+        BIGINT id PK "Primary key"
+        BIGINT workout_day_id FK "FK to workout_days.id"
+        BIGINT exercise_id FK "FK to exercises.id"
+        SMALLINT exercise_order "Unique positive order within workout day"
+        TINYINT planned_sets "Sets target (1-5)"
+        SMALLINT planned_reps "Reps target (1-30)"
+        DECIMAL planned_rpe "RPE target (6.0-9.0)"
+        SMALLINT rest_seconds "Rest time between sets (30-300)"
+        TEXT notes "AI notes for this exercise"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    workout_sessions {
+        BIGINT id PK "Primary key"
+        BIGINT member_id FK "FK to users.id"
+        BIGINT workout_day_id FK "FK to workout_days.id"
+        DATE session_date "Date of the actual workout session (Unique per member)"
+        TEXT notes "General session notes"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    workout_logs {
+        BIGINT id PK "Primary key"
+        BIGINT workout_session_id FK "FK to workout_sessions.id"
+        BIGINT member_id FK "Member copied from workout session"
+        DATE log_date "Business date matching workout session"
+        BIGINT workout_plan_exercise_id FK "FK to workout_plan_exercises.id"
+        BIGINT exercise_id FK "FK to exercises.id"
+        TINYINT actual_sets "Completed sets (1-10)"
+        SMALLINT actual_reps "Completed reps (1-100)"
+        DECIMAL actual_rpe "Actual RPE (1.0-10.0)"
+        DECIMAL weight_used_kg "Weight used in kg (>=0)"
+        TEXT notes "Optional exercise log notes"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    body_progress {
+        BIGINT id PK "Primary key"
+        BIGINT member_id FK "FK to users.id; composite unique with record_date"
+        DATE record_date "Composite unique with member_id"
+        DECIMAL weight_kg "Weight in kg"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    ai_recommendations {
+        BIGINT id PK "Primary key"
+        BIGINT member_id FK "FK to users.id"
+        BIGINT workout_plan_id FK, UK "FK to workout_plans.id; one recommendation per AI-created plan"
+        VARCHAR recommendation_source "AI_GENERATED, FALLBACK_TEMPLATE"
+        VARCHAR validation_status "VALIDATED, FALLBACK_APPLIED"
+        VARCHAR warning_code "Warning code if fallback"
+        JSON calculated_targets "BMR, TDEE, calories, macros calculated by Backend"
+        JSON ai_suggestion "Validated workoutSchedule and nutritionPlan.mealStructure"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    nutrition_meal_suggestions {
+        BIGINT id PK "Primary key"
+        BIGINT recommendation_id FK "FK to ai_recommendations.id"
+        VARCHAR meal_name "Meal display name"
+        CHAR time_suggest "Time suggest in HH:mm format"
+        JSON foods_list "List of foods"
+        TEXT description "Meal description notes"
+        TINYINT meal_order "Unique positive order within recommendation"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    users ||--o| member_profiles : "owns"
+    users ||--o{ user_roles : "has"
+    roles ||--o{ user_roles : "assigned_to"
+
+    member_profiles ||--o{ member_available_equipment : "has"
+    member_profiles ||--o{ member_target_muscle_groups : "targets"
+    member_profiles ||--o{ member_injury_constraints : "declares"
+    member_profiles ||--o{ member_food_allergies : "declares"
+    member_profiles ||--o{ member_excluded_foods : "excludes"
+
+    users ||--o{ member_subscriptions : "subscribes"
+    users o|--o{ member_subscriptions : "approves"
+    users o|--o{ member_subscriptions : "cancels"
+    membership_packages ||--o{ member_subscriptions : "selected_for"
+
+    users ||--o{ subscription_renewal_requests : "requests"
+    users o|--o{ subscription_renewal_requests : "processes"
+    member_subscriptions ||--o{ subscription_renewal_requests : "renewed_by"
+    membership_packages ||--o{ subscription_renewal_requests : "requested_package"
+
+    exercises ||--o{ exercise_secondary_muscles : "targets"
+    exercises ||--o{ exercise_equipment : "requires"
+    exercises ||--o{ exercise_target_body_regions : "affects"
+    exercises ||--o{ exercise_contraindication_tags : "contraindicates"
+
+    users ||--o{ workout_plans : "owns"
+    workout_plans ||--|{ workout_days : "contains"
+    workout_days ||--|{ workout_plan_exercises : "contains"
+    exercises ||--o{ workout_plan_exercises : "referenced_by"
+
+    users ||--o{ workout_sessions : "performs"
+    users ||--o{ workout_logs : "owns"
+    workout_days ||--o{ workout_sessions : "planned_from"
+    workout_sessions ||--|{ workout_logs : "contains"
+    workout_plan_exercises ||--o{ workout_logs : "logged_from"
+    exercises ||--o{ workout_logs : "logged_exercise"
+
+    users ||--o{ body_progress : "tracks"
+    users ||--o{ ai_recommendations : "requests"
+    ai_recommendations o|--|| workout_plans : "creates"
+    ai_recommendations ||--|{ nutrition_meal_suggestions : "contains"

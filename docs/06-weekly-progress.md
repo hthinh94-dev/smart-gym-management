@@ -72,5 +72,103 @@
 - [ ] Thiết kế mô hình thực thể liên kết (ERD), cấu trúc Database Schema chi tiết (Tables, Columns, Data Types, Constraints) và ánh xạ sang các Entity Java (Hibernate/Spring Data JPA).
 
 **Minh chứng Git Ngày 2:**
-- [ ] Tạo commit sau khi hoàn tất hậu kiểm cuối cùng.
-- Commit đề xuất: `docs: finalize Day 2 detailed requirements, use cases, and API contract`
+- [x] Đã tạo commit sau khi hoàn tất hậu kiểm cuối cùng.
+  - Commit: `c5a7a792bf1ff70ea46a4a782edcae1f399557e9`
+  - Message: `docs: finalize Day 2 detailed requirements, use cases, and API contract`
+
+---
+
+### Nhật ký Ngày 3 (17/07/2026) - Tuần 1
+
+**Mục tiêu:** Hoàn thiện thiết kế cơ sở dữ liệu vật lý, sơ đồ ERD, chiến lược
+ánh xạ JPA/Hibernate và script DDL MySQL 8 làm nền tảng cho giai đoạn hiện thực
+Backend.
+
+**Đã hoàn thành:**
+- [x] Tạo và hoàn thiện [11-database-design.md](./11-database-design.md), đặc tả
+  đầy đủ 25 bảng vật lý thuộc tám nhóm Auth, Profile, Membership, Exercise,
+  Workout Plan, Workout Log, Progress và AI/Nutrition.
+- [x] Chốt 16 nguyên tắc thiết kế dữ liệu, danh sách Enum, khóa chính, khóa
+  ngoại, unique/check constraints, soft delete, auditing fields và hệ thống
+  index phục vụ các truy vấn nghiệp vụ cốt lõi.
+- [x] Tách riêng bảng `subscription_renewal_requests` và thiết kế generated
+  unique key để bảo vệ quy tắc một Subscription `ACTIVE`, một yêu cầu đăng ký
+  mới `PENDING` và một yêu cầu gia hạn `PENDING` trong điều kiện concurrent.
+- [x] Thiết kế composite unique key và composite foreign key cho
+  `workout_sessions`/`workout_logs`, bảo đảm `member_id` và `log_date` của nhật
+  ký luôn khớp với buổi tập theo BR-19 và BR-28.
+- [x] Tạo sơ đồ ERD Mermaid
+  [erd-gym-management.mmd](../diagrams/erd-gym-management.mmd), biểu diễn đủ
+  25 thực thể và các quan hệ 1-1, 1-N, N-N; không tạo bảng Guest hoặc bảng
+  nghiệp vụ PT riêng trong MVP.
+- [x] Tạo và hoàn thiện
+  [12-entity-relationship-mapping.md](./12-entity-relationship-mapping.md),
+  ánh xạ 16 Java Entity và chín `@ElementCollection` theo 14 quy ước JPA;
+  cấu hình LAZY loading, cascade có kiểm soát, DTO boundary, soft delete và
+  optimistic locking bằng `@Version`.
+- [x] Tạo [schema-draft.sql](../database/schema-draft.sql) theo đúng dependency
+  tree của MySQL 8; toàn bộ 25 bảng dùng `InnoDB`, `utf8mb4` và
+  `utf8mb4_unicode_ci`.
+- [x] Đồng bộ tuyệt đối tên 25 bảng giữa SQL và JPA: 16 Entity tables và chín
+  Element Collection tables; đồng bộ đủ 18 unique constraints của JPA và 14
+  index đề xuất trong File 11.
+- [x] Tách rõ dữ liệu AI và Backend tại `ai_recommendations`: Backend sở hữu
+  `calculated_targets`; AI chỉ cung cấp `ai_suggestion`; lưu thêm
+  `recommendation_source`, `validation_status` và `warning_code` có CHECK
+  constraint trạng thái.
+- [x] Seed duy nhất ba role tĩnh `ROLE_ADMIN`, `ROLE_MEMBER`, `ROLE_PT`; không
+  seed Guest, User, password hoặc dữ liệu nhạy cảm.
+- [x] Thực thi thành công toàn bộ script từ database trống trên MySQL 8.0.44.
+  Kết quả metadata: 25 bảng, 54 CHECK constraints, 34 foreign keys, 18 unique
+  constraints và ba role seed.
+- [x] Hoàn thành 9/9 kiểm thử ràng buộc âm tại tầng database: chặn hai
+  Subscription ACTIVE, hai Renewal PENDING, hai Workout Plan ACTIVE, planned
+  sets/actual sets vượt giới hạn, Workout Log sai chủ sở hữu Session, Body
+  Progress trùng ngày, trạng thái AI Recommendation sai và Gender ngoài Enum.
+- [x] Database kiểm thử được tạo trong môi trường cô lập, dừng và dọn sạch sau
+  khi hoàn thành; không tác động đến database phát triển hiện có.
+
+**Vấn đề gặp phải và cách giải quyết:**
+- *Vấn đề:* DDL ban đầu thiếu generated unique key cho các trạng thái
+  `ACTIVE`/`PENDING`, khiến kiểm tra ở Service chưa đủ chống race condition.
+  *Giải quyết:* Bổ sung generated columns kết hợp unique constraints và giữ
+  `@Version` tại các Entity có khả năng xung đột.
+- *Vấn đề:* Workout Log ban đầu có thể lệch Member/ngày so với Workout Session
+  và cho phép mất liên kết lịch sử bằng `ON DELETE SET NULL`.
+  *Giải quyết:* Sử dụng composite foreign key, chuyển các liên kết lịch sử sang
+  `NOT NULL`/`ON DELETE RESTRICT` và chỉ dùng cascade cho thành phần được thực
+  thể cha sở hữu hoàn toàn.
+- *Vấn đề:* MySQL 8 hạn chế biểu thức CHECK tham chiếu trực tiếp các cột tham
+  gia foreign key referential action.
+  *Giải quyết:* Database kiểm tra vòng đời bằng trạng thái, ngày và timestamp;
+  Service xác minh actor Admin và lưu khóa ngoại actor trong cùng transaction.
+- *Vấn đề:* ERD ban đầu chưa thể hiện quan hệ trực tiếp từ `users` tới
+  `workout_logs`, dù `workout_logs.member_id` đã tồn tại nhất quán trong thiết
+  kế bảng, JPA Mapping và khóa ngoại vật lý.
+  *Giải quyết:* Bổ sung quan hệ `users ||--o{ workout_logs` vào cả ERD nhúng
+  trong File 11 và file Mermaid độc lập; đối chiếu tự động xác nhận toàn bộ 34
+  khóa ngoại SQL đều đã được biểu diễn, không còn quan hệ thiếu hoặc thừa.
+
+**Quyết định đã chốt:**
+- Sử dụng đúng 25 bảng vật lý cho MVP; `ROLE_PT` tồn tại trong RBAC nhưng không
+  có bảng nghiệp vụ PT riêng, còn Anonymous Guest không được lưu trong database.
+- Dùng khóa chính `BIGINT AUTO_INCREMENT`, Enum lưu `VARCHAR`, audit timestamp
+  theo UTC và ngày nghiệp vụ được Backend xác định theo timezone
+  `Asia/Ho_Chi_Minh`.
+- Không dùng cascade remove từ dữ liệu lịch sử sang `users`, `exercises` hoặc
+  `membership_packages`; package và exercise được vô hiệu hóa bằng soft delete.
+- `schema-draft.sql` là hợp đồng DDL đã kiểm chứng cho thiết kế; khi bắt đầu
+  coding sẽ chuyển thành migration Flyway có version, không để Hibernate tự tạo
+  schema production.
+
+**Kế hoạch tiếp theo:**
+- [ ] Chuyển DDL đã chốt thành Flyway migration đầu tiên khi khởi tạo Backend.
+- [ ] Hiện thực các Entity, Enum, Embeddable ID và Repository theo File 12.
+- [ ] Chuẩn bị dữ liệu master 30-50 bài tập phù hợp Enum và metadata Exercise
+  để seed ở migration riêng.
+- [ ] Viết integration test bằng MySQL/Testcontainers cho generated unique key,
+  composite foreign key, soft delete và optimistic locking.
+
+**Minh chứng Git Ngày 3:**
+- [ ] Tạo commit sau khi hoàn tất hậu kiểm File 06 và rà soát thay đổi cuối cùng.
+- Commit đề xuất: `docs: finalize Day 3 database design and JPA mapping`
