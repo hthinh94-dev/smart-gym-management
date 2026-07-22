@@ -170,5 +170,51 @@ Backend.
   composite foreign key, soft delete và optimistic locking.
 
 **Minh chứng Git Ngày 3:**
-- [ ] Tạo commit sau khi hoàn tất hậu kiểm File 06 và rà soát thay đổi cuối cùng.
-- Commit đề xuất: `docs: finalize Day 3 database design and JPA mapping`
+- [x] Đã tạo commit khép lại thiết kế dữ liệu Ngày 3 sau khi hoàn tất hậu kiểm.
+- Commit: `652d4a9`
+- Message: `docs(database): finalize Day 3 schema, ERD, and JPA mappings`
+
+---
+
+## Ngày 4 — Khởi tạo Backend Foundation
+
+### Đã hoàn thành
+
+- [x] Khởi tạo Maven Spring Boot Backend tại thư mục `backend/`.
+- [x] Cấu hình Java 21 và Spring Boot 3.5.16.
+- [x] Bổ sung dependencies nền tảng: Spring Web, Spring Data JPA, Validation,
+  Spring Security, MySQL Driver, Flyway Core/MySQL, Actuator, Lombok và Test.
+- [x] Chuẩn hóa repository bằng `.gitignore`, `.editorconfig`,
+  `.gitattributes` và `backend/.env.example`.
+- [x] Cấu hình `application.yml` dùng biến môi trường, timezone UTC,
+  `spring.jpa.hibernate.ddl-auto=validate` và `spring.jpa.open-in-view=false`.
+- [x] Tạo 8 Flyway migrations theo module:
+  `V1__create_auth_schema.sql` đến `V8__seed_system_roles.sql`.
+- [x] Đối chiếu Flyway migrations với `database/schema-draft.sql`:
+  25/25 bảng vật lý khớp thiết kế.
+- [x] Bật JPA Auditing qua `@EnableJpaAuditing`.
+- [x] Tạo `BaseEntity`, `AccountStatus`, `RoleName`.
+- [x] Ánh xạ `User`, `Role`, `UserRole`, `UserRoleId` và các repository Auth.
+- [x] Dùng entity trung gian `UserRole`; không dùng `@ManyToMany` trực tiếp
+  vì bảng `user_roles` có audit fields.
+- [x] Kiểm tra runtime: Maven test, Flyway migration, Hibernate validate
+  và kết nối MySQL thành công.
+
+### Quyết định đã chốt
+
+- Flyway là nguồn sở hữu duy nhất của schema; Hibernate chỉ được phép validate.
+- Không sửa migration đã áp dụng. Mọi thay đổi schema sau này phải tạo migration mới.
+- Không lưu secret trong source code; cấu hình database lấy từ biến môi trường.
+- `ROLE_PT` chỉ tồn tại trong RBAC; không tạo bảng nghiệp vụ PT trong MVP.
+- Anonymous Guest không được lưu thành role hoặc bảng trong database.
+
+### Vấn đề đã xử lý
+
+- Loại bỏ class `@SpringBootApplication` và test context bị trùng.
+- Loại bỏ các file `.gitkeep` không còn cần thiết.
+- Đồng bộ file `.env.example` với MySQL cục bộ tại cổng `3307`.
+
+### Kế hoạch tiếp theo
+
+- Ngày 5: hiện thực Authentication, Spring Security, JWT Access Token,
+  Register, Login và AccountStatusGuard.
