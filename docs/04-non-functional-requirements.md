@@ -73,8 +73,8 @@ Tài liệu này xác lập các tiêu chí đo lường chất lượng hệ th
 ## 6. Khả năng bảo trì & Kiểm thử (Maintainability & Testability)
 
 ### [NFR-11] - Cấu trúc code phân lớp (Layered Architecture Compliance)
-- **Mô tả:** Source code Backend phải tuân thủ nghiêm ngặt kiến trúc phân lớp: `Controller → Service → Repository`. Nghiêm cấm gọi Repository trực tiếp từ Controller hoặc chứa logic nghiệp vụ trong Controller.
-- **Hiện thực hóa kỹ thuật:** Code review theo tiêu chí: Controller chỉ chứa HTTP mapping và request/response DTO conversion; Service chứa toàn bộ business logic; Repository chỉ chứa Database query.
+- **Mô tả:** Source code Backend phải tuân thủ kiến trúc **Modular Layered Monolith** được chốt tại [13-architecture-decision.md](./13-architecture-decision.md): `Controller → Service/Policy/External Port → Repository`. Nghiêm cấm gọi Repository trực tiếp từ Controller hoặc chứa logic nghiệp vụ trong Controller.
+- **Hiện thực hóa kỹ thuật:** Package theo module nghiệp vụ (`auth`, `member`, `membership`, `exercise`, `recommendation`, `workout`, `progress`); `common` chỉ chứa cross-cutting concern. Controller chỉ chứa HTTP mapping, validation đầu vào, Principal và DTO; Service sở hữu transaction/business logic; Repository chỉ chứa Database query; adapter chỉ xuất hiện tại ranh giới provider bên ngoài.
 
 ### [NFR-12] - Tài liệu API tự động (Automated API Documentation)
 - **Mô tả:** Toàn bộ REST API endpoint phải được mô tả tự động qua Swagger UI để phục vụ quá trình kiểm thử và trình diễn đồ án.

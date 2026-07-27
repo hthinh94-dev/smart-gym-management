@@ -74,8 +74,8 @@ Ký hiệu:
 ### 4.1. Phân định trách nhiệm cơ chế bảo mật
 Hệ thống phân tách rõ ràng trách nhiệm giữa hai tầng kiểm soát:
 
-- **JWT Filter (Xác thực danh tính):** Chịu trách nhiệm duy nhất là xác minh chữ ký JWT Token và trích xuất thông tin User và Role đưa vào Security Context. Filter này không thực hiện các kiểm tra trạng thái tài khoản hay các nghiệp vụ khác.
-- **Account Status Guard (Kiểm tra trạng thái tài khoản):** Khi đăng nhập, `UserDetailsService` kiểm tra `AccountStatus` (`ACTIVE`, `LOCKED`, `DISABLED`). Trên các endpoint yêu cầu xác thực, `AccountStatusGuard` (Custom Interceptor/Guard) hoặc Method Security kiểm tra trạng thái tài khoản và từ chối `LOCKED`/`DISABLED`. JWT Security Filter không truy vấn Database để làm việc này.
+- **JWT Filter (Xác thực danh tính):** `JwtAuthenticationFilter` xác minh chữ ký và hạn dùng JWT, sau đó nạp User và Role qua `UserDetailsService` để thiết lập Security Context. Filter này không thực hiện các kiểm tra trạng thái tài khoản hay các nghiệp vụ khác.
+- **Account Status Guard (Kiểm tra trạng thái tài khoản):** Khi đăng nhập, `UserDetailsService` kiểm tra `AccountStatus` (`ACTIVE`, `LOCKED`, `DISABLED`). Trên các endpoint yêu cầu xác thực, `AccountStatusGuard` (Custom Interceptor/Guard) hoặc Method Security kiểm tra trạng thái tài khoản và từ chối `LOCKED`/`DISABLED`. `JwtAuthenticationFilter` không truy vấn hoặc đánh giá `accountStatus` để chặn request.
 - **Method Security (Kiểm tra nghiệp vụ):** Việc kiểm tra gói tập ACTIVE tại các API chức năng cao cấp được xử lý thông qua Method Security Annotation thay vì kiểm tra ở JWT Filter:
 
 ```java

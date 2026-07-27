@@ -37,7 +37,7 @@
 
 **Đã hoàn thành:**
 - [x] **[P0]** Tinh chỉnh văn phong học thuật [01-project-overview.md](./01-project-overview.md): loại bỏ ngôn từ khẳng định thái quá (toàn diện → trong phạm vi đề tài, tối ưu → phù hợp), xác nhận PT là Should-have và không chặn luồng MVP.
-- [x] **[P0]** Cập nhật [07-actors-and-roles.md](./07-actors-and-roles.md): Làm rõ vai trò PT là Should-have và Member nhận đề xuất AI trực tiếp. Khi đăng nhập, `UserDetailsService` kiểm tra `AccountStatus`; trên các endpoint yêu cầu xác thực, `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái `ACTIVE`, `LOCKED`, `DISABLED`, trong khi JWT Security Filter chỉ xác thực chữ ký và hạn dùng của token. Đảm bảo hết hạn subscription không khóa tài khoản người dùng mà chỉ chặn các chức năng yêu cầu gói ACTIVE. Sửa đổi Dashboard từ "doanh thu" thành "tổng giá trị subscription đã xác nhận mô phỏng".
+- [x] **[P0]** Cập nhật [07-actors-and-roles.md](./07-actors-and-roles.md): Làm rõ vai trò PT là Should-have và Member nhận đề xuất AI trực tiếp. Khi đăng nhập, `UserDetailsService` kiểm tra `AccountStatus`; trên các endpoint yêu cầu xác thực, `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái `ACTIVE`, `LOCKED`, `DISABLED`, trong khi `JwtAuthenticationFilter` xác thực kỹ thuật token và nạp identity/roles nhưng không quyết định trạng thái tài khoản. Đảm bảo hết hạn subscription không khóa tài khoản người dùng mà chỉ chặn các chức năng yêu cầu gói ACTIVE. Sửa đổi Dashboard từ "doanh thu" thành "tổng giá trị subscription đã xác nhận mô phỏng".
 - [x] **[P0]** Cập nhật [02-mvp-scope.md](./02-mvp-scope.md): Thêm `activityLevel` Enum, trường dinh dưỡng, luồng Subscription, chuyển 1RM sang Should-have; đồng bộ metadata Exercise gồm `movementPattern`, `targetBodyRegions`, `equipmentRequired`, `contraindicationTags` và `isActive`.
 - [x] **[P0]** Cập nhật [03-functional-requirements.md](./03-functional-requirements.md): Đồng bộ giới hạn Planned và Actual; xóa hoàn toàn calorie/macro khỏi output schema của AI; làm rõ Backend merge chỉ số dinh dưỡng, whitelist, metadata Exercise và điều kiện thiết bị `containsAll`.
 - [x] **[P0]** Cập nhật [05-business-rules.md](./05-business-rules.md): Chuẩn hóa email; tách BR-09A (Planned) và BR-09B (Actual); bổ sung BR-09C xác nhận Backend sở hữu số liệu dinh dưỡng; cấu hình whitelist `whitelist.containsAll(responseExerciseIds)` và chính sách mật khẩu không tự ý trim dữ liệu nhập.
@@ -53,7 +53,7 @@
 - [x] Tích hợp 31 tiêu chí nghiệm thu Acceptance Criteria dạng Given - When - Then (BDD) cho toàn bộ Use Cases, bao gồm cả luồng thành công và kịch bản biên của Auth, Subscription, Exercise, AI/Fallback, Workout Log, Progress và khóa/mở khóa tài khoản.
 - [x] Tạo [10-api-draft.md](./10-api-draft.md) phác thảo 32 API Contract chi tiết theo chuẩn RESTful cho các nhóm Auth, Member Profile, Membership, Exercise, Recommendation, Workout Plan, Workout Log, Body Progress và Admin; bổ sung ma trận truy vết endpoint → FR → UC → BR/NFR.
 - [x] Tách biệt hoàn toàn API đăng ký mới và API gia hạn gói tập để thực thi chuẩn quy tắc `BR-24`.
-- [x] Đồng bộ hóa Error Code Registry (`ACC-001`, `ACC-002`, `ACC-004`, `ACC-005`, `ACC-006`, `ACC-007`, `SUB-001` đến `SUB-007`, `EXR-001`, `EXR-002`, `WRK-001`, `VAL-001`, `AI-001`) và Warning Code Registry (`AI_TIMEOUT`, `AI_RESPONSE_INVALID`) từ file Quy tắc nghiệp vụ ([05-business-rules.md](./05-business-rules.md)) xuống FR, Use Case và API Contract.
+- [x] Đồng bộ hóa Error Code Registry (`AUTH-002`, `ACC-001`, `ACC-002`, `ACC-004`, `ACC-005`, `ACC-006`, `ACC-007`, `SUB-001` đến `SUB-007`, `EXR-001`, `EXR-002`, `WRK-001`, `VAL-001`, `AI-001`, `CON-001`) và Warning Code Registry (`AI_TIMEOUT`, `AI_RESPONSE_INVALID`) từ file Quy tắc nghiệp vụ ([05-business-rules.md](./05-business-rules.md)) xuống FR, Use Case và API Contract.
 - [x] Bổ sung `BR-25` để kiểm tra động hiệu lực subscription, `BR-26` để chốt vòng đời giáo án `DRAFT → ACTIVE → ARCHIVED`, `BR-27` để kiểm duyệt danh mục gói tập và `BR-28` để bảo vệ toàn vẹn tham chiếu khi ghi Workout Log.
 - [x] Chuẩn hóa định dạng phản hồi JSON Success, Error và Fallback Recommendation (`recommendationSource = FALLBACK_TEMPLATE` kèm `warningCode`).
 - [x] Kiểm tra và chuẩn hóa tất cả liên kết trong bộ tài liệu: chỉ sử dụng đường dẫn tương đối dạng `./`, không còn đường dẫn tuyệt đối cục bộ.
@@ -64,7 +64,7 @@
 - *Giải quyết:* Chốt lại Registry mã lỗi tập trung tại file Quy tắc nghiệp vụ, tách riêng endpoint yêu cầu gia hạn và thiết kế kịch bản xử lý logic cộng dồn thời hạn `endDate` của Admin khi phê duyệt.
 
 **Quyết định đã chốt:**
-- JWT Security Filter chỉ xác thực tính hợp lệ của chữ ký và hạn dùng (Stateless); việc chặn tài khoản bị khóa/vô hiệu hóa do `AccountStatusGuard` hoặc cơ chế Method Security truy vấn DB/Cache và thực thi ở các request tiếp theo.
+- `JwtAuthenticationFilter` xác thực chữ ký/hạn dùng và nạp identity/roles để thiết lập `SecurityContext`; việc chặn tài khoản bị khóa/vô hiệu hóa do `AccountStatusGuard` hoặc Method Security truy vấn DB/Cache và thực thi ở các request tiếp theo.
 - Toàn bộ API/UI phục vụ luồng MVP chỉ chạy độc lập giữa Admin và Member; vai trò PT vẫn được giữ nguyên ở phân hệ mở rộng `Should-have`.
 - Recommendation fallback trả về HTTP 200 kèm `warningCode` và `calculatedTargets` do Backend tính cứng để đảm bảo trải nghiệm người dùng không bị gián đoạn khi AI gặp sự cố.
 
@@ -181,11 +181,11 @@ Backend.
 ### Đã hoàn thành
 
 - [x] Khởi tạo Maven Spring Boot Backend tại thư mục `backend/`.
-- [x] Cấu hình Java 21 và Spring Boot 3.5.16.
+- [x] Cấu hình Java 21 và Spring Boot 3.4.3.
 - [x] Bổ sung dependencies nền tảng: Spring Web, Spring Data JPA, Validation,
   Spring Security, MySQL Driver, Flyway Core/MySQL, Actuator, Lombok và Test.
 - [x] Chuẩn hóa repository bằng `.gitignore`, `.editorconfig`,
-  `.gitattributes` và `backend/.env.example`.
+  `.gitattributes` và `.env.example` tại project root.
 - [x] Cấu hình `application.yml` dùng biến môi trường, timezone UTC,
   `spring.jpa.hibernate.ddl-auto=validate` và `spring.jpa.open-in-view=false`.
 - [x] Tạo 8 Flyway migrations theo module:
@@ -212,9 +212,86 @@ Backend.
 
 - Loại bỏ class `@SpringBootApplication` và test context bị trùng.
 - Loại bỏ các file `.gitkeep` không còn cần thiết.
-- Đồng bộ file `.env.example` với MySQL cục bộ tại cổng `3307`.
+- Đồng bộ file `.env.example` với các biến kết nối MySQL (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`); cổng cụ thể do môi trường cục bộ/Docker cấu hình.
+
+### Quyết định kiến trúc trước Ngày 5 (26/07/2026)
+
+- [x] Đối chiếu đề xuất kiến trúc với File 02–12, Flyway migration và Backend Foundation; chốt **Modular Layered Monolith** tại [13-architecture-decision.md](./13-architecture-decision.md).
+- [x] Giữ Layered Architecture, DTO/Repository/Service, JWT stateless, Enum + state-policy, AI hybrid, Adapter tại provider boundary, fallback được hậu kiểm và mapper thủ công.
+- [x] Điều chỉnh để khớp đặc tả hiện hành: Resilience4j và SpringDoc OpenAPI là bắt buộc; `SubscriptionRenewalRequestStatus` chỉ có `PENDING`/`PROCESSED`; `admin` là actor/API entry point, không phải module nghiệp vụ trùng lặp.
+- [x] Chốt `Clock` ngày nghiệp vụ `Asia/Ho_Chi_Minh`, audit timestamp UTC; giữ optimistic locking kết hợp lock theo phạm vi Member tại các transition đa dòng.
+- [x] Loại bỏ mật khẩu database hardcode khỏi `application.yml`; datasource đọc `DB_URL` hoặc các biến `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` từ environment. File `.env` bị ignore chỉ là nguồn để Docker Compose hoặc IDE/shell nạp các biến này, không được commit.
 
 ### Kế hoạch tiếp theo
 
-- Ngày 5: hiện thực Authentication, Spring Security, JWT Access Token,
-  Register, Login và AccountStatusGuard.
+- Ngày 5: hiện thực nền Spring Security, JWT Access Token,
+  `AccountStatusGuard`, response/error chuẩn và OpenAPI; chưa làm Register/Login.
+
+---
+
+## Ngày 5 — Security/JWT Foundation (27/07/2026)
+
+### Đã hoàn thành
+
+- [x] Bổ sung JJWT `0.12.6`, hoàn thiện `JwtService` cho Access Token chứa
+  `sub`, `iat`, `exp` và `roles`; không tạo Refresh Token.
+- [x] Loại bỏ toàn bộ JWT secret và database credential fallback khỏi source;
+  ứng dụng bắt buộc nhận `JWT_SECRET`, `DB_USER`, `DB_PASSWORD` từ environment.
+- [x] Kiểm tra JWT secret khi khởi động và fail-fast nếu khóa hiệu lực ngắn hơn
+  32 byte theo NFR-06.
+- [x] Hoàn thiện `CustomUserDetailsService`, `JwtAuthenticationFilter`,
+  `SecurityConfiguration`, RBAC tạm thời và Method Security nền tảng.
+- [x] Chuẩn hóa phản hồi 401/403 bằng `ErrorResponse`; token thiếu/sai/hết hạn
+  trả `ACC-005`, tài khoản `LOCKED` trả `ACC-004`, tài khoản `DISABLED` trả
+  `ACC-006` kèm `details.accountStatus`.
+- [x] Hoàn thiện nền `AccountStatusGuard` theo email/User ID; chưa gắn vào
+  endpoint nghiệp vụ vì kế hoạch thực hiện việc này cùng endpoint bảo vệ sau.
+- [x] Bổ sung SpringDoc OpenAPI và mở public `/v3/api-docs`, `/swagger-ui/**`.
+- [x] Đồng bộ `.env.example` ở root/backend theo một bộ biến; `.env` không bị
+  Git theo dõi; dọn toàn bộ `.gitkeep` không còn cần thiết.
+
+### Cơ chế xác thực và phân quyền
+
+Hệ thống sử dụng Spring Security để cung cấp một chuỗi xử lý thống nhất cho xác
+thực, phân quyền RBAC và phản hồi lỗi 401/403. JWT Access Token được chọn vì phù
+hợp với REST API và React client: server không lưu session đăng nhập, mỗi request
+tự mang Bearer token đã ký. Mô hình stateless giúp backend mở rộng độc lập giữa
+các request, nhưng token đã phát hành không bị thu hồi trực tiếp khi trạng thái
+tài khoản thay đổi.
+
+Trong luồng request, `JwtAuthenticationFilter` đọc Bearer token, kiểm tra chữ ký
+và hạn dùng, nạp identity/roles qua `CustomUserDetailsService`, sau đó thiết lập
+`SecurityContext`. Filter không dùng `accountStatus` để quyết định chặn request.
+`AccountStatusGuard` truy vấn trạng thái hiện hành ở tầng endpoint/Method Security,
+nhờ đó token cũ của tài khoản `LOCKED` hoặc `DISABLED` vẫn bị chặn bằng
+`ACC-004`/`ACC-006`. Mật khẩu được băm bằng BCrypt strength 12 và không xuất hiện
+trong JWT, response hoặc log.
+
+Anonymous Guest chỉ là actor chưa xác thực, không được lưu thành `ROLE_GUEST`.
+`ROLE_PT` được seed để mở rộng RBAC, nhưng MVP chưa có bảng hoặc API nghiệp vụ PT;
+luồng bắt buộc hiện tại chỉ gồm Admin và Member.
+
+### Kiểm thử và minh chứng
+
+- [x] Chạy `mvnw.cmd clean test`: **26 test pass**,
+  không failure/error.
+- [x] Biên dịch sạch 21 main classes và 6 test classes bằng Java release 21.
+- [x] Flyway validate thành công 8 migration trên MySQL 8.0.44; Hibernate
+  khởi tạo `EntityManagerFactory` với schema hiện tại.
+- [x] Test JWT bao phủ generate, extract username, đúng/sai user, hết hạn,
+  sai chữ ký và secret dưới 32 byte.
+- [x] Test Security bao phủ UserDetails `ACTIVE/LOCKED/DISABLED`,
+  AccountStatusGuard, body lỗi 401/403, request thiếu token và OpenAPI public.
+
+### Quyết định và lưu ý
+
+- Generic RBAC 403 dùng `AUTH-002` đã được đăng ký trong Error Code Registry;
+  các lỗi trạng thái tài khoản vẫn dùng đúng `ACC-004`/`ACC-006`.
+- File `.env` cục bộ phải được cập nhật đúng database đang chạy và phải được
+  IDE/shell hoặc Docker Compose nạp trước khi khởi động ứng dụng.
+
+### Kế hoạch tiếp theo
+
+- Ngày 6: hiện thực `POST /api/v1/auth/register` theo API Draft, gồm DTO,
+  validation mật khẩu, normalize email, BCrypt, `ROLE_MEMBER`, `ACTIVE`,
+  `ACC-001` và `ACC-002`; không cho client truyền role/account status.

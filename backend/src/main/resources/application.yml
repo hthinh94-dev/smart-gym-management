@@ -3,9 +3,9 @@ spring:
     name: smart-gym-api
 
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_gym_management?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8}
-    username: root
-    password: thinh2005
+    url: ${DB_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:smart_gym_management}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     hikari:
       connection-init-sql: "SET time_zone = '+00:00'"
 
@@ -28,3 +28,9 @@ management:
     health:
       probes:
         enabled: true
+
+application:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:3600000}

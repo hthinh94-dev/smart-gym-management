@@ -93,7 +93,7 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 
 ### [BR-16] - Kiểm thử trạng thái khóa tài khoản (Locked Account Testing)
 - **Mô tả nghiệp vụ:** Hệ thống ngăn chặn rõ ràng tài khoản LOCKED khỏi đăng nhập và sử dụng dịch vụ, kể cả khi họ cung cấp đúng mật khẩu.
-- **Hiện thực hóa kỹ thuật:** Khi đăng nhập, `UserDetailsService` kiểm tra `accountStatus`. Trên request cần xác thực, `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái; nếu `LOCKED` → trả HTTP 403 với `ACC-004`. JWT Filter chỉ xác thực chữ ký/hạn dùng. Nếu Guard dùng cache, thao tác lock/unlock phải cập nhật hoặc evict cache trạng thái đồng bộ sau transaction để request tiếp theo quan sát ngay trạng thái mới.
+- **Hiện thực hóa kỹ thuật:** Khi đăng nhập, `UserDetailsService` kiểm tra `accountStatus`. Trên request cần xác thực, `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái; nếu `LOCKED` → trả HTTP 403 với `ACC-004`. `JwtAuthenticationFilter` xác thực chữ ký/hạn dùng và có thể nạp identity/roles qua `UserDetailsService` để thiết lập `SecurityContext`, nhưng không dùng `accountStatus` để quyết định chặn request. Nếu Guard dùng cache, thao tác lock/unlock phải cập nhật hoặc evict cache trạng thái đồng bộ sau transaction để request tiếp theo quan sát ngay trạng thái mới.
 
 ### [BR-17] - Dọn dẹp tài khoản chưa hoàn tất đăng ký (Stale Registration Cleanup)
 - **Mô tả nghiệp vụ:** Nếu trong tương lai hệ thống áp dụng luồng xác nhận email (OTP/Token), các tài khoản chưa xác thực email sau **24 giờ** phải bị xóa tự động để giải phóng chỗ cho Email/Username trùng lặp.
@@ -113,7 +113,7 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 
 ### [BR-21] - Chặn tài khoản DISABLED (Permanently Disabled Account Block)
 - **Mô tả nghiệp vụ:** Tài khoản ở trạng thái `DISABLED` (vô hiệu hóa vĩnh viễn, khác `LOCKED` có thể mở lại) không được đăng nhập, và token của tài khoản đã `DISABLED` cũng phải bị hệ thống từ chối trên mọi request yêu cầu xác thực.
-- **Hiện thực hóa kỹ thuật:** Enum `AccountStatus`: `ACTIVE`, `LOCKED`, `DISABLED`. Khi đăng nhập, `UserDetailsService` kiểm tra trạng thái tài khoản. Trên mỗi endpoint yêu cầu xác thực, `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái; nếu `DISABLED` → ném `DisabledException` (hoặc custom exception tương ứng), trả HTTP 403 với Error Code `ACC-006`. JWT Security Filter không truy vấn Database; subscription được kiểm tra riêng bằng Method Security.
+- **Hiện thực hóa kỹ thuật:** Enum `AccountStatus`: `ACTIVE`, `LOCKED`, `DISABLED`. Khi đăng nhập, `UserDetailsService` kiểm tra trạng thái tài khoản. Trên mỗi endpoint yêu cầu xác thực, `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái; nếu `DISABLED` → ném `DisabledException` (hoặc custom exception tương ứng), trả HTTP 403 với Error Code `ACC-006`. `JwtAuthenticationFilter` có thể truy vấn User/Role qua `UserDetailsService` để dựng principal nhưng không truy vấn hoặc đánh giá `accountStatus`; subscription được kiểm tra riêng bằng Method Security.
 
 ### [BR-22] - Chỉ duy nhất một bản ghi tiến trình thể trạng trong một ngày (Body Progress Daily Uniqueness)
 - **Mô tả nghiệp vụ:** Mỗi hội viên chỉ có tối đa một bản ghi `BodyProgress` (cân nặng, các chỉ số thể trạng) trong một ngày cụ thể. Nếu hội viên nhập lại trong cùng ngày, hệ thống **cập nhật (Update-in-place)** bản ghi cũ, không tạo mới.
@@ -153,6 +153,7 @@ Bảng này xác lập các `ErrorCode` cần kết xuất trong phản hồi AP
 
 | Mã lỗi | Nhóm | HTTP Status | Mô tả ngắn |
 | :--- | :--- | :---: | :--- |
+| `AUTH-002` | Xác thực/Phân quyền | 403 | Token hợp lệ nhưng tài khoản không có role cần thiết để truy cập tài nguyên |
 | `ACC-001` | Tài khoản | 409 | Email đã được dùng |
 | `ACC-002` | Tài khoản | 400 | Định dạng mật khẩu không hợp lệ |
 | `ACC-004` | Tài khoản | 403 | Tài khoản bị khóa (LOCKED) |

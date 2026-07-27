@@ -831,7 +831,7 @@ Các unique constraint đã tự tạo unique index nên không tạo index trù
 
 - Khóa tạm thời: `account_status = LOCKED`.
 - Vô hiệu hóa lâu dài: `account_status = DISABLED`.
-- JWT đã phát hành không bị thu hồi tại JwtSecurityFilter. Request tiếp theo bị AccountStatusGuard chặn bằng `ACC-004`.
+- JWT đã phát hành không bị thu hồi tại `JwtAuthenticationFilter`. Request tiếp theo bị `AccountStatusGuard` chặn bằng `ACC-004`.
 - Không xóa cứng User có dữ liệu lịch sử.
 
 ### 8.2. Membership Package và Exercise

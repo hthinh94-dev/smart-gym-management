@@ -428,7 +428,7 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
 - **Luồng ngoại lệ (Alternative / Exception Flows):**
   - **[Ngoại lệ 09.a] - Truy cập sai sở hữu dữ liệu:**
     - Người dùng cố truy vấn API phân tích tiến độ sử dụng User ID của người dùng khác.
-    - Hệ thống từ chối truy cập, trả về lỗi HTTP 403 Forbidden.
+    - Hệ thống từ chối truy cập, trả về lỗi `AUTH-002` (HTTP 403 Forbidden).
 - **Business Rules liên quan:** BR-13, BR-22.
 - **Acceptance Criteria (BDD):**
   - **AC-UC_09-01 (Ghi nhận BodyProgress trùng ngày thực hiện Update-in-place):**
@@ -438,7 +438,7 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   - **AC-UC_09-02 (Chỉ xem được tiến độ thuộc sở hữu của chính mình):**
     - **Given** Member A đã xác thực và Member B có dữ liệu BodyProgress riêng.
     - **When** Member A yêu cầu xem hoặc truy vấn dữ liệu tiến độ bằng định danh của Member B,
-    - **Then** Backend từ chối truy cập với HTTP 403 Forbidden theo BR-13 và không trả dữ liệu tiến độ của Member B.
+    - **Then** Backend từ chối truy cập với `AUTH-002` (HTTP 403 Forbidden) theo BR-13 và không trả dữ liệu tiến độ của Member B.
 
 ---
 
@@ -456,7 +456,7 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   3. Hệ thống kiểm tra xem tài khoản có đang ở đúng trạng thái hợp lệ để thực thi hành động hay không.
   4. Admin nhập lý do thực hiện khóa (nếu khóa tài khoản).
   5. Hệ thống cập nhật trạng thái `accountStatus` trong DB.
-  6. Do JWT có kiến trúc stateless, hệ thống không thu hồi hoặc vô hiệu hóa trực tiếp JWT đã phát hành. `JwtSecurityFilter` chỉ kiểm tra chữ ký và thời hạn; ở request yêu cầu xác thực tiếp theo, `AccountStatusGuard` hoặc Method Security truy vấn DB/Cache theo User ID trong Security Context và trả HTTP 403 với `ACC-004` nếu tài khoản là `LOCKED`. **Lưu ý:** Gói tập subscription hiện tại vẫn được bảo lưu ngày hết hạn cũ và không bị xóa hoặc thay đổi.
+  6. Do JWT có kiến trúc stateless, hệ thống không thu hồi hoặc vô hiệu hóa trực tiếp JWT đã phát hành. `JwtAuthenticationFilter` xác thực chữ ký/thời hạn và nạp identity/roles nhưng không đánh giá `accountStatus`; ở request yêu cầu xác thực tiếp theo, `AccountStatusGuard` hoặc Method Security truy vấn DB/Cache theo User ID trong Security Context và trả HTTP 403 với `ACC-004` nếu tài khoản là `LOCKED`. **Lưu ý:** Gói tập subscription hiện tại vẫn được bảo lưu ngày hết hạn cũ và không bị xóa hoặc thay đổi.
   7. Hệ thống hiển thị thông báo thay đổi trạng thái tài khoản thành công.
 - **Luồng ngoại lệ (Alternative / Exception Flows):**
   - **[Ngoại lệ 10.a] - Khóa tài khoản do hết hạn gói tập:**
@@ -467,11 +467,11 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   - **AC-UC_10-01 (Chặn truy cập đối với tài khoản bị khóa):**
     - **Given** Admin khóa tài khoản của hội viên B thành công (`accountStatus = LOCKED`) nhưng gói tập Subscription đang ACTIVE vẫn được bảo lưu thời hạn.
     - **When** hội viên B cố gắng dùng mã JWT Token hiện hành của mình để truy xuất API của Member,
-    - **Then** bộ kiểm soát trạng thái (`AccountStatusGuard`) chặn request ở cổng xác thực API và trả về mã lỗi HTTP 403 Forbidden.
+    - **Then** bộ kiểm soát trạng thái (`AccountStatusGuard`) chặn request ở endpoint bảo vệ và trả `ACC-004` (HTTP 403 Forbidden).
   - **AC-UC_10-02 (Chặn truy cập khách vãng lai chưa xác thực):**
     - **Given** người dùng chưa thực hiện đăng nhập và không có JWT token hợp lệ.
     - **When** người dùng này cố tình gửi request trực tiếp vào các API bảo mật của Member,
-    - **Then** bộ lọc an ninh JWT Filter chặn đứng request tại cổng và trả về mã lỗi HTTP 401 Unauthorized.
+    - **Then** Spring Security từ chối request và trả `ACC-005` (HTTP 401 Unauthorized).
   - **AC-UC_10-03 (Mở khóa tài khoản thành công):**
     - **Given** Admin đã xác thực và tài khoản Member đang có `accountStatus = LOCKED`.
     - **When** Admin thực hiện thao tác mở khóa tài khoản,

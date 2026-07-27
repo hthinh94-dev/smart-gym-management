@@ -1,0 +1,75 @@
+package com.thinh.smartgym.security;
+
+import com.thinh.smartgym.auth.entity.User;
+import com.thinh.smartgym.auth.repository.UserRepository;
+import com.thinh.smartgym.common.enums.AccountStatus;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class CustomUserDetailsServiceTest {
+
+    private static final String EMAIL = "member@smartgym.com";
+
+    @Mock
+    private UserRepository userRepository;
+
+    private CustomUserDetailsService userDetailsService;
+
+    @BeforeEach
+    void setUp() {
+        userDetailsService = new CustomUserDetailsService(userRepository);
+    }
+
+    @Test
+    @DisplayName("Chuẩn hóa email và cho phép tài khoản ACTIVE đăng nhập")
+    void loadUserByUsername_WithActiveAccount_ShouldReturnEnabledUser() {
+        when(userRepository.findByEmailWithRolesIgnoreCase(EMAIL))
+                .thenReturn(Optional.of(userWithStatus(AccountStatus.ACTIVE)));
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername("  MEMBER@SMARTGYM.COM  ");
+
+        assertThat(userDetails.isEnabled()).isTrue();
+        assertThat(userDetails.isAccountNonLocked()).isTrue();
+        verify(userRepository).findByEmailWithRolesIgnoreCase(EMAIL);
+    }
+
+    @Test
+    @DisplayName("Ánh xạ tài khoản LOCKED sang UserDetails bị khóa")
+    void loadUserByUsername_WithLockedAccount_ShouldReturnLockedUser() {
+        when(userRepository.findByEmailWithRolesIgnoreCase(EMAIL))
+                .thenReturn(Optional.of(userWithStatus(AccountStatus.LOCKED)));
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(EMAIL);
+
+        assertThat(userDetails.isAccountNonLocked()).isFalse();
+        assertThat(userDetails.isEnabled()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Ánh xạ tài khoản DISABLED sang UserDetails bị vô hiệu hóa")
+    void loadUserByUsername_WithDisabledAccount_ShouldReturnDisabledUser() {
+        when(userRepository.findByEmailWithRolesIgnoreCase(EMAIL))
+                .thenReturn(Optional.of(userWithStatus(AccountStatus.DISABLED)));
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(EMAIL);
+
+        assertThat(userDetails.isEnabled()).isFalse();
+        assertThat(userDetails.isAccountNonLocked()).isTrue();
+    }
+
+    private User userWithStatus(AccountStatus status) {
+        return new User("Gym Member", EMAIL, "password-hash", status);
+    }
+}

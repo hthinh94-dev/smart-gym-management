@@ -41,6 +41,16 @@
 }
 ```
 
+**Response lỗi - Đã xác thực nhưng không đủ quyền (HTTP 403 Forbidden):**
+```json
+{
+  "success": false,
+  "errorCode": "AUTH-002",
+  "message": "Tài khoản của bạn không có đủ quyền hạn để truy cập tài nguyên này.",
+  "details": {}
+}
+```
+
 ---
 
 ## 3. Auth API
@@ -2133,7 +2143,7 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
 ---
 
 ### PATCH /api/v1/admin/users/{id}/lock
-**Mô tả:** Admin khóa tài khoản người dùng. Gói tập subscription hiện tại không bị thay đổi. Do JWT stateless, token đã phát hành không bị thu hồi trực tiếp tại `JwtSecurityFilter`; Filter chỉ kiểm tra chữ ký và hạn dùng. Sau transaction lock, hệ thống cập nhật/evict cache trạng thái tài khoản. Trên request xác thực tiếp theo, `AccountStatusGuard` hoặc Method Security truy vấn DB/Cache theo User ID và trả HTTP 403 với `ACC-004` nếu trạng thái là `LOCKED`.
+**Mô tả:** Admin khóa tài khoản người dùng. Gói tập subscription hiện tại không bị thay đổi. Do JWT stateless, token đã phát hành không bị thu hồi trực tiếp tại `JwtAuthenticationFilter`; Filter xác thực chữ ký/hạn dùng và nạp identity/roles nhưng không đánh giá `accountStatus`. Sau transaction lock, hệ thống cập nhật/evict cache trạng thái tài khoản. Trên request xác thực tiếp theo, `AccountStatusGuard` hoặc Method Security truy vấn DB/Cache theo User ID và trả HTTP 403 với `ACC-004` nếu trạng thái là `LOCKED`.
 
 **Headers:**
 - `Authorization: Bearer <token>` (Role: ADMIN)

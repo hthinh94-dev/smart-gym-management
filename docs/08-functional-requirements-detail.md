@@ -41,14 +41,14 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Input chính:** `email` (khi đăng nhập), `Authorization` header chứa JWT (khi gửi request)
 **Output:** HTTP Status 403 Forbidden kèm mã lỗi cụ thể (`ACC-004` cho LOCKED, `ACC-006` cho DISABLED).
 **Business Rules liên quan:** BR-16 (Chặn đăng nhập tài khoản LOCKED), BR-21 (Chặn đăng nhập và token tài khoản DISABLED).
-**Ghi chú kỹ thuật:** JWT Security Filter chỉ xác thực tính hợp lệ của Token (chữ ký, hết hạn) và thiết lập Security Context; Filter không truy vấn Database để kiểm tra trạng thái tài khoản. Khi đăng nhập, `UserDetailsService` kiểm tra `accountStatus`. Trên các endpoint yêu cầu xác thực, `AccountStatusGuard` (Custom Interceptor/Guard) hoặc Method Security kiểm tra `accountStatus`; nếu là `LOCKED` hoặc `DISABLED` thì từ chối request.
+**Ghi chú kỹ thuật:** `JwtAuthenticationFilter` xác thực tính hợp lệ của Token (chữ ký, hết hạn), nạp identity/roles qua `UserDetailsService` và thiết lập Security Context; Filter không truy vấn hoặc đánh giá `accountStatus`. Khi đăng nhập, `UserDetailsService` kiểm tra `accountStatus`. Trên các endpoint yêu cầu xác thực, `AccountStatusGuard` (Custom Interceptor/Guard) hoặc Method Security kiểm tra `accountStatus`; nếu là `LOCKED` hoặc `DISABLED` thì từ chối request.
 
 ### [FR-AUTH-04] Phân quyền endpoint theo role
 **Mức ưu tiên:** Must-have
 **Actor:** Hệ thống
 **Mô tả:** Hệ thống tự động kiểm tra vai trò của tài khoản thực hiện request và chặn đứng các truy cập trái phép đối với các tài nguyên nghiệp vụ thuộc về phân hệ quản trị hoặc phân hệ chuyên biệt.
 **Input chính:** `Authorization` header chứa JWT, HTTP Request Path & Method
-**Output:** HTTP Status 403 Forbidden nếu người dùng không đủ quyền hạn, ngược lại cho phép thực thi API.
+**Output:** HTTP Status 403 Forbidden với `AUTH-002` nếu người dùng không đủ quyền hạn, ngược lại cho phép thực thi API.
 **Business Rules liên quan:** BR-03 (Giới hạn quyền quản trị của Member).
 **Ghi chú kỹ thuật:** Sử dụng các cấu hình phân quyền tại Spring Security Filter Chain (`requestMatchers`) và Method Security (`@PreAuthorize`) bảo vệ API.
 
@@ -59,7 +59,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Input chính:** `Authorization` header chứa JWT
 **Output:** Thông tin chi tiết tài khoản hiện tại gồm ID, Họ tên, Email, Vai trò.
 **Business Rules liên quan:** Không có.
-**Ghi chú kỹ thuật:** Sau khi `AccountStatusGuard` đã kiểm tra trạng thái tài khoản qua DB/Cache, endpoint đọc các trường định danh cơ bản từ Security Context (Principal) để tránh một lần truy vấn lặp. JWT Filter chỉ thiết lập Context từ token hợp lệ và không thay thế AccountStatusGuard.
+**Ghi chú kỹ thuật:** Sau khi `AccountStatusGuard` đã kiểm tra trạng thái tài khoản qua DB/Cache, endpoint đọc các trường định danh cơ bản từ Security Context (Principal) để tránh một lần truy vấn lặp. `JwtAuthenticationFilter` thiết lập Context từ token hợp lệ và không thay thế `AccountStatusGuard`.
 
 ---
 
@@ -429,7 +429,7 @@ Tuổi (Age) được tính chính xác bằng cách so sánh `dateOfBirth` vớ
 **Input chính:** `userId` (path variable), `action` (LOCK / UNLOCK), `reason` (nếu LOCK)
 **Output:** Trạng thái tài khoản người dùng cập nhật thành `LOCKED` hoặc `ACTIVE` trong DB.
 **Business Rules liên quan:** BR-03 (Quyền Admin), BR-16 (Không khóa tài khoản chỉ vì hết gói tập).
-**Ghi chú kỹ thuật:** Cần ghi nhận lý do khóa vào trường log hệ thống để kiểm toán hành vi quản trị. JWT Security Filter chỉ xác thực chữ ký và hạn dùng Token, không truy vấn Database. `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái `LOCKED`/`DISABLED` tại endpoint yêu cầu xác thực và từ chối token hiện hành của tài khoản bị khóa.
+**Ghi chú kỹ thuật:** Cần ghi nhận lý do khóa vào trường log hệ thống để kiểm toán hành vi quản trị. `JwtAuthenticationFilter` xác thực chữ ký/hạn dùng, nạp identity/roles nhưng không truy vấn hoặc đánh giá `accountStatus`. `AccountStatusGuard` hoặc Method Security kiểm tra trạng thái `LOCKED`/`DISABLED` tại endpoint yêu cầu xác thực và từ chối token hiện hành của tài khoản bị khóa.
 
 ### [FR-ADMIN-03] Admin xem số liệu đếm cơ bản
 **Mức ưu tiên:** Must-have
