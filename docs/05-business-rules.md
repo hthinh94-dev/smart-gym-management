@@ -8,11 +8,11 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 
 ### [BR-01] - Tính duy nhất và chuẩn hóa định danh số (Email Uniqueness & Normalization)
 - **Mô tả nghiệp vụ:** Mỗi tài khoản người dùng phải sử dụng một địa chỉ email duy nhất. Trước khi kiểm tra trùng và lưu trữ, email bắt buộc phải được **trim khoảng trắng đầu/cuối** và **chuyển thành chữ thường (lowercase)**. Lý do: `User@Gmail.com` và ` user@gmail.com ` đều phải được xác định là cùng một danh tính.
-- **Hiện thực hóa kỹ thuật:** Gọi `email.trim().toLowerCase()` tại tầng Service trước bất kỳ thao tác nào (kiểm tra tồn tại, lưu mới, tìm kiếm). Thiết lập `UNIQUE` tại trường `email` mức Database.
+- **Hiện thực hóa kỹ thuật:** Gọi `email.trim().toLowerCase(Locale.ROOT)` tại tầng Service trước bất kỳ thao tác nào (kiểm tra tồn tại, lưu mới, tìm kiếm). Thiết lập `UNIQUE` tại trường `email` mức Database.
 
-### [BR-02] - Mã hóa dữ liệu mật khẩu (Password Encryption)
+### [BR-02] - Băm mật khẩu (Password Hashing)
 - **Mô tả nghiệp vụ:** Mật khẩu của người dùng tuyệt đối không được lưu trữ dưới dạng văn bản thuần (plain text) nhằm phòng ngừa rủi ro rò rỉ dữ liệu khi cơ sở dữ liệu bị xâm nhập trái phép.
-- **Hiện thực hóa kỹ thuật:** Sử dụng thuật toán băm mật khẩu bảo mật (ví dụ: BCrypt) thông qua class `PasswordEncoder` của Spring Security để mã hóa mật khẩu ở tầng Service trước khi lưu trữ vào Database.
+- **Hiện thực hóa kỹ thuật:** Sử dụng `BCryptPasswordEncoder(12)` thông qua interface `PasswordEncoder` của Spring Security để băm mật khẩu tại tầng Service trước khi lưu vào Database.
 
 ### [BR-03] - Giới hạn quyền truy cập tài nguyên quản trị (Admin Authorization Constraint)
 - **Mô tả nghiệp vụ:** Hội viên (Member) tuyệt đối không được phép tiếp cận hoặc thực thi các chức năng thuộc về phân hệ quản trị (như CRUD gói tập, quản lý tài khoản người dùng khác).
@@ -87,7 +87,7 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 - **Hiện thực hóa kỹ thuật:** Chuẩn hóa một cột duy nhất `is_active` (boolean). Mapping JPA của MVP dùng `@SQLDelete` để cập nhật `is_active = false, updated_at = CURRENT_TIMESTAMP(6)` và `@Where(clause = "is_active = true")` cho truy vấn danh mục hiện hành. Truy vấn lịch sử cần đọc Exercise inactive dùng native DTO projection để không bị entity-level filter che dữ liệu. Không đồng thời dùng cả `is_active` và `deleted`, tránh hai nguồn trạng thái mâu thuẫn.
 
 
-### [BR-15] - Kiểm thử đăng ký (Registration Validation)
+### [BR-15] - Trạng thái tài khoản sau đăng ký (Registration Account State)
 - **Mô tả nghiệp vụ:** Sau khi đăng ký thành công, tài khoản phải ở trạng thái PENDING cho đến khi Admin xác nhận, hoặc hệ thống có thể mặc định kích hoạt ngay (AUTO-ACTIVE). Phải định nghĩa rõ trong cấu hình và ghi vào tài liệu quyết định.
 - **Hiện thực hóa kỹ thuật:** Trong MVP, áp dụng **AUTO-ACTIVE**: Hội viên mới được gán quyền `ROLE_MEMBER` và trạng thái `accountStatus = ACTIVE` ngay sau khi đăng ký nhưng **chưa có gói tập Active**. Gói tập được kích hoạt riêng bởi luồng Subscription Management.
 
@@ -109,7 +109,7 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 
 ### [BR-20] - Chuẩn hóa Email (Email Trim & Lowercase)
 - **Mô tả nghiệp vụ:** Trước bất kỳ thao tác nào (kiểm tra tồn tại, đăng nhập, lưu mới), Email phải được **trim khoảng trắng đầu/cuối** và **chuyển lowercase** để kiểm tra trùng có ý nghĩa. Quy tắc này bổ sung thêm chi tiết thực hiện cho BR-01.
-- **Hiện thực hóa kỹ thuật:** Tại `UserService.register()` và `UserService.findByEmail()`: `String normalizedEmail = email.trim().toLowerCase();`. Không để Spring Security thực hiện so sánh trước khi email được chuẩn hóa.
+- **Hiện thực hóa kỹ thuật:** `AuthService.register()` chuẩn hóa bằng `email.trim().toLowerCase(Locale.ROOT)` trước khi kiểm tra tồn tại và lưu. `CustomUserDetailsService.loadUserByUsername()` áp dụng cùng quy tắc trước khi gọi `UserRepository.findByEmailWithRolesIgnoreCase()`. Không để Spring Security truy vấn bằng email chưa chuẩn hóa.
 
 ### [BR-21] - Chặn tài khoản DISABLED (Permanently Disabled Account Block)
 - **Mô tả nghiệp vụ:** Tài khoản ở trạng thái `DISABLED` (vô hiệu hóa vĩnh viễn, khác `LOCKED` có thể mở lại) không được đăng nhập, và token của tài khoản đã `DISABLED` cũng phải bị hệ thống từ chối trên mọi request yêu cầu xác thực.
@@ -173,6 +173,7 @@ Bảng này xác lập các `ErrorCode` cần kết xuất trong phản hồi AP
 | `VAL-001` | Validation | 400 | Dữ liệu đầu vào hoặc trạng thái request không hợp lệ |
 | `AI-001` | AI Engine | 502 | Không thể tạo recommendation vì cả AI Engine và cơ chế fallback đều thất bại |
 | `CON-001` | Đồng thời | 409 | Dữ liệu đã được request khác cập nhật hoặc tài nguyên đang bị khóa; client phải tải lại trạng thái trước khi thử lại |
+| `SYS-001` | Hệ thống | 500 | Thiếu dữ liệu cấu hình bắt buộc hoặc xảy ra lỗi nội bộ không thể công khai chi tiết |
 
 ### Warning Code Registry cho response fallback HTTP 200
 

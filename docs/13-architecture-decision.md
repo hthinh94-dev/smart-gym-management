@@ -36,7 +36,7 @@ Mã đặt dưới `com.thinh.smartgym`. `common` chỉ chứa thành phần k�
 ```text
 com.thinh.smartgym
 ├── common
-│   ├── api                 # ApiResponse, ErrorResponse, PageResponse
+│   ├── response            # ApiResponse, ErrorResponse, PageResponse
 │   ├── config              # Clock, Jackson, JPA, OpenAPI configuration
 │   ├── exception           # exception nghiệp vụ và @RestControllerAdvice
 │   ├── persistence         # BaseEntity
@@ -162,7 +162,10 @@ Các dependency hiện có (Web, Validation, JPA, Security, MySQL, Flyway, Actua
 | Recommendation/AI | `resilience4j-spring-boot3`, HTTP client và provider SDK/adapter đã chọn. |
 | Integration test database | Testcontainers MySQL cho Flyway, unique generated keys và concurrency. |
 
-Frontend hiện chưa được khởi tạo nên không áp dụng package manager tại thời điểm này. Khi dựng React, dùng `TanStack Query` cho server state, React Hook Form + Zod cho form, và Context hoặc Zustand cho auth state; không cần Redux cho MVP.
+Frontend đã được khởi tạo bằng React + Vite. Luồng Register dùng `TanStack Query`
+cho mutation/server state, React Hook Form + Zod cho form, Axios cho HTTP client và
+React Router cho điều hướng; không cần Redux cho MVP. Auth state dùng Context hoặc
+Zustand khi triển khai Login và route guard ở các ngày tiếp theo.
 
 Ngoài phạm vi: refresh token, OAuth2 login, Redis, cache phân tán, payment gateway thật, messaging broker, real-time notification, microservices và full Clean Architecture.
 

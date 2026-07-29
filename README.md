@@ -7,7 +7,8 @@ Backend kiểm duyệt.
 
 ## Trạng thái hiện tại
 
-Dự án đã hoàn thành kế hoạch đến **Ngày 5 - Security/JWT Foundation**:
+Dự án đã nghiệm thu **Ngày 5 - Security/JWT Foundation** và hoàn thành phạm vi
+local của **Ngày 6 - Register API và React Register flow**:
 
 - Backend foundation bằng Java 21 và Spring Boot 3.4.3.
 - 8 Flyway migration tạo schema MVP trên MySQL 8.
@@ -16,10 +17,19 @@ Dự án đã hoàn thành kế hoạch đến **Ngày 5 - Security/JWT Foundati
 - `AccountStatusGuard` phân biệt `ACTIVE`, `LOCKED`, `DISABLED`.
 - Response lỗi Security chuẩn hóa bằng `ACC-004`, `ACC-005`, `ACC-006` và
   `AUTH-002`.
-- 26 test đang pass, gồm unit test Security/JWT và Spring context integration.
+- Regression backend có 61 test pass, gồm toàn bộ 26 test Ngày 5 và 35 test
+  Register/CORS của Ngày 6.
+- `POST /api/v1/auth/register` đã có DTO, validation, transaction service,
+  `ROLE_MEMBER`, `ACTIVE`, BCrypt, error handler và OpenAPI.
+- Frontend Register dùng React Router, React Query, React Hook Form, Zod và Axios;
+  6 test Vitest pass và production build thành công.
+- Postman collection bao phủ success, duplicate email, password, confirm password,
+  invalid email và chống client tự gán role/account status.
+- CORS đọc danh sách origin cụ thể từ environment và từ chối wildcard.
 
-Register, Login, Profile, Membership, AI API và frontend nghiệp vụ chưa được
-triển khai ở Ngày 5. Thứ tự tiếp theo được quản lý tại
+Login API, Profile, Membership và AI API chưa được triển khai. `LoginPage` hiện
+chỉ là màn hình đích sau Register; kết nối Login API thuộc Ngày 7. Deploy staging
+chưa nằm trong phạm vi nghiệm thu local hiện tại. Thứ tự tiếp theo được quản lý tại
 [Implementation Plan](./docs/14-implementation-plan.md).
 
 ## Công nghệ
@@ -31,7 +41,8 @@ triển khai ở Ngày 5. Thứ tự tiếp theo được quản lý tại
 | Security | Spring Security, BCrypt, JJWT 0.12.6 |
 | Persistence | Spring Data JPA, Hibernate, MySQL 8 |
 | Migration | Flyway Core và Flyway MySQL |
-| Test | JUnit 5, Mockito, Spring Security Test, MockMvc |
+| Frontend | React, Vite, React Router, React Query, React Hook Form, Zod, Axios |
+| Test | JUnit 5, Mockito, MockMvc, Vitest, Testing Library |
 
 ## Kiến trúc
 
@@ -63,8 +74,8 @@ smart-gym-management/
 |-- diagrams/
 |   `-- erd-gym-management.mmd
 |-- docs/                    # Đặc tả, API, dữ liệu, kiến trúc và tiến độ
-|-- frontend/                # Placeholder cho React ở milestone tiếp theo
-|-- postman/                 # Placeholder cho collection kiểm thử API
+|-- frontend/                # React Register/Login shell và test frontend
+|-- postman/                 # Collection kiểm thử UC-01 Register
 |-- .env.example             # Mẫu biến môi trường cấp repository
 `-- README.md
 ```
@@ -79,8 +90,8 @@ Phân loại file:
   và truy vết bắt buộc của đồ án.
 - Hai file `.env.example` được giữ để hỗ trợ chạy từ project root hoặc thư mục
   `backend`; nội dung phải luôn đồng bộ.
-- `frontend/.gitkeep` và `postman/.gitkeep` là placeholder hợp lệ cho các giai
-  đoạn chưa triển khai.
+- `frontend/` là workspace React của luồng Register; `postman/` chứa collection
+  kiểm thử API có thể chạy tuần tự trên local.
 - `.env`, `backend/target/`, log và cấu hình IDE là file cục bộ hoặc sinh tự động,
   không được commit.
 
@@ -103,6 +114,7 @@ Các biến được hỗ trợ:
 | `DB_PASSWORD` | Có | Mật khẩu MySQL |
 | `JWT_SECRET` | Có | Khóa ký JWT, tối thiểu 32 byte |
 | `JWT_ACCESS_TOKEN_EXPIRATION_MS` | Không | Mặc định `3600000` ms |
+| `CORS_ALLOWED_ORIGINS` | Không | Danh sách origin cụ thể, phân tách bằng dấu phẩy; mặc định `http://localhost:5173` |
 | `AI_API_KEY` | Chưa dùng | Dành cho milestone AI |
 
 File `.env` bị Git ignore và Spring Boot không tự động nạp file này. Trên
@@ -127,15 +139,34 @@ cd backend
 .\mvnw.cmd clean test
 ```
 
-Baseline sau Ngày 5:
+Regression backend sau Ngày 6:
 
 ```text
-Tests run: 26, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 61, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Flyway phải validate đủ 8 migration và Hibernate phải khởi tạo
+Chạy riêng test Ngày 6 trước khi chạy regression toàn bộ:
+
+```powershell
+.\mvnw.cmd "-Dtest=AuthServiceTest,AuthControllerTest,WebCorsConfigurationTest,AuthRegistrationIntegrationTest" test
+.\mvnw.cmd clean test
+```
+
+Snapshot có 26 test invocation nền Ngày 5 và 35 test invocation cho Register/CORS,
+tổng 61 test. Flyway validate đủ 8 migration và Hibernate khởi tạo
 `EntityManagerFactory` thành công.
+
+Frontend:
+
+```powershell
+cd ..\frontend
+npm install
+npm run test -- --run
+npm run build
+```
+
+Kết quả xác nhận: 6 test Vitest pass và Vite production build thành công.
 
 ## Chạy Backend
 
@@ -147,8 +178,20 @@ cd backend
 Các endpoint nền:
 
 - Health check: `http://localhost:8080/actuator/health`
+- Register: `POST http://localhost:8080/api/v1/auth/register`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+
+## Chạy Frontend
+
+```powershell
+cd frontend
+npm run dev
+```
+
+- Register: `http://localhost:5173/register`
+- Login shell: `http://localhost:5173/login`
+- API base URL local: `http://localhost:8080/api/v1`
 
 ## Tài liệu chính
 

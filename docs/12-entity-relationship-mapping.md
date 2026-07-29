@@ -237,11 +237,11 @@ public class User {
 >     FROM User u
 >     LEFT JOIN FETCH u.userRoles ur
 >     LEFT JOIN FETCH ur.role
->     WHERE u.email = :email
+>     WHERE LOWER(u.email) = LOWER(:email)
 >     """)
-> Optional<User> findByEmailWithRoles(@Param("email") String email);
+> Optional<User> findByEmailWithRolesIgnoreCase(@Param("email") String email);
 > ```
-> Phương thức này được `UserDetailsServiceImpl.loadUserByUsername()` gọi để nạp User kèm Roles trong một câu SQL duy nhất, tránh hoàn toàn `LazyInitializationException`.
+> Phương thức này được `CustomUserDetailsService.loadUserByUsername()` gọi để nạp User kèm Roles trong một câu SQL duy nhất, tránh hoàn toàn `LazyInitializationException`.
 
 ---
 

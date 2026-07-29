@@ -1,0 +1,242 @@
+{
+  "info": {
+    "_postman_id": "97c29ec9-3170-4e38-9395-b1653996e1e8",
+    "name": "Smart Gym - Day 6 Register",
+    "description": "Local verification for UC-01 member registration. Run requests in collection order.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1"
+    },
+    {
+      "key": "registerEmail",
+      "value": ""
+    },
+    {
+      "key": "duplicateEmail",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Register - Success 201",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const email = `member.${Date.now()}@smartgym.test`;",
+              "pm.collectionVariables.set('registerEmail', email);",
+              "pm.collectionVariables.set('duplicateEmail', `  ${email.toUpperCase()}  `);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('ACTIVE ROLE_MEMBER without secret fields', () => {",
+              "  pm.expect(body.success).to.eql(true);",
+              "  pm.expect(body.data.email).to.eql(pm.collectionVariables.get('registerEmail'));",
+              "  pm.expect(body.data.role).to.eql('ROLE_MEMBER');",
+              "  pm.expect(body.data.accountStatus).to.eql('ACTIVE');",
+              "  pm.expect(body.data).not.to.have.any.keys('password', 'passwordHash', 'confirmPassword', 'accessToken');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"  Nguyen Van An  \",\n  \"email\": \"  {{registerEmail}}  \",\n  \"password\": \"SecurePass1\",\n  \"confirmPassword\": \"SecurePass1\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Register - Duplicate Email ACC-001",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409 ACC-001', () => {",
+              "  pm.response.to.have.status(409);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.success).to.eql(false);",
+              "  pm.expect(body.errorCode).to.eql('ACC-001');",
+              "  pm.expect(body.details.field).to.eql('email');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Nguyen Van An\",\n  \"email\": \"{{duplicateEmail}}\",\n  \"password\": \"SecurePass1\",\n  \"confirmPassword\": \"SecurePass1\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Register - Weak Password ACC-002",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400 ACC-002', () => {",
+              "  pm.response.to.have.status(400);",
+              "  pm.expect(pm.response.json().errorCode).to.eql('ACC-002');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Nguyen Van An\",\n  \"email\": \"weak.password@smartgym.test\",\n  \"password\": \"password\",\n  \"confirmPassword\": \"password\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Register - Confirm Password ACC-002",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400 ACC-002 for confirmPassword', () => {",
+              "  pm.response.to.have.status(400);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.errorCode).to.eql('ACC-002');",
+              "  pm.expect(body.details.field).to.eql('confirmPassword');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Nguyen Van An\",\n  \"email\": \"confirm.password@smartgym.test\",\n  \"password\": \"SecurePass1\",\n  \"confirmPassword\": \"DifferentPass1\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Register - Invalid Email VAL-001",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400 VAL-001', () => {",
+              "  pm.response.to.have.status(400);",
+              "  pm.expect(pm.response.json().errorCode).to.eql('VAL-001');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Nguyen Van An\",\n  \"email\": \"invalid-email\",\n  \"password\": \"SecurePass1\",\n  \"confirmPassword\": \"SecurePass1\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Register - Ignore Client Role And Status",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('privilegeEmail', `privilege.${Date.now()}@smartgym.test`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Client cannot assign ADMIN or DISABLED', () => {",
+              "  pm.response.to.have.status(201);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.data.role).to.eql('ROLE_MEMBER');",
+              "  pm.expect(body.data.accountStatus).to.eql('ACTIVE');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Privilege Attempt\",\n  \"email\": \"{{privilegeEmail}}\",\n  \"password\": \"SecurePass1\",\n  \"confirmPassword\": \"SecurePass1\",\n  \"role\": \"ROLE_ADMIN\",\n  \"accountStatus\": \"DISABLED\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    }
+  ]
+}

@@ -60,8 +60,11 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
     - Hệ thống phát hiện email đã tồn tại trong DB (sau khi trim và lowercase).
     - Hệ thống ném mã lỗi `ACC-001` (HTTP 409 Conflict) kèm thông báo "Email đã được sử dụng".
   - **[Ngoại lệ 01.b] - Mật khẩu sai định dạng:**
-    - Hệ thống phát hiện mật khẩu vi phạm chính sách mật khẩu (dưới 8 ký tự, thiếu chữ hoa hoặc số) hoặc `confirmPassword` không khớp.
+    - Hệ thống phát hiện mật khẩu vi phạm chính sách mật khẩu (dưới 8 ký tự, trên 72 ký tự, thiếu chữ hoa hoặc số, có khoảng trắng ở biên) hoặc `confirmPassword` không khớp.
     - Hệ thống ném mã lỗi `ACC-002` (HTTP 400 Bad Request) kèm thông báo lỗi chi tiết.
+  - **[Ngoại lệ 01.c] - Họ tên hoặc Email không hợp lệ:**
+    - Họ tên rỗng/vượt quá 100 ký tự, hoặc Email rỗng/sai định dạng/vượt quá 150 ký tự.
+    - Hệ thống từ chối gọi Service và trả `VAL-001` (HTTP 400 Bad Request) kèm lỗi theo trường.
 - **Business Rules liên quan:** BR-01, BR-02, BR-15, BR-18, BR-20.
 - **Acceptance Criteria (BDD):**
   - **AC-UC_01-01 (Đăng ký thành công):**

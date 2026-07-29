@@ -115,6 +115,37 @@
 
 Trường `password` và `confirmPassword` chỉ tồn tại trong request DTO để validation; cả hai không xuất hiện trong response, application log hoặc dữ liệu lưu trữ. Nếu hai trường không khớp, endpoint cũng trả `ACC-002` (HTTP 400) với `details.field = "confirmPassword"`.
 
+**Response lỗi - Họ tên hoặc email không hợp lệ (HTTP 400 Bad Request):**
+```json
+{
+  "success": false,
+  "errorCode": "VAL-001",
+  "message": "Dữ liệu đầu vào không hợp lệ.",
+  "details": {
+    "field": "email",
+    "constraint": "Email không đúng định dạng.",
+    "rejectedValue": "invalid-email",
+    "violations": {
+      "email": "Email không đúng định dạng."
+    }
+  }
+}
+```
+
+Request JSON sai cú pháp cũng trả `VAL-001` (HTTP 400) với
+`details.field = "requestBody"`; response không công khai stack trace, câu SQL,
+exception parser hoặc tên class Java.
+
+**Response lỗi - Thiếu cấu hình hệ thống (HTTP 500 Internal Server Error):**
+```json
+{
+  "success": false,
+  "errorCode": "SYS-001",
+  "message": "Hệ thống chưa được cấu hình đầy đủ. Vui lòng liên hệ quản trị viên.",
+  "details": {}
+}
+```
+
 ---
 
 ### POST /api/v1/auth/login

@@ -295,3 +295,46 @@ luồng bắt buộc hiện tại chỉ gồm Admin và Member.
 - Ngày 6: hiện thực `POST /api/v1/auth/register` theo API Draft, gồm DTO,
   validation mật khẩu, normalize email, BCrypt, `ROLE_MEMBER`, `ACTIVE`,
   `ACC-001` và `ACC-002`; không cho client truyền role/account status.
+
+---
+
+## Ngày 6 — Register API (28/07/2026)
+
+### Đã triển khai source
+
+- [x] Tạo `RegisterRequest` và `RegisterResponse`; request trim họ tên/email,
+  giữ nguyên password, áp dụng validation BR-18 và không nhận role/account status.
+- [x] Tạo `ErrorCode`, `BusinessException`, `GlobalExceptionHandler`; chuẩn hóa
+  `ACC-001`, `ACC-002`, `VAL-001`, `SYS-001` và không trả stack trace/SQL/class Java.
+- [x] Tạo `UserRoleRepository` và `AuthService.register()` trong transaction:
+  normalize email, lấy `ROLE_MEMBER`, BCrypt strength 12, tạo User `ACTIVE`,
+  lưu `UserRole` và bắt race condition tại `uk_users_email`.
+- [x] Tạo `AuthController` cho `POST /api/v1/auth/register`, trả HTTP 201 bằng
+  `ApiResponse<RegisterResponse>` và bổ sung mô tả OpenAPI.
+- [x] Thêm CORS từ `CORS_ALLOWED_ORIGINS`; mặc định chỉ cho
+  `http://localhost:5173`, hỗ trợ nhiều origin cụ thể và fail-fast nếu có wildcard.
+- [x] Tạo `AuthServiceTest` và `AuthControllerTest` bao phủ success, normalize,
+  BCrypt, validation password/email, confirm password, duplicate/race condition,
+  payload cố gửi role/status, malformed JSON và response không lộ password.
+- [x] Tạo `WebCorsConfigurationTest` cho nhiều origin cụ thể, loại trùng và
+  fail-fast với danh sách rỗng hoặc mọi dạng wildcard.
+- [x] Tạo `AuthRegistrationIntegrationTest` để kiểm tra qua full Spring context
+  và MySQL: lưu User/UserRole, BCrypt, chống privilege escalation và email trùng.
+- [x] Hoàn thiện React Register bằng React Router, React Query, React Hook Form,
+  Zod và Axios; LoginPage giữ đúng vai trò màn hình đích của Ngày 6.
+- [x] Tạo Postman collection cho success, `ACC-001`, `ACC-002`, `VAL-001` và
+  payload cố gắng tự gán role/account status.
+
+### Kết quả kiểm thử xác nhận
+
+- [x] `mvnw.cmd clean test`: 61 test pass, 0 failure, 0 error, 0 skipped;
+  toàn bộ 26 test Ngày 5 tiếp tục pass.
+- [x] Flyway validate đủ 8 migration, schema ở version 8 và Hibernate khởi tạo
+  `EntityManagerFactory` thành công trên MySQL 8.
+- [x] Frontend `npm run test -- --run`: 6 test pass.
+- [x] Frontend `npm run build`: production build thành công.
+- [x] Đã kiểm thử local Register success/error/CORS, dữ liệu `ACTIVE + ROLE_MEMBER`,
+  BCrypt và unique email trong database.
+
+**Kết luận:** Ngày 6 đã hoàn thành trong phạm vi local. Deploy staging được hoãn
+theo phạm vi đã thống nhất và không được ghi nhận là đã thực hiện.
