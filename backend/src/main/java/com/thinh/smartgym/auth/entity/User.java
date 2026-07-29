@@ -63,6 +63,14 @@ public class User extends BaseEntity {
         this.accountStatus = accountStatus != null ? accountStatus : AccountStatus.ACTIVE;
     }
 
+    public void attachUserRole(UserRole userRole) {
+        Objects.requireNonNull(userRole, "userRole must not be null");
+        if (userRole.getUser() != this) {
+            throw new IllegalArgumentException("UserRole must belong to this user");
+        }
+        userRoles.add(userRole);
+    }
+
     @Override
     public boolean equals(Object object) {
         if (this == object) return true;
