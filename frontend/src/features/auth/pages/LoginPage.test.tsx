@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { httpClient } from "../../../lib/httpClient";
 import { AuthProvider } from "../context/AuthContext";
@@ -46,7 +46,11 @@ function renderLoginPage() {
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={["/login"]}>
                 <AuthProvider>
-                    <LoginPage />
+                    <Routes>
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/member" element={<p>Khu vực hội viên</p>} />
+                        <Route path="/admin/users" element={<p>Quản lý tài khoản</p>} />
+                    </Routes>
                 </AuthProvider>
             </MemoryRouter>
         </QueryClientProvider>,
@@ -115,8 +119,7 @@ describe("LoginPage", () => {
 
         await user.click(screen.getByRole("button", { name: /^đăng nhập$/i }));
 
-        expect(await screen.findByText("Đăng nhập thành công")).toBeInTheDocument();
-        expect(screen.getByText(/Nguyễn Văn An/)).toBeInTheDocument();
+        expect(await screen.findByText("Khu vực hội viên")).toBeInTheDocument();
         expect(postMock).toHaveBeenCalledWith("/auth/login", {
             email: "user@gmail.com",
             password: "SecurePass1",
@@ -129,28 +132,30 @@ describe("LoginPage", () => {
         expect(storedSession).not.toContain("password");
     });
 
-    it("không hiện lại success cũ khi sửa form sau một lần đăng nhập thành công", async () => {
+    it("điều hướng Admin đến trang quản lý tài khoản", async () => {
         vi.spyOn(httpClient, "post").mockResolvedValue({
-            data: loginSuccess,
+            data: {
+                ...loginSuccess,
+                data: {
+                    ...loginSuccess.data,
+                    user: { ...loginSuccess.data.user, role: "ROLE_ADMIN" as const },
+                },
+            },
             status: 200,
         });
         vi.spyOn(httpClient, "get").mockResolvedValue({
-            data: currentUserSuccess,
+            data: {
+                ...currentUserSuccess,
+                data: { ...currentUserSuccess.data, role: "ROLE_ADMIN" as const },
+            },
             status: 200,
         });
         renderLoginPage();
         const user = await fillLoginForm();
 
         await user.click(screen.getByRole("button", { name: /^đăng nhập$/i }));
-        expect(await screen.findByText("Đăng nhập thành công")).toBeInTheDocument();
 
-        const passwordInput = screen.getByLabelText(/^mật khẩu/i);
-        await user.clear(passwordInput);
-        await user.click(screen.getByRole("button", { name: /^đăng nhập$/i }));
-        expect(await screen.findByText("Mật khẩu là bắt buộc.")).toBeInTheDocument();
-
-        await user.type(passwordInput, "SecurePass1");
-        expect(screen.queryByText("Đăng nhập thành công")).not.toBeInTheDocument();
+        expect(await screen.findByText("Quản lý tài khoản")).toBeInTheDocument();
     });
 
     it("không hiển thị banner success của phiên tài khoản đã có trước đó", async () => {
@@ -167,8 +172,7 @@ describe("LoginPage", () => {
         renderLoginPage();
 
         await waitFor(() => expect(httpClient.get).toHaveBeenCalledWith("/users/me"));
-        expect(screen.queryByText("Đăng nhập thành công")).not.toBeInTheDocument();
-        expect(screen.queryByText(/Nguyễn Văn An/)).not.toBeInTheDocument();
+        expect(await screen.findByText("Khu vực hội viên")).toBeInTheDocument();
     });
 
     it.each([
@@ -211,7 +215,7 @@ describe("LoginPage", () => {
 
         expect(await screen.findByRole("button", { name: /đang đăng nhập/i })).toBeDisabled();
         resolveLogin({ data: loginSuccess, status: 200 });
-        await screen.findByText("Đăng nhập thành công");
+        await screen.findByText("Khu vực hội viên");
     });
 
     it("hiện và ẩn mật khẩu bằng nút icon", async () => {

@@ -58,6 +58,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         function syncClearedSession() {
             if (!readAuthSession()) {
                 setUser(null);
+                setIsRestoringSession(false);
             }
         }
 

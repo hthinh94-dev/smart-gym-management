@@ -1,12 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { AuthApiError } from "../api/authApi";
 import { useAuth } from "../hooks/useAuth";
 import { loginSchema } from "../schemas/loginSchema";
-import type { AuthErrorCode, AuthUser, LoginFormValues } from "../types/auth.types";
+import type { AuthErrorCode, LoginFormValues, RoleName } from "../types/auth.types";
 
 type AuthRoute = "/register" | "/login";
 
@@ -18,6 +18,10 @@ type LoginMessage = {
     title: string;
     description: string;
 };
+
+function authenticatedPath(role: RoleName) {
+    return role === "ROLE_ADMIN" ? "/admin/users" : "/member";
+}
 
 const loginErrorMessages: Record<AuthErrorCode, LoginMessage> = {
     "ACC-001": {
@@ -86,16 +90,6 @@ function CloseIcon() {
     );
 }
 
-function roleLabel(role: AuthUser["role"]) {
-    if (role === "ROLE_ADMIN") {
-        return "Quản trị viên";
-    }
-    if (role === "ROLE_PT") {
-        return "Huấn luyện viên";
-    }
-    return "Hội viên";
-}
-
 function errorMessage(error: unknown): LoginMessage {
     if (error instanceof AuthApiError) {
         return loginErrorMessages[error.errorCode] ?? {
@@ -112,9 +106,14 @@ function errorMessage(error: unknown): LoginMessage {
 
 export function LoginPage({ onNavigate }: LoginPageProps) {
     const routerNavigate = useNavigate();
-    const { login } = useAuth();
+    const { login, user, isRestoringSession } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
-    const loginMutation = useMutation({ mutationFn: login });
+    const loginMutation = useMutation({
+        mutationFn: login,
+        onSuccess: (authenticatedUser) => {
+            routerNavigate(authenticatedPath(authenticatedUser.role), { replace: true });
+        },
+    });
     const {
         register,
         handleSubmit,
@@ -127,8 +126,15 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
     });
 
     const isLoading = loginMutation.isPending;
-    const authenticatedUser = loginMutation.data;
     const apiMessage = loginMutation.isError ? errorMessage(loginMutation.error) : null;
+
+    useEffect(() => {
+        if (isRestoringSession || !user) {
+            return;
+        }
+
+        routerNavigate(authenticatedPath(user.role), { replace: true });
+    }, [isRestoringSession, routerNavigate, user]);
 
     function navigateTo(path: AuthRoute) {
         if (onNavigate) {
@@ -156,17 +162,6 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
                     <h2>Đăng nhập</h2>
                     <p>Tiếp tục quản lý lịch tập, gói tập và tiến trình của bạn.</p>
                 </header>
-
-                {authenticatedUser && !apiMessage && (
-                    <div className="login-alert login-alert-success" role="status">
-                        <div>
-                            <strong>Đăng nhập thành công</strong>
-                            <p>
-                                {authenticatedUser.fullName} · {roleLabel(authenticatedUser.role)}
-                            </p>
-                        </div>
-                    </div>
-                )}
 
                 {apiMessage && (
                     <div className="login-alert login-alert-error" role="alert">
