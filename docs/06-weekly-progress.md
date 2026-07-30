@@ -385,5 +385,6 @@ theo phạm vi đã thống nhất và không được ghi nhận là đã thự
   success từ phiên cũ và test xóa phiên cũ sau khi đăng ký tài khoản mới.
 - [x] Flyway validate 8 migration, schema version 8; Hibernate khởi tạo thành công.
 
-**Kết luận:** Source backend/frontend và kiểm thử tự động Ngày 7 đã hoàn thành.
-Kiểm thử localhost thủ công theo mục 16 là gate còn lại trước khi commit/push.
+**Kết luận:** Source backend/frontend, kiểm thử tự động và kiểm thử localhost thủ công
+theo mục 16 của Ngày 7 đã hoàn thành. Luồng Register → Login → `/users/me`, Swagger
+Authorize và các trường hợp lỗi xác thực đã được xác nhận hoạt động đúng.
