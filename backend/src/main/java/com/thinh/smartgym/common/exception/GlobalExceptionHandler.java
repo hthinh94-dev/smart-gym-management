@@ -12,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -31,7 +32,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException exception) {
         ErrorCode errorCode = exception.getErrorCode();
         return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(ErrorResponse.of(errorCode.getCode(), errorCode.getMessage(), exception.getDetails()));
+                .body(ErrorResponse.of(errorCode.getCode(), exception.getMessage(), exception.getDetails()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -85,6 +86,21 @@ public class GlobalExceptionHandler {
                 "field", "requestBody",
                 "constraint", "JSON request body không đúng định dạng."
         );
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(ErrorResponse.of(errorCode.getCode(), errorCode.getMessage(), details));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException exception
+    ) {
+        ErrorCode errorCode = ErrorCode.VALIDATION_ERROR;
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("field", exception.getName());
+        details.put("constraint", "Giá trị query parameter không hợp lệ.");
+        if (exception.getValue() != null) {
+            details.put("rejectedValue", exception.getValue());
+        }
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ErrorResponse.of(errorCode.getCode(), errorCode.getMessage(), details));
     }

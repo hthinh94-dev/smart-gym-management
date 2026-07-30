@@ -14,7 +14,11 @@ public class BusinessException extends RuntimeException {
     }
 
     public BusinessException(ErrorCode errorCode, Object details) {
-        super(errorCode.getMessage());
+        this(errorCode, errorCode.getMessage(), details);
+    }
+
+    public BusinessException(ErrorCode errorCode, String message, Object details) {
+        super(message == null || message.isBlank() ? errorCode.getMessage() : message);
         this.errorCode = errorCode;
         this.details = details == null ? Map.of() : details;
     }
