@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,7 +33,7 @@ class JwtServiceTest {
 
     private static final String MOCK_EMAIL = "thinh.member@smartgym.com";
     private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
-    private static final long EXPIRATION_TIME_MS = 86400000L; // 24 hours
+    private static final long EXPIRATION_TIME_MS = 3600000L;
 
     @BeforeEach
     void setUp() {
@@ -70,6 +71,28 @@ class JwtServiceTest {
 
         // Assert
         assertThat(extractedUsername).isEqualTo(MOCK_EMAIL);
+    }
+
+    @Test
+    @DisplayName("JWT chứa roles, iat và exp đúng contract")
+    void generateToken_ShouldContainRequiredClaims() {
+        when(userDetails.getUsername()).thenReturn(MOCK_EMAIL);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_MEMBER"))).when(userDetails).getAuthorities();
+
+        String token = jwtService.generateAccessToken(userDetails);
+
+        List<?> roles = jwtService.extractClaim(token, claims -> claims.get("roles", List.class));
+        assertThat(roles).hasSize(1);
+        assertThat(roles.getFirst()).isEqualTo("ROLE_MEMBER");
+        Date issuedAt = jwtService.extractClaim(token, claims -> claims.getIssuedAt());
+        Date expiration = jwtService.extractExpiration(token);
+        assertThat(expiration.getTime() - issuedAt.getTime()).isEqualTo(EXPIRATION_TIME_MS);
+    }
+
+    @Test
+    @DisplayName("expiresIn được tính từ cấu hình millisecond")
+    void getAccessTokenExpirationSeconds_ShouldMatchConfiguration() {
+        assertThat(jwtService.getAccessTokenExpirationSeconds()).isEqualTo(3600L);
     }
 
     @Test

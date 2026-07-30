@@ -1,5 +1,7 @@
 package com.thinh.smartgym.auth.controller;
 
+import com.thinh.smartgym.auth.dto.LoginRequest;
+import com.thinh.smartgym.auth.dto.LoginResponse;
 import com.thinh.smartgym.auth.dto.RegisterRequest;
 import com.thinh.smartgym.auth.dto.RegisterResponse;
 import com.thinh.smartgym.auth.service.AuthService;
@@ -65,5 +67,35 @@ public class AuthController {
         RegisterResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Đăng ký tài khoản thành công", response));
+    }
+
+    @PostMapping(
+            value = "/login",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @Operation(
+            summary = "Đăng nhập",
+            description = "Xác thực email/password và trả JWT access token theo cấu hình hiện hành."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "Đăng nhập thành công",
+                content = @Content(schema = @Schema(implementation = ApiResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "Email hoặc mật khẩu không chính xác",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "403",
+                description = "Tài khoản LOCKED hoặc DISABLED",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ApiResponse.success("Đăng nhập thành công", authService.login(request));
     }
 }

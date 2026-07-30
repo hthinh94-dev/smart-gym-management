@@ -1,6 +1,8 @@
 package com.thinh.smartgym.common.exception;
 
+import com.thinh.smartgym.auth.dto.RegisterRequest;
 import com.thinh.smartgym.common.response.ErrorResponse;
+import com.thinh.smartgym.security.AccountStatusAccessDeniedException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +39,10 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException exception
     ) {
         List<FieldError> fieldErrors = exception.getBindingResult().getFieldErrors();
-        boolean passwordOnly = !fieldErrors.isEmpty()
+        boolean registerPasswordOnly = exception.getBindingResult().getTarget() instanceof RegisterRequest
+                && !fieldErrors.isEmpty()
                 && fieldErrors.stream().allMatch(error -> PASSWORD_FIELDS.contains(error.getField()));
-        ErrorCode errorCode = passwordOnly ? ErrorCode.INVALID_PASSWORD : ErrorCode.VALIDATION_ERROR;
+        ErrorCode errorCode = registerPasswordOnly ? ErrorCode.INVALID_PASSWORD : ErrorCode.VALIDATION_ERROR;
 
         Map<String, String> violations = new LinkedHashMap<>();
         fieldErrors.forEach(error -> violations.putIfAbsent(
@@ -84,6 +87,17 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ErrorResponse.of(errorCode.getCode(), errorCode.getMessage(), details));
+    }
+
+    @ExceptionHandler(AccountStatusAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountStatusAccessDenied(
+            AccountStatusAccessDeniedException exception
+    ) {
+        return ResponseEntity.status(403).body(ErrorResponse.of(
+                exception.getErrorCode(),
+                exception.getMessage(),
+                Map.of("accountStatus", exception.getAccountStatus().name())
+        ));
     }
 
     @ExceptionHandler({AccessDeniedException.class, AuthenticationException.class})

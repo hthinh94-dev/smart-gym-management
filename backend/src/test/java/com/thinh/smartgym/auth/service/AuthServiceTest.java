@@ -12,6 +12,7 @@ import com.thinh.smartgym.common.enums.AccountStatus;
 import com.thinh.smartgym.common.enums.RoleName;
 import com.thinh.smartgym.common.exception.BusinessException;
 import com.thinh.smartgym.common.exception.ErrorCode;
+import com.thinh.smartgym.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -51,13 +53,26 @@ class AuthServiceTest {
     @Mock
     private UserRoleRepository userRoleRepository;
 
+    @Mock
+    private AuthenticationManager authenticationManager;
+
+    @Mock
+    private JwtService jwtService;
+
     private PasswordEncoder passwordEncoder;
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
         passwordEncoder = new BCryptPasswordEncoder(12);
-        authService = new AuthService(userRepository, roleRepository, userRoleRepository, passwordEncoder);
+        authService = new AuthService(
+                userRepository,
+                roleRepository,
+                userRoleRepository,
+                passwordEncoder,
+                authenticationManager,
+                jwtService
+        );
     }
 
     @Test

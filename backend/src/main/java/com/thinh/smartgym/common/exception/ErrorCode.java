@@ -14,6 +14,21 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST,
             "Mật khẩu không đáp ứng yêu cầu bảo mật."
     ),
+    ACCOUNT_LOCKED(
+            "ACC-004",
+            HttpStatus.FORBIDDEN,
+            "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ."
+    ),
+    ACCOUNT_DISABLED(
+            "ACC-006",
+            HttpStatus.FORBIDDEN,
+            "Tài khoản đã bị vô hiệu hóa vĩnh viễn. Vui lòng liên hệ ban quản trị."
+    ),
+    INVALID_CREDENTIALS(
+            "ACC-007",
+            HttpStatus.UNAUTHORIZED,
+            "Tên đăng nhập hoặc mật khẩu không chính xác."
+    ),
     VALIDATION_ERROR(
             "VAL-001",
             HttpStatus.BAD_REQUEST,

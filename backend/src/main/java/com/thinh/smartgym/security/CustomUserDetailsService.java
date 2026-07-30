@@ -2,16 +2,12 @@ package com.thinh.smartgym.security;
 
 import com.thinh.smartgym.auth.entity.User;
 import com.thinh.smartgym.auth.repository.UserRepository;
-import com.thinh.smartgym.common.enums.AccountStatus;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -40,20 +36,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmailWithRolesIgnoreCase(normalizedEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + normalizedEmail));
 
-        // Bước 3: Ánh xạ Vai trò (Roles) sang GrantedAuthority
-        List<GrantedAuthority> authorities = user.getUserRoles().stream()
-                .filter(userRole -> userRole.getRole() != null && userRole.getRole().getName() != null)
-                .map(userRole -> new SimpleGrantedAuthority(userRole.getRole().getName().name()))
-                .map(GrantedAuthority.class::cast)
-                .toList();
-
-        // Bước 4: Trả về UserDetails với trạng thái dùng cho luồng đăng nhập.
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-                .password(user.getPasswordHash())
-                .authorities(authorities)
-                .disabled(user.getAccountStatus() == AccountStatus.DISABLED)
-                .accountLocked(user.getAccountStatus() == AccountStatus.LOCKED)
-                .build();
+        // Bước 3: Dựng principal giàu thông tin cho Login, JWT và ownership guard.
+        return AuthenticatedUserPrincipal.from(user);
     }
 }

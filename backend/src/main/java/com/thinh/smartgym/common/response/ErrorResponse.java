@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -18,13 +20,15 @@ public class ErrorResponse {
 
     private String message;
 
-    private Object details;
+    @Builder.Default
+    private Object details = Map.of();
 
     public static ErrorResponse of(String errorCode, String message) {
         return ErrorResponse.builder()
                 .success(false)
                 .errorCode(errorCode)
                 .message(message)
+                .details(Map.of())
                 .build();
     }
 
@@ -33,7 +37,7 @@ public class ErrorResponse {
                 .success(false)
                 .errorCode(errorCode)
                 .message(message)
-                .details(details)
+                .details(details == null ? Map.of() : details)
                 .build();
     }
 }

@@ -1,8 +1,11 @@
 package com.thinh.smartgym.security;
 
+import com.thinh.smartgym.auth.entity.Role;
 import com.thinh.smartgym.auth.entity.User;
+import com.thinh.smartgym.auth.entity.UserRole;
 import com.thinh.smartgym.auth.repository.UserRepository;
 import com.thinh.smartgym.common.enums.AccountStatus;
+import com.thinh.smartgym.common.enums.RoleName;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Optional;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -38,10 +42,16 @@ class CustomUserDetailsServiceTest {
         when(userRepository.findByEmailWithRolesIgnoreCase(EMAIL))
                 .thenReturn(Optional.of(userWithStatus(AccountStatus.ACTIVE)));
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername("  MEMBER@SMARTGYM.COM  ");
+        AuthenticatedUserPrincipal userDetails = (AuthenticatedUserPrincipal) userDetailsService
+                .loadUserByUsername("  MEMBER@SMARTGYM.COM  ");
 
         assertThat(userDetails.isEnabled()).isTrue();
         assertThat(userDetails.isAccountNonLocked()).isTrue();
+        assertThat(userDetails.getId()).isEqualTo(101L);
+        assertThat(userDetails.getFullName()).isEqualTo("Gym Member");
+        assertThat(userDetails.getEmail()).isEqualTo(EMAIL);
+        assertThat(userDetails.getPrimaryRole()).isEqualTo(RoleName.ROLE_MEMBER);
+        assertThat(userDetails.getAuthorities()).extracting("authority").containsExactly("ROLE_MEMBER");
         verify(userRepository).findByEmailWithRolesIgnoreCase(EMAIL);
     }
 
@@ -70,6 +80,12 @@ class CustomUserDetailsServiceTest {
     }
 
     private User userWithStatus(AccountStatus status) {
-        return new User("Gym Member", EMAIL, "password-hash", status);
+        User user = new User("Gym Member", EMAIL, "password-hash", status);
+        user.setId(101L);
+        user.setCreatedAt(Instant.parse("2026-07-29T08:00:00Z"));
+        Role role = new Role(RoleName.ROLE_MEMBER);
+        role.setId(2L);
+        user.attachUserRole(new UserRole(user, role));
+        return user;
     }
 }

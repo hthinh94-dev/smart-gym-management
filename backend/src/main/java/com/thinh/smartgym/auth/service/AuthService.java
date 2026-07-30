@@ -1,5 +1,8 @@
 package com.thinh.smartgym.auth.service;
 
+import com.thinh.smartgym.auth.dto.LoginRequest;
+import com.thinh.smartgym.auth.dto.LoginResponse;
+import com.thinh.smartgym.auth.dto.LoginUserResponse;
 import com.thinh.smartgym.auth.dto.RegisterRequest;
 import com.thinh.smartgym.auth.dto.RegisterResponse;
 import com.thinh.smartgym.auth.entity.Role;
@@ -12,12 +15,23 @@ import com.thinh.smartgym.common.enums.AccountStatus;
 import com.thinh.smartgym.common.enums.RoleName;
 import com.thinh.smartgym.common.exception.BusinessException;
 import com.thinh.smartgym.common.exception.ErrorCode;
+import com.thinh.smartgym.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -38,6 +52,8 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
@@ -70,6 +86,43 @@ public class AuthService {
             }
             throw new BusinessException(ErrorCode.INTERNAL_CONFIGURATION_ERROR);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public LoginResponse login(LoginRequest request) {
+        String normalizedEmail = normalizeLoginEmail(request.getEmail());
+        Authentication authentication;
+
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(normalizedEmail, request.getPassword())
+            );
+        } catch (LockedException exception) {
+            throw accountStatusError(ErrorCode.ACCOUNT_LOCKED, AccountStatus.LOCKED);
+        } catch (DisabledException exception) {
+            throw accountStatusError(ErrorCode.ACCOUNT_DISABLED, AccountStatus.DISABLED);
+        } catch (BadCredentialsException | UsernameNotFoundException exception) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        } catch (AuthenticationException exception) {
+            throw new BusinessException(ErrorCode.INTERNAL_CONFIGURATION_ERROR);
+        }
+
+        User user = userRepository.findByEmailWithRolesIgnoreCase(normalizedEmail)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
+        ensureActive(user.getAccountStatus());
+
+        RoleName primaryRole = resolvePrimaryRole(user);
+        if (!(authentication.getPrincipal() instanceof UserDetails userDetails)) {
+            throw new BusinessException(ErrorCode.INTERNAL_CONFIGURATION_ERROR);
+        }
+        String accessToken = jwtService.generateAccessToken(userDetails);
+
+        return new LoginResponse(
+                accessToken,
+                "Bearer",
+                jwtService.getAccessTokenExpirationSeconds(),
+                new LoginUserResponse(user.getId(), user.getFullName(), user.getEmail(), primaryRole)
+        );
     }
 
     private String normalizeAndValidateFullName(String fullName) {
@@ -154,5 +207,31 @@ public class AuthService {
                 user.getAccountStatus(),
                 user.getCreatedAt()
         );
+    }
+
+    private String normalizeLoginEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private void ensureActive(AccountStatus accountStatus) {
+        if (accountStatus == AccountStatus.LOCKED) {
+            throw accountStatusError(ErrorCode.ACCOUNT_LOCKED, AccountStatus.LOCKED);
+        }
+        if (accountStatus == AccountStatus.DISABLED) {
+            throw accountStatusError(ErrorCode.ACCOUNT_DISABLED, AccountStatus.DISABLED);
+        }
+    }
+
+    private BusinessException accountStatusError(ErrorCode errorCode, AccountStatus accountStatus) {
+        return new BusinessException(errorCode, Map.of("accountStatus", accountStatus.name()));
+    }
+
+    private RoleName resolvePrimaryRole(User user) {
+        return user.getUserRoles().stream()
+                .filter(userRole -> userRole.getRole() != null && userRole.getRole().getName() != null)
+                .map(userRole -> userRole.getRole().getName())
+                .distinct()
+                .min(Comparator.comparingInt(RoleName::ordinal))
+                .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_CONFIGURATION_ERROR));
     }
 }

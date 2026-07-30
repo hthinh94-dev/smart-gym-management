@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Service quản lý và thao tác với JWT Token cho hệ thống Smart Gym Management.
@@ -86,6 +87,10 @@ public class JwtService {
                 .expiration(new Date(now + jwtExpiration))
                 .signWith(getSignInKey())
                 .compact();
+    }
+
+    public long getAccessTokenExpirationSeconds() {
+        return TimeUnit.MILLISECONDS.toSeconds(jwtExpiration);
     }
 
     /**
