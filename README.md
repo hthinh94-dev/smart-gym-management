@@ -7,8 +7,8 @@ Backend kiểm duyệt.
 
 ## Trạng thái hiện tại
 
-Dự án đã nghiệm thu **Ngày 5 - Security/JWT Foundation** và hoàn thành phạm vi
-local của **Ngày 6 - Register API và React Register flow**:
+Dự án đã nghiệm thu **Ngày 5 - Security/JWT Foundation**, hoàn thành phạm vi
+local của **Ngày 6 - Register** và triển khai source **Ngày 7 - Login/Current User**:
 
 - Backend foundation bằng Java 21 và Spring Boot 3.4.3.
 - 8 Flyway migration tạo schema MVP trên MySQL 8.
@@ -17,19 +17,25 @@ local của **Ngày 6 - Register API và React Register flow**:
 - `AccountStatusGuard` phân biệt `ACTIVE`, `LOCKED`, `DISABLED`.
 - Response lỗi Security chuẩn hóa bằng `ACC-004`, `ACC-005`, `ACC-006` và
   `AUTH-002`.
-- Regression backend có 61 test pass, gồm toàn bộ 26 test Ngày 5 và 35 test
-  Register/CORS của Ngày 6.
+- Regression backend có 83 test pass, gồm toàn bộ 61 test đến hết Ngày 6.
 - `POST /api/v1/auth/register` đã có DTO, validation, transaction service,
   `ROLE_MEMBER`, `ACTIVE`, BCrypt, error handler và OpenAPI.
-- Frontend Register dùng React Router, React Query, React Hook Form, Zod và Axios;
-  6 test Vitest pass và production build thành công.
-- Postman collection bao phủ success, duplicate email, password, confirm password,
-  invalid email và chống client tự gán role/account status.
+- `POST /api/v1/auth/login` dùng `AuthenticationManager`, chuẩn hóa email, giữ
+  nguyên password, cấp JWT có `sub`, `roles`, `iat`, `exp` và `expiresIn` theo cấu hình.
+- `GET /api/v1/users/me` lấy `AuthenticatedUserPrincipal` từ `SecurityContext` và
+  dùng `AccountStatusGuard` để chặn token cũ bằng `ACC-004`/`ACC-006`.
+- Swagger/OpenAPI khai báo `bearerAuth` dạng HTTP Bearer JWT để kiểm thử endpoint
+  bảo vệ bằng nút `Authorize` mà không phải tự ghép header.
+- Frontend Register/Login dùng React Router, React Query, React Hook Form, Zod,
+  Auth Context và Axios; JWT được lưu trong `sessionStorage`, Bearer interceptor
+  tự gắn token và `/users/me` xác nhận phiên trước khi cập nhật auth state.
+- Frontend có 22 test Vitest pass và production build thành công.
+- Postman collection bao phủ Register, Login, `/users/me`, `ACC-001`, `ACC-002`,
+  `ACC-005`, `ACC-007`, validation và chống client tự gán role/account status.
 - CORS đọc danh sách origin cụ thể từ environment và từ chối wildcard.
 
-Login API, Profile, Membership và AI API chưa được triển khai. `LoginPage` hiện
-chỉ là màn hình đích sau Register; kết nối Login API thuộc Ngày 7. Deploy staging
-chưa nằm trong phạm vi nghiệm thu local hiện tại. Thứ tự tiếp theo được quản lý tại
+Profile, Membership và AI API chưa được triển khai. Deploy staging chưa nằm trong
+phạm vi nghiệm thu local hiện tại. Thứ tự tiếp theo được quản lý tại
 [Implementation Plan](./docs/14-implementation-plan.md).
 
 ## Công nghệ
@@ -139,23 +145,22 @@ cd backend
 .\mvnw.cmd clean test
 ```
 
-Regression backend sau Ngày 6:
+Regression backend sau phần Login/Current User Ngày 7:
 
 ```text
-Tests run: 61, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 83, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Chạy riêng test Ngày 6 trước khi chạy regression toàn bộ:
+Chạy riêng test Login/Current User trước khi chạy regression toàn bộ:
 
 ```powershell
-.\mvnw.cmd "-Dtest=AuthServiceTest,AuthControllerTest,WebCorsConfigurationTest,AuthRegistrationIntegrationTest" test
+.\mvnw.cmd "-Dtest=AuthLoginServiceTest,AuthLoginControllerTest,UserControllerTest,AuthLoginIntegrationTest,JwtServiceTest,CustomUserDetailsServiceTest" test
 .\mvnw.cmd clean test
 ```
 
-Snapshot có 26 test invocation nền Ngày 5 và 35 test invocation cho Register/CORS,
-tổng 61 test. Flyway validate đủ 8 migration và Hibernate khởi tạo
-`EntityManagerFactory` thành công.
+Toàn bộ 61 test đến hết Ngày 6 tiếp tục pass. Flyway validate đủ 8 migration và
+Hibernate khởi tạo `EntityManagerFactory` thành công.
 
 Frontend:
 
@@ -166,7 +171,7 @@ npm run test -- --run
 npm run build
 ```
 
-Kết quả xác nhận: 6 test Vitest pass và Vite production build thành công.
+Kết quả xác nhận: 22 test Vitest pass và Vite production build thành công.
 
 ## Chạy Backend
 
@@ -179,6 +184,8 @@ Các endpoint nền:
 
 - Health check: `http://localhost:8080/actuator/health`
 - Register: `POST http://localhost:8080/api/v1/auth/register`
+- Login: `POST http://localhost:8080/api/v1/auth/login`
+- Current user: `GET http://localhost:8080/api/v1/users/me`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
@@ -190,7 +197,7 @@ npm run dev
 ```
 
 - Register: `http://localhost:5173/register`
-- Login shell: `http://localhost:5173/login`
+- Login: `http://localhost:5173/login`
 - API base URL local: `http://localhost:8080/api/v1`
 
 ## Tài liệu chính

@@ -170,7 +170,7 @@ exception parser hoặc tên class Java.
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGdtYWlsLmNvbSIsInJvbGVzIjpbIlJPTEVfTUVNQkVSIl0sImlhdCI6MTc1MjU2MzIwMCwiZXhwIjoxNzUyNjQ5NjAwfQ.signature",
     "tokenType": "Bearer",
-    "expiresIn": 86400,
+    "expiresIn": 3600,
     "user": {
       "id": 101,
       "fullName": "Nguyễn Văn An",

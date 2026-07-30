@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "97c29ec9-3170-4e38-9395-b1653996e1e8",
-    "name": "Smart Gym - Day 6 Register",
-    "description": "Local verification for UC-01 member registration. Run requests in collection order.",
+    "name": "Smart Gym - Day 7 Register and Login",
+    "description": "Local verification for UC-01 registration and UC-02 login/current user. Run requests in collection order.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -16,6 +16,10 @@
     },
     {
       "key": "duplicateEmail",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
       "value": ""
     }
   ],
@@ -236,6 +240,162 @@
           "raw": "{\n  \"fullName\": \"Privilege Attempt\",\n  \"email\": \"{{privilegeEmail}}\",\n  \"password\": \"SecurePass1\",\n  \"confirmPassword\": \"SecurePass1\",\n  \"role\": \"ROLE_ADMIN\",\n  \"accountStatus\": \"DISABLED\"\n}"
         },
         "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Login - Success 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 with configured JWT contract', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.success).to.eql(true);",
+              "  pm.expect(body.data.tokenType).to.eql('Bearer');",
+              "  pm.expect(body.data.expiresIn).to.be.a('number').and.above(0);",
+              "  pm.expect(body.data.user.email).to.eql(pm.collectionVariables.get('registerEmail'));",
+              "  pm.expect(body.data.user.role).to.eql('ROLE_MEMBER');",
+              "  pm.expect(body.data).not.to.have.any.keys('password', 'passwordHash');",
+              "  pm.collectionVariables.set('accessToken', body.data.accessToken);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"  {{registerEmail}}  \",\n  \"password\": \"SecurePass1\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Login - Wrong Password ACC-007",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401 ACC-007 without token', () => {",
+              "  pm.response.to.have.status(401);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.success).to.eql(false);",
+              "  pm.expect(body.errorCode).to.eql('ACC-007');",
+              "  pm.expect(body.details).to.be.an('object');",
+              "  pm.expect(body).not.to.have.any.keys('accessToken', 'password', 'passwordHash');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{registerEmail}}\",\n  \"password\": \"WrongPassword1\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Current User - Success 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 returns authenticated principal', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.success).to.eql(true);",
+              "  pm.expect(body.data.email).to.eql(pm.collectionVariables.get('registerEmail'));",
+              "  pm.expect(body.data.role).to.eql('ROLE_MEMBER');",
+              "  pm.expect(body.data.accountStatus).to.eql('ACTIVE');",
+              "  pm.expect(body.data).not.to.have.any.keys('password', 'passwordHash');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/users/me"
+      }
+    },
+    {
+      "name": "Current User - Invalid Token ACC-005",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401 ACC-005 for malformed JWT', () => {",
+              "  pm.response.to.have.status(401);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.success).to.eql(false);",
+              "  pm.expect(body.errorCode).to.eql('ACC-005');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer malformed.jwt.token"
+          }
+        ],
+        "url": "{{baseUrl}}/users/me"
+      }
+    },
+    {
+      "name": "Current User - Missing Token ACC-005",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401 ACC-005 without Authorization', () => {",
+              "  pm.response.to.have.status(401);",
+              "  pm.expect(pm.response.json().errorCode).to.eql('ACC-005');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/users/me"
       }
     }
   ]

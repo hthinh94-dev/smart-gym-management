@@ -338,3 +338,52 @@ luồng bắt buộc hiện tại chỉ gồm Admin và Member.
 
 **Kết luận:** Ngày 6 đã hoàn thành trong phạm vi local. Deploy staging được hoãn
 theo phạm vi đã thống nhất và không được ghi nhận là đã thực hiện.
+
+---
+
+## Ngày 7 — Login và Current User API (29/07/2026)
+
+### Đã triển khai source
+
+- [x] Tạo `LoginRequest`, `LoginResponse`, `LoginUserResponse` và
+  `CurrentUserResponse`; email được trim/lowercase, password đăng nhập không trim
+  và không áp lại chính sách mật khẩu của Register.
+- [x] Bổ sung `ACC-007` cho sai email/password, giữ `ACC-004` cho `LOCKED` và
+  `ACC-006` cho `DISABLED`; Login Service tự ánh xạ lỗi, không dùng JWT entry point.
+- [x] Tạo `AuthService.login()` qua `AuthenticationManager`; chỉ cấp JWT sau khi
+  xác thực thành công và kiểm tra lại trạng thái tài khoản.
+- [x] JWT tiếp tục chứa `sub`, `roles`, `iat`, `exp`; `expiresIn` được đổi từ
+  millisecond cấu hình sang giây, mặc định là `3600`, không hardcode trong response.
+- [x] Tạo `AuthenticatedUserPrincipal` chứa User ID, họ tên, email, role,
+  authorities, account status và created time để các module sau lấy ownership từ
+  `SecurityContext`, không nhận User ID tùy ý từ client.
+- [x] Tạo `GET /api/v1/users/me`; endpoint gọi `AccountStatusGuard` theo User ID,
+  nên token cũ của tài khoản `LOCKED`/`DISABLED` trả đúng `ACC-004`/`ACC-006`.
+- [x] Thay Login mock bằng Axios API thật; thêm Auth Context, `sessionStorage`,
+  Bearer request interceptor và response interceptor chỉ xóa phiên với `ACC-005`.
+- [x] Sau Login, frontend gọi `/users/me` để xác nhận principal; nếu bước xác nhận
+  thất bại thì rollback token vừa lưu và giữ trạng thái anonymous.
+- [x] LoginPage dùng React Hook Form, Zod và TanStack Query; có loading, hiện/ẩn
+  password, lỗi `ACC-004`/`ACC-006`/`ACC-007`, lỗi mạng và trạng thái thành công.
+- [x] Cập nhật API Draft: ví dụ `expiresIn` là `3600`, khớp cấu hình mặc định
+  `JWT_ACCESS_TOKEN_EXPIRATION_MS=3600000`.
+- [x] Khai báo OpenAPI security scheme `bearerAuth`; Swagger UI có nút `Authorize`
+  và tự gắn `Authorization: Bearer <token>` cho `/api/v1/users/me`.
+- [x] Cập nhật Postman thành chuỗi UC-01/UC-02: Register, Login, `/users/me`,
+  sai password, token sai và token thiếu.
+
+### Kiểm thử và minh chứng
+
+- [x] Unit/WebMvc test bao phủ login success, normalize email, giữ nguyên password,
+  sai email/password cùng `ACC-007`, trạng thái tài khoản và không cấp token khi lỗi.
+- [x] JWT test xác nhận claims bắt buộc và `expiresIn` khớp cấu hình.
+- [x] Integration test qua full Spring Security chain và MySQL bao phủ login,
+  `/users/me`, token thiếu/sai/hết hạn và token cũ sau khi khóa/vô hiệu hóa tài khoản.
+- [x] Toàn bộ 61 test đến hết Ngày 6 tiếp tục pass; regression hiện có 83 test,
+  0 failure, 0 error, 0 skipped.
+- [x] Frontend có 22 test pass; production build thành công, gồm test chống hiển thị
+  success từ phiên cũ và test xóa phiên cũ sau khi đăng ký tài khoản mới.
+- [x] Flyway validate 8 migration, schema version 8; Hibernate khởi tạo thành công.
+
+**Kết luận:** Source backend/frontend và kiểm thử tự động Ngày 7 đã hoàn thành.
+Kiểm thử localhost thủ công theo mục 16 là gate còn lại trước khi commit/push.
