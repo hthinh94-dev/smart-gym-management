@@ -29,7 +29,7 @@ Nguồn đối chiếu chính:
 | JPA | Hibernate chỉ `validate`, `open-in-view=false`, auditing đã bật. |
 | Auth persistence | Đã có `User`, `Role`, `UserRole`, `UserRoleId`, repository Auth và seed `ROLE_ADMIN`, `ROLE_MEMBER`, `ROLE_PT`. |
 | Bảo mật | JWT stateless; `JwtAuthenticationFilter` xác thực chữ ký/hạn dùng và nạp identity/roles nhưng không quyết định `accountStatus`; trạng thái tài khoản được kiểm tra bằng `AccountStatusGuard`/Method Security. |
-| Frontend | Register React flow đã kết nối API và pass test/build; Login, auth state và route guard tiếp tục hoàn thiện trong M1. |
+| Frontend | Register, Login, auth state, Protected Route và phân layout Admin/Member đã kết nối API thật, pass test/build; M1 tiếp tục hardening và hoàn thiện auth shell. |
 | Phạm vi | MVP chỉ yêu cầu luồng Admin và Member; PT, payment thật, refresh token, mobile app, IoT, chat realtime là ngoài phạm vi giai đoạn này. |
 
 ## 3. Quy tắc triển khai xuyên suốt
@@ -68,9 +68,9 @@ Nguồn đối chiếu chính:
 | 27/07 - Buổi 1 | Security foundation | Hoàn thiện `SecurityFilterChain`, `JwtService`, `JwtAuthenticationFilter`, `CustomUserDetailsService`, `AccountStatusGuard`, `AuthenticationEntryPoint`, `AccessDeniedHandler`; bổ sung SpringDoc nếu chưa có | Chưa bắt buộc | Context load, JWT valid/expired/invalid signature, request thiếu token | Endpoint bảo mật phân biệt được `401`, `403`, `AUTH-002`, `ACC-005`, `ACC-004`, `ACC-006` |
 | 28/07 - Buổi 2 - Hoàn thành local | Register | Tạo DTO/controller/service cho `POST /api/v1/auth/register`; normalize email; validate password/confirmPassword; BCrypt; gán `ROLE_MEMBER`, `ACTIVE` | Trang Register, client validation, hiển thị lỗi API | 61 backend test và 6 frontend test pass; production build thành công | Register chạy đúng API Draft, không log password/confirmPassword |
 | 29/07 - Buổi 3 - Hoàn thành local | Login, current user và RBAC | Đã tạo `POST /api/v1/auth/login`, `GET /api/v1/users/me`; giữ role matcher; bắt `ACC-007`, `ACC-004`, `ACC-006` | Login API thật, Auth Context, `sessionStorage`, Axios Bearer interceptor | 83 backend test và 22 frontend test pass; build và kiểm thử localhost thủ công thành công | Người dùng đăng nhập nhận JWT và gọi được `/users/me` |
-| 30/07 - Buổi 4 | Admin account status | Tạo `GET /api/v1/admin/users`, `PATCH /api/v1/admin/users/{id}/lock`, `PATCH /api/v1/admin/users/{id}/unlock`; không khóa vì hết hạn gói | Protected Route, phân layout Admin/Member cơ bản | Test lock/unlock, token cũ bị Guard chặn ở request kế tiếp | Admin khóa/mở khóa được, subscription không bị thay đổi |
+| 30/07 - Buổi 4 - Hoàn thành local | Admin account status | Đã tạo `GET /api/v1/admin/users`, `PATCH /api/v1/admin/users/{id}/lock`, `PATCH /api/v1/admin/users/{id}/unlock`; không khóa vì hết hạn gói | Protected Route, layout Admin/Member và User Management | 110 backend test, 33 frontend test; lock/unlock, token cũ và bảo toàn subscription đã kiểm tra local | Admin khóa/mở khóa được, subscription không bị thay đổi |
 | 31/07 - Buổi 5 | React skeleton và OpenAPI gate | Rà lại OpenAPI annotations, response/error format, README auth API | Navbar, auth state, route guard, Home/Login/Register/Admin shell | Full flow Register -> Login -> `/users/me` -> Admin denied/allowed | Demo M1 trên local, cập nhật README/docs |
-| 01/08 - 02/08 | Review M1 | Sửa lỗi nhỏ, chuẩn hóa package theo File 13 | Chỉnh UI responsive tối thiểu | Chạy `mvn test`, test thủ công Swagger/Postman | Tag `v0.1.0-m1-auth` |
+| 01/08 - 02/08 | Review M1 | Sửa lỗi nhỏ, chuẩn hóa package theo File 13; xử lý cảnh báo Mockito Java Agent và rà cảnh báo cấu hình `AuthenticationProvider` | Chỉnh UI responsive tối thiểu | Chạy `mvn test`, test thủ công Swagger/Postman; xác nhận không còn cảnh báo hardening M1 | Tag `v0.1.0-m1-auth` |
 
 ### M2 - Member Profile, Calculator và Body Progress nền
 

@@ -459,12 +459,16 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   3. Hệ thống kiểm tra xem tài khoản có đang ở đúng trạng thái hợp lệ để thực thi hành động hay không.
   4. Admin nhập lý do thực hiện khóa (nếu khóa tài khoản).
   5. Hệ thống cập nhật trạng thái `accountStatus` trong DB.
-  6. Do JWT có kiến trúc stateless, hệ thống không thu hồi hoặc vô hiệu hóa trực tiếp JWT đã phát hành. `JwtAuthenticationFilter` xác thực chữ ký/thời hạn và nạp identity/roles nhưng không đánh giá `accountStatus`; ở request yêu cầu xác thực tiếp theo, `AccountStatusGuard` hoặc Method Security truy vấn DB/Cache theo User ID trong Security Context và trả HTTP 403 với `ACC-004` nếu tài khoản là `LOCKED`. **Lưu ý:** Gói tập subscription hiện tại vẫn được bảo lưu ngày hết hạn cũ và không bị xóa hoặc thay đổi.
+  6. Do JWT có kiến trúc stateless, hệ thống không thu hồi hoặc vô hiệu hóa trực tiếp JWT đã phát hành. `JwtAuthenticationFilter` xác thực chữ ký/thời hạn và nạp identity/roles nhưng không đánh giá `accountStatus`; ở request yêu cầu xác thực tiếp theo, `AccountStatusGuard` truy vấn DB theo User ID trong Security Context và trả HTTP 403 với `ACC-004` nếu tài khoản là `LOCKED`. **Lưu ý:** Gói tập subscription hiện tại vẫn được bảo lưu ngày hết hạn cũ và không bị xóa hoặc thay đổi.
   7. Hệ thống hiển thị thông báo thay đổi trạng thái tài khoản thành công.
 - **Luồng ngoại lệ (Alternative / Exception Flows):**
   - **[Ngoại lệ 10.a] - Khóa tài khoản do hết hạn gói tập:**
     - Hệ thống phát hiện lý do khóa là "hết hạn gói tập".
     - Hệ thống từ chối thực hiện, hiển thị cảnh báo yêu cầu Admin chỉ khóa tài khoản khi có vi phạm nội quy, hết hạn gói tập chỉ tự động ngưng quyền truy cập tính năng cao cấp của gói thay vì khóa đăng nhập (áp dụng BR-16).
+  - **[Ngoại lệ 10.b] - Target hoặc trạng thái không hợp lệ:**
+    - Admin không được tự khóa, khóa Admin khác, khóa lại tài khoản `LOCKED`, khóa tài khoản `DISABLED` hoặc mở khóa tài khoản không ở trạng thái `LOCKED`.
+  - **[Ngoại lệ 10.c] - Lý do khóa không hợp lệ:**
+    - Lý do sau khi trim phải có từ 10 đến 500 ký tự; vi phạm trả `VAL-001` và không thay đổi trạng thái tài khoản.
 - **Business Rules liên quan:** BR-03, BR-16, BR-21.
 - **Acceptance Criteria (BDD):**
   - **AC-UC_10-01 (Chặn truy cập đối với tài khoản bị khóa):**
@@ -478,4 +482,4 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   - **AC-UC_10-03 (Mở khóa tài khoản thành công):**
     - **Given** Admin đã xác thực và tài khoản Member đang có `accountStatus = LOCKED`.
     - **When** Admin thực hiện thao tác mở khóa tài khoản,
-    - **Then** Backend chuyển `accountStatus` thành `ACTIVE`, xóa hiệu lực của trạng thái khóa trong DB/Cache và trả HTTP 200 OK; Member có thể đăng nhập lại bằng thông tin hợp lệ.
+    - **Then** Backend chuyển `accountStatus` thành `ACTIVE` trong DB và trả HTTP 200 OK; Member có thể đăng nhập lại bằng thông tin hợp lệ.

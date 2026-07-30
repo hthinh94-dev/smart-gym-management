@@ -2131,11 +2131,11 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
 - `Authorization: Bearer <token>` (Role: ADMIN)
 
 **Query Parameters:**
-- `page` (Integer, mặc định 0)
-- `size` (Integer, mặc định 20)
+- `page` (Integer, mặc định 0, tối thiểu 0)
+- `size` (Integer, mặc định 20, từ 1 đến 100)
 - `role` (Enum, tùy chọn): ROLE_MEMBER, ROLE_PT, ROLE_ADMIN.
 - `status` (Enum, tùy chọn): ACTIVE, LOCKED, DISABLED.
-- `search` (String, tùy chọn): Từ khóa tìm theo tên hoặc email.
+- `search` (String, tùy chọn, tối đa 150 ký tự): Từ khóa tìm theo tên hoặc email.
 
 **Response thành công (HTTP 200 OK):**
 ```json
@@ -2174,13 +2174,17 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
 ---
 
 ### PATCH /api/v1/admin/users/{id}/lock
-**Mô tả:** Admin khóa tài khoản người dùng. Gói tập subscription hiện tại không bị thay đổi. Do JWT stateless, token đã phát hành không bị thu hồi trực tiếp tại `JwtAuthenticationFilter`; Filter xác thực chữ ký/hạn dùng và nạp identity/roles nhưng không đánh giá `accountStatus`. Sau transaction lock, hệ thống cập nhật/evict cache trạng thái tài khoản. Trên request xác thực tiếp theo, `AccountStatusGuard` hoặc Method Security truy vấn DB/Cache theo User ID và trả HTTP 403 với `ACC-004` nếu trạng thái là `LOCKED`.
+**Mô tả:** Admin khóa tài khoản người dùng. Gói tập subscription hiện tại không bị thay đổi. Do JWT stateless, token đã phát hành không bị thu hồi trực tiếp tại `JwtAuthenticationFilter`; Filter xác thực chữ ký/hạn dùng và nạp identity/roles nhưng không đánh giá `accountStatus`. Trên request xác thực tiếp theo, `AccountStatusGuard` truy vấn DB theo User ID và trả HTTP 403 với `ACC-004` nếu trạng thái là `LOCKED`.
 
 **Headers:**
 - `Authorization: Bearer <token>` (Role: ADMIN)
 - `Content-Type: application/json`
 
 **Path Parameters:** `id` - ID của người dùng cần khóa.
+
+**Ràng buộc:** Chỉ khóa tài khoản `ACTIVE`; Admin không được tự khóa hoặc khóa
+Admin khác. Tài khoản `LOCKED`/`DISABLED`, lý do ngoài 10-500 ký tự và lý do hết
+hạn gói tập đều bị từ chối bằng `VAL-001`.
 
 **Request Body:**
 ```json
@@ -2222,12 +2226,15 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
 ---
 
 ### PATCH /api/v1/admin/users/{id}/unlock
-**Mô tả:** Admin mở khóa tài khoản người dùng. Tài khoản được trả về trạng thái `ACTIVE`; sau transaction hệ thống cập nhật/evict cache trạng thái để người dùng có thể đăng nhập và truy cập lại ngay.
+**Mô tả:** Admin mở khóa tài khoản người dùng. Tài khoản được trả về trạng thái `ACTIVE` trong DB để người dùng có thể đăng nhập và truy cập lại ngay.
 
 **Headers:**
 - `Authorization: Bearer <token>` (Role: ADMIN)
 
 **Path Parameters:** `id` - ID của người dùng cần mở khóa.
+
+**Ràng buộc:** Chỉ tài khoản `LOCKED` được mở khóa; endpoint này không chuyển
+`DISABLED` sang `ACTIVE` và không thay đổi subscription.
 
 **Response thành công (HTTP 200 OK):**
 ```json

@@ -7,8 +7,8 @@ Backend kiểm duyệt.
 
 ## Trạng thái hiện tại
 
-Dự án đã nghiệm thu **Ngày 5 - Security/JWT Foundation**, hoàn thành phạm vi
-local của **Ngày 6 - Register** và triển khai source **Ngày 7 - Login/Current User**:
+Dự án đã nghiệm thu local từ **Ngày 5 - Security/JWT Foundation** đến
+**Ngày 8 - Admin Account Status**:
 
 - Backend foundation bằng Java 21 và Spring Boot 3.4.3.
 - 8 Flyway migration tạo schema MVP trên MySQL 8.
@@ -17,21 +17,24 @@ local của **Ngày 6 - Register** và triển khai source **Ngày 7 - Login/Cur
 - `AccountStatusGuard` phân biệt `ACTIVE`, `LOCKED`, `DISABLED`.
 - Response lỗi Security chuẩn hóa bằng `ACC-004`, `ACC-005`, `ACC-006` và
   `AUTH-002`.
-- Regression backend có 83 test pass, gồm toàn bộ 61 test đến hết Ngày 6.
+- Regression backend có 110 test pass, gồm toàn bộ 83 test đến hết Ngày 7.
 - `POST /api/v1/auth/register` đã có DTO, validation, transaction service,
   `ROLE_MEMBER`, `ACTIVE`, BCrypt, error handler và OpenAPI.
 - `POST /api/v1/auth/login` dùng `AuthenticationManager`, chuẩn hóa email, giữ
   nguyên password, cấp JWT có `sub`, `roles`, `iat`, `exp` và `expiresIn` theo cấu hình.
 - `GET /api/v1/users/me` lấy `AuthenticatedUserPrincipal` từ `SecurityContext` và
   dùng `AccountStatusGuard` để chặn token cũ bằng `ACC-004`/`ACC-006`.
+- Admin API hỗ trợ danh sách tài khoản có search/filter/pagination và thao tác
+  lock/unlock; không cho tự khóa Admin, khóa Admin khác hoặc khóa vì hết hạn gói.
 - Swagger/OpenAPI khai báo `bearerAuth` dạng HTTP Bearer JWT để kiểm thử endpoint
   bảo vệ bằng nút `Authorize` mà không phải tự ghép header.
 - Frontend Register/Login dùng React Router, React Query, React Hook Form, Zod,
   Auth Context và Axios; JWT được lưu trong `sessionStorage`, Bearer interceptor
   tự gắn token và `/users/me` xác nhận phiên trước khi cập nhật auth state.
-- Frontend có 22 test Vitest pass và production build thành công.
+- Frontend có Protected Route, layout Admin/Member và trang quản lý tài khoản;
+  33 test Vitest pass và production build thành công.
 - Postman collection bao phủ Register, Login, `/users/me`, `ACC-001`, `ACC-002`,
-  `ACC-005`, `ACC-007`, validation và chống client tự gán role/account status.
+  `ACC-004`, `ACC-005`, `ACC-007`, `AUTH-002` và luồng Admin lock/unlock.
 - CORS đọc danh sách origin cụ thể từ environment và từ chối wildcard.
 
 Profile, Membership và AI API chưa được triển khai. Deploy staging chưa nằm trong
@@ -80,8 +83,8 @@ smart-gym-management/
 |-- diagrams/
 |   `-- erd-gym-management.mmd
 |-- docs/                    # Đặc tả, API, dữ liệu, kiến trúc và tiến độ
-|-- frontend/                # React Register/Login shell và test frontend
-|-- postman/                 # Collection kiểm thử UC-01 Register
+|-- frontend/                # React Auth, Protected Route và Admin User Management
+|-- postman/                 # Collection kiểm thử UC-01, UC-02 và UC-10
 |-- .env.example             # Mẫu biến môi trường cấp repository
 `-- README.md
 ```
@@ -96,7 +99,7 @@ Phân loại file:
   và truy vết bắt buộc của đồ án.
 - Hai file `.env.example` được giữ để hỗ trợ chạy từ project root hoặc thư mục
   `backend`; nội dung phải luôn đồng bộ.
-- `frontend/` là workspace React của luồng Register; `postman/` chứa collection
+- `frontend/` là workspace React cho Auth và Admin shell; `postman/` chứa collection
   kiểm thử API có thể chạy tuần tự trên local.
 - `.env`, `backend/target/`, log và cấu hình IDE là file cục bộ hoặc sinh tự động,
   không được commit.
@@ -145,21 +148,21 @@ cd backend
 .\mvnw.cmd clean test
 ```
 
-Regression backend sau phần Login/Current User Ngày 7:
+Regression backend sau Admin Account Status Ngày 8:
 
 ```text
-Tests run: 83, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 110, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Chạy riêng test Login/Current User trước khi chạy regression toàn bộ:
+Chạy riêng test Admin Account Status trước khi chạy regression toàn bộ:
 
 ```powershell
-.\mvnw.cmd "-Dtest=AuthLoginServiceTest,AuthLoginControllerTest,UserControllerTest,AuthLoginIntegrationTest,JwtServiceTest,CustomUserDetailsServiceTest" test
+.\mvnw.cmd "-Dtest=AdminUserServiceTest,AdminUserControllerTest,AdminUserIntegrationTest" test
 .\mvnw.cmd clean test
 ```
 
-Toàn bộ 61 test đến hết Ngày 6 tiếp tục pass. Flyway validate đủ 8 migration và
+Toàn bộ 83 test đến hết Ngày 7 tiếp tục pass. Flyway validate đủ 8 migration và
 Hibernate khởi tạo `EntityManagerFactory` thành công.
 
 Frontend:
@@ -171,7 +174,7 @@ npm run test -- --run
 npm run build
 ```
 
-Kết quả xác nhận: 22 test Vitest pass và Vite production build thành công.
+Kết quả xác nhận: 33 test Vitest pass và Vite production build thành công.
 
 ## Chạy Backend
 
@@ -186,6 +189,9 @@ Các endpoint nền:
 - Register: `POST http://localhost:8080/api/v1/auth/register`
 - Login: `POST http://localhost:8080/api/v1/auth/login`
 - Current user: `GET http://localhost:8080/api/v1/users/me`
+- Admin users: `GET http://localhost:8080/api/v1/admin/users`
+- Lock user: `PATCH http://localhost:8080/api/v1/admin/users/{id}/lock`
+- Unlock user: `PATCH http://localhost:8080/api/v1/admin/users/{id}/unlock`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
@@ -198,6 +204,7 @@ npm run dev
 
 - Register: `http://localhost:5173/register`
 - Login: `http://localhost:5173/login`
+- Admin users: `http://localhost:5173/admin/users`
 - API base URL local: `http://localhost:8080/api/v1`
 
 ## Tài liệu chính

@@ -64,7 +64,7 @@
 - *Giải quyết:* Chốt lại Registry mã lỗi tập trung tại file Quy tắc nghiệp vụ, tách riêng endpoint yêu cầu gia hạn và thiết kế kịch bản xử lý logic cộng dồn thời hạn `endDate` của Admin khi phê duyệt.
 
 **Quyết định đã chốt:**
-- `JwtAuthenticationFilter` xác thực chữ ký/hạn dùng và nạp identity/roles để thiết lập `SecurityContext`; việc chặn tài khoản bị khóa/vô hiệu hóa do `AccountStatusGuard` hoặc Method Security truy vấn DB/Cache và thực thi ở các request tiếp theo.
+- `JwtAuthenticationFilter` xác thực chữ ký/hạn dùng và nạp identity/roles để thiết lập `SecurityContext`; việc chặn tài khoản bị khóa/vô hiệu hóa do `AccountStatusGuard` truy vấn DB và thực thi ở các request tiếp theo. Cache trạng thái chưa được sử dụng trong implementation hiện tại.
 - Toàn bộ API/UI phục vụ luồng MVP chỉ chạy độc lập giữa Admin và Member; vai trò PT vẫn được giữ nguyên ở phân hệ mở rộng `Should-have`.
 - Recommendation fallback trả về HTTP 200 kèm `warningCode` và `calculatedTargets` do Backend tính cứng để đảm bảo trải nghiệm người dùng không bị gián đoạn khi AI gặp sự cố.
 
@@ -388,3 +388,38 @@ theo phạm vi đã thống nhất và không được ghi nhận là đã thự
 **Kết luận:** Source backend/frontend, kiểm thử tự động và kiểm thử localhost thủ công
 theo mục 16 của Ngày 7 đã hoàn thành. Luồng Register → Login → `/users/me`, Swagger
 Authorize và các trường hợp lỗi xác thực đã được xác nhận hoạt động đúng.
+
+---
+
+## Ngày 8 — Admin Account Status (30/07/2026)
+
+### Đã triển khai source
+
+- [x] Tạo `PageResponse`, DTO Admin User, `BusinessClockConfiguration`, projection
+  và native query danh sách tài khoản có pagination, search, role/status filter.
+- [x] `hasActiveSubscription` được tính động theo `status = ACTIVE`,
+  `startDate <= today < endDate` bằng ngày nghiệp vụ `Asia/Ho_Chi_Minh`, không N+1.
+- [x] Tạo `AdminUserService` và `AdminUserController` cho list/lock/unlock; transition
+  target dùng pessimistic lock, chỉ `ACTIVE -> LOCKED -> ACTIVE` và không sửa subscription.
+- [x] Chặn Admin tự khóa, khóa Admin khác, thao tác với `DISABLED`, lý do ngoài
+  10-500 ký tự và lý do hết hạn gói tập; Admin hiện hành luôn qua `AccountStatusGuard`.
+- [x] Tạo Protected Route, Role Route, layout Admin/Member, trang User Management,
+  search debounce, filter, pagination, dialog lock/unlock và các trạng thái UI.
+- [x] Login điều hướng theo role sau khi `/users/me` xác nhận principal; `ACC-005`
+  tiếp tục xóa session, token cũ của Member bị khóa nhận `ACC-004`.
+
+### Kiểm thử và minh chứng
+
+- [x] `mvnw.cmd clean test`: 110 test pass, 0 failure, 0 error, 0 skipped;
+  toàn bộ 83 test đến hết Ngày 7 tiếp tục pass.
+- [x] Flyway validate 8 migration, schema version 8 và Hibernate khởi tạo thành công.
+- [x] Frontend có 33 test pass; Vite production build thành công.
+- [x] Kiểm thử localhost hoàn tất: Admin list/search/filter, lock Member, token cũ
+  và login mới bị `ACC-004`, unlock rồi login lại thành công, Member bị `AUTH-002`
+  tại Admin API và subscription trước/sau thao tác không thay đổi.
+- [x] UI được kiểm tra ở viewport desktop/laptop theo phạm vi Ngày 8.
+
+**Kết luận:** UC-10 đã hoàn thành trong phạm vi local. Admin quản lý trạng thái tài
+khoản đúng RBAC và state transition; JWT stateless vẫn bị Guard chặn theo trạng thái
+DB hiện hành, còn subscription độc lập với thao tác lock/unlock. Deploy tiếp tục hoãn
+đến Gate đóng M1.
