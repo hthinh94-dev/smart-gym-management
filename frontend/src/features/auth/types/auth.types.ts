@@ -43,6 +43,12 @@ export type LoginResponse = {
     user: Omit<AuthUser, "accountStatus" | "createdAt">;
 };
 
+export type AuthSession = {
+    accessToken: string;
+    tokenType: "Bearer";
+    expiresAt: number;
+};
+
 export type ApiSuccessResponse<T> = {
     success: true;
     message: string;

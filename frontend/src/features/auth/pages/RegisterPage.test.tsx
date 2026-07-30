@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { httpClient } from "../../../lib/httpClient";
+import { AUTH_SESSION_STORAGE_KEY } from "../storage/authSession";
 import { RegisterPage } from "./RegisterPage";
 
 const postMock = vi.spyOn(httpClient, "post");
@@ -45,6 +46,7 @@ function renderRegisterPage(onNavigate?: (path: "/register" | "/login") => void)
 describe("RegisterPage", () => {
     beforeEach(() => {
         postMock.mockReset();
+        sessionStorage.clear();
     });
 
     it("hiển thị validation client cho các trường bắt buộc", async () => {
@@ -107,6 +109,11 @@ describe("RegisterPage", () => {
 
         const navigate = vi.fn();
         const user = userEvent.setup();
+        sessionStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify({
+            accessToken: "old-account-token",
+            tokenType: "Bearer",
+            expiresAt: Date.now() + 3_600_000,
+        }));
         renderRegisterPage(navigate);
 
         await user.type(screen.getByLabelText(/họ và tên/i), "  Nguyễn Văn A  ");
@@ -127,6 +134,7 @@ describe("RegisterPage", () => {
             password: "Password123",
             confirmPassword: "Password123",
         });
+        expect(sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY)).toBeNull();
 
         await waitFor(() => expect(navigate).toHaveBeenCalledWith("/login"), { timeout: 2600 });
     });

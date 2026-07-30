@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { AuthApiError, registerMember } from "../api/authApi";
 import { normalizeEmail, PASSWORD_POLICY_TEXT, registerSchema } from "../schemas/registerSchema";
+import { clearAuthSession } from "../storage/authSession";
 import type { AuthErrorCode, RegisterFormValues } from "../types/auth.types";
 
 type AuthRoute = "/register" | "/login";
@@ -246,6 +247,7 @@ export function RegisterPage({ onNavigate }: RegisterPageProps) {
                 fullName: values.fullName.trim(),
                 email: normalizeEmail(values.email),
             });
+            clearAuthSession();
             setMessage({
                 type: "success",
                 title: "Đăng Ký Thành Công",
