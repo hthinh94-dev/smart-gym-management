@@ -17,7 +17,7 @@ Dự án đã nghiệm thu local từ **Ngày 5 - Security/JWT Foundation** đ�
 - `AccountStatusGuard` phân biệt `ACTIVE`, `LOCKED`, `DISABLED`.
 - Response lỗi Security chuẩn hóa bằng `ACC-004`, `ACC-005`, `ACC-006` và
   `AUTH-002`.
-- Regression backend có 175 test pass, gồm toàn bộ 110 test đến hết Ngày 8.
+- Regression backend có 200 test pass, gồm toàn bộ 110 test đến hết Ngày 8.
 - `POST /api/v1/auth/register` đã có DTO, validation, transaction service,
   `ROLE_MEMBER`, `ACTIVE`, BCrypt, error handler và OpenAPI.
 - `POST /api/v1/auth/login` dùng `AuthenticationManager`, chuẩn hóa email, giữ
@@ -155,7 +155,7 @@ cd backend
 Regression backend sau OpenAPI Gate Ngày 9:
 
 ```text
-Tests run: 175, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 200, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 

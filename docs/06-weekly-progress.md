@@ -447,7 +447,7 @@ DB hiện hành, còn subscription độc lập với thao tác lock/unlock. Dep
 
 ### Kiểm thử và minh chứng
 
-- [x] `mvnw.cmd clean test`: 175 test pass, 0 failure, 0 error, 0 skipped;
+- [x] `mvnw.cmd clean test`: 200 test pass, 0 failure, 0 error, 0 skipped;
   toàn bộ 110 test đến hết Ngày 8 tiếp tục pass.
 - [x] Flyway validate đủ 8 migration, schema version 8; Hibernate khởi tạo
   `EntityManagerFactory` thành công trên MySQL 8.

@@ -212,6 +212,54 @@ class AuthServiceTest {
         verifyNoInteractions(userRoleRepository);
     }
 
+    /** Kiểm tra service tự bảo vệ fullName null/trống/quá dài dù controller validation bị bỏ qua. */
+    @ParameterizedTest(name = "Full name invalid case {index}")
+    @MethodSource("invalidFullNames")
+    @DisplayName("Full name khong hop le tra VAL-001 tai service")
+    void register_WithInvalidFullName_ShouldThrowValidationError(String fullName) {
+        RegisterRequest request = new RegisterRequest(fullName, "user@gmail.com", "SecurePass1", "SecurePass1");
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception -> {
+                    assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+                    assertThat(exception.getDetails().toString()).contains("fullName");
+                });
+
+        verifyNoInteractions(userRepository, roleRepository, userRoleRepository);
+    }
+
+    /** Kiểm tra service tự bảo vệ email null/sai định dạng/quá dài trước repository. */
+    @ParameterizedTest(name = "Email invalid case {index}")
+    @MethodSource("invalidEmails")
+    @DisplayName("Email khong hop le tra VAL-001 tai service")
+    void register_WithInvalidEmail_ShouldThrowValidationError(String email) {
+        RegisterRequest request = new RegisterRequest("Nguyen Van An", email, "SecurePass1", "SecurePass1");
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception -> {
+                    assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+                    assertThat(exception.getDetails().toString()).contains("email");
+                });
+
+        verifyNoInteractions(userRepository, roleRepository, userRoleRepository);
+    }
+
+    /** Kiểm tra lỗi integrity không liên quan unique email được che thành SYS-001. */
+    @Test
+    @DisplayName("Data integrity khac email unique tra SYS-001")
+    void register_WithUnrelatedDataIntegrityViolation_ShouldReturnSystemError() {
+        when(userRepository.existsByEmailIgnoreCase("user@gmail.com")).thenReturn(false);
+        when(roleRepository.findByName(RoleName.ROLE_MEMBER)).thenReturn(Optional.of(memberRole()));
+        when(userRepository.saveAndFlush(any(User.class)))
+                .thenThrow(new DataIntegrityViolationException("foreign key constraint failed"));
+
+        assertThatThrownBy(() -> authService.register(validRequest()))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_CONFIGURATION_ERROR));
+
+        verify(userRoleRepository, never()).saveAndFlush(any(UserRole.class));
+    }
+
     private void stubSuccessfulRegistration(Role memberRole) {
         when(userRepository.existsByEmailIgnoreCase("user@gmail.com")).thenReturn(false);
         when(roleRepository.findByName(RoleName.ROLE_MEMBER)).thenReturn(Optional.of(memberRole));
@@ -250,5 +298,13 @@ class AuthServiceTest {
                 " SecurePass1",
                 "SecurePass1 "
         );
+    }
+
+    private static Stream<String> invalidFullNames() {
+        return Stream.of(null, "   ", "N".repeat(101));
+    }
+
+    private static Stream<String> invalidEmails() {
+        return Stream.of(null, "   ", "not-an-email", "a".repeat(140) + "@example.com");
     }
 }

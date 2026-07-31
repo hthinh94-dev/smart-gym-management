@@ -28,6 +28,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
@@ -170,6 +171,58 @@ class AuthLoginServiceTest {
                 .thenThrow(new AuthenticationServiceException("authentication backend unavailable"));
 
         assertLoginError(new LoginRequest(EMAIL, "SecurePass1"), ErrorCode.INTERNAL_CONFIGURATION_ERROR);
+        verify(jwtService, never()).generateAccessToken(any());
+    }
+
+    /** Kiểm tra account biến mất sau authentication vẫn trả ACC-007 và không phát token. */
+    @Test
+    @DisplayName("User bien mat sau authenticate tra ACC-007")
+    void login_WhenUserIsMissingAfterAuthentication_ShouldReturnAcc007() {
+        Authentication authenticated = org.mockito.Mockito.mock(Authentication.class);
+        when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(authenticated);
+        when(userRepository.findByEmailWithRolesIgnoreCase(EMAIL)).thenReturn(Optional.empty());
+
+        assertLoginError(new LoginRequest(EMAIL, "SecurePass1"), ErrorCode.INVALID_CREDENTIALS);
+
+        verify(jwtService, never()).generateAccessToken(any());
+    }
+
+    /** Kiểm tra principal không phải UserDetails bị xem là lỗi cấu hình và không phát token. */
+    @Test
+    @DisplayName("Authentication principal sai contract tra SYS-001")
+    void login_WithNonUserDetailsPrincipal_ShouldReturnSystemError() {
+        User user = user(AccountStatus.ACTIVE);
+        Authentication authenticated = new UsernamePasswordAuthenticationToken(
+                "plain-principal",
+                null,
+                java.util.List.of()
+        );
+        when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(authenticated);
+        when(userRepository.findByEmailWithRolesIgnoreCase(EMAIL)).thenReturn(Optional.of(user));
+
+        assertLoginError(new LoginRequest(EMAIL, "SecurePass1"), ErrorCode.INTERNAL_CONFIGURATION_ERROR);
+
+        verify(jwtService, never()).generateAccessToken(any(UserDetails.class));
+    }
+
+    /** Kiểm tra user không có role sau authentication bị chặn trước khi phát JWT. */
+    @Test
+    @DisplayName("User khong co role sau authenticate tra SYS-001")
+    void login_WhenUserHasNoRole_ShouldReturnSystemError() {
+        User validUser = user(AccountStatus.ACTIVE);
+        AuthenticatedUserPrincipal principal = AuthenticatedUserPrincipal.from(validUser);
+        Authentication authenticated = new UsernamePasswordAuthenticationToken(
+                principal,
+                null,
+                principal.getAuthorities()
+        );
+        User userWithoutRole = new User("Gym Member", EMAIL, "hash", AccountStatus.ACTIVE);
+        userWithoutRole.setId(101L);
+        when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(authenticated);
+        when(userRepository.findByEmailWithRolesIgnoreCase(EMAIL)).thenReturn(Optional.of(userWithoutRole));
+
+        assertLoginError(new LoginRequest(EMAIL, "SecurePass1"), ErrorCode.INTERNAL_CONFIGURATION_ERROR);
+
         verify(jwtService, never()).generateAccessToken(any());
     }
 

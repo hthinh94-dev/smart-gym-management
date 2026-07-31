@@ -18,6 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -107,6 +108,46 @@ class AdminUserServiceTest {
         verify(userRepository, never()).findAdminUsers(any(), any(), any(), any(), any());
     }
 
+    /** Kiểm tra page âm bị chặn trước khi tạo PageRequest hoặc gọi repository. */
+    @Test
+    @DisplayName("Page am tra VAL-001")
+    void getUsers_WithNegativePage_ShouldReject() {
+        assertValidationError(() -> adminUserService.getUsers(admin, -1, 20, null, null, null));
+
+        verify(userRepository, never()).findAdminUsers(any(), any(), any(), any(), any());
+    }
+
+    /** Kiểm tra search trống được chuẩn hóa thành null để query không lọc sai. */
+    @Test
+    @DisplayName("Search trong duoc chuan hoa thanh null")
+    void getUsers_WithBlankSearch_ShouldQueryWithoutSearchFilter() {
+        PageRequest pageable = PageRequest.of(0, 20);
+        when(userRepository.findAdminUsers(null, null, null, LocalDate.of(2026, 7, 30), pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        var response = adminUserService.getUsers(admin, 0, 20, null, null, "   ");
+
+        assertThat(response.content()).isEmpty();
+        verify(userRepository).findAdminUsers(null, null, null, LocalDate.of(2026, 7, 30), pageable);
+    }
+
+    /** Kiểm tra principal admin null hoặc thiếu id bị xem là lỗi cấu hình, không truy cập database. */
+    @Test
+    @DisplayName("Admin principal khong hop le tra SYS-001")
+    void getUsers_WithInvalidAdminPrincipal_ShouldReject() {
+        assertSystemError(() -> adminUserService.getUsers(null, 0, 20, null, null, null));
+        assertSystemError(() -> adminUserService.getUsers(
+                principal(null, "admin@smartgym.com", RoleName.ROLE_ADMIN, AccountStatus.ACTIVE),
+                0,
+                20,
+                null,
+                null,
+                null
+        ));
+
+        verify(userRepository, never()).findAdminUsers(any(), any(), any(), any(), any());
+    }
+
     @Test
     @DisplayName("Khóa Member ACTIVE dùng clock cố định và giữ nguyên trạng thái subscription")
     void lockUser_WithActiveMember_ShouldReturnAuditResponse() {
@@ -193,6 +234,63 @@ class AdminUserServiceTest {
         assertValidationError(() -> adminUserService.lockUser(admin, 2L, new LockUserRequest("a".repeat(501))));
     }
 
+    /** Kiểm tra request/reason null bị chặn bằng validation error thay vì NullPointerException. */
+    @Test
+    @DisplayName("Lock request null tra VAL-001")
+    void lockUser_WithNullRequest_ShouldReject() {
+        assertValidationError(() -> adminUserService.lockUser(admin, 2L, null));
+
+        verify(userRepository, never()).findByIdForUpdate(any());
+    }
+
+    /** Kiểm tra target id null hoặc không dương bị chặn trước câu query khóa row. */
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(longs = {0L, -1L})
+    @DisplayName("Target id khong hop le tra VAL-001")
+    void lockUser_WithInvalidTargetId_ShouldReject(Long targetUserId) {
+        assertValidationError(() -> adminUserService.lockUser(
+                admin,
+                targetUserId,
+                new LockUserRequest("Vi phạm nội quy phòng tập nghiêm trọng.")
+        ));
+
+        verify(userRepository, never()).findByIdForUpdate(any());
+    }
+
+    /** Kiểm tra target hợp lệ về id nhưng không tồn tại trả lỗi nghiệp vụ ổn định. */
+    @Test
+    @DisplayName("Target khong ton tai tra VAL-001")
+    void lockUser_WithUnknownTarget_ShouldReject() {
+        when(userRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
+
+        assertValidationError(() -> adminUserService.lockUser(
+                admin,
+                999L,
+                new LockUserRequest("Vi phạm nội quy phòng tập nghiêm trọng.")
+        ));
+
+        verify(userRoleRepository, never()).existsByUserIdAndRoleName(any(), any());
+    }
+
+    /** Kiểm tra khóa account không có subscription vẫn không thay đổi dữ liệu gói tập. */
+    @Test
+    @DisplayName("Lock user khong co subscription tra NO_ACTIVE_SUBSCRIPTION")
+    void lockUser_WithoutActiveSubscription_ShouldPreserveSubscriptionState() {
+        User target = target(2L, AccountStatus.ACTIVE);
+        when(userRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(target));
+        when(userRoleRepository.existsByUserIdAndRoleName(2L, RoleName.ROLE_ADMIN)).thenReturn(false);
+        when(userRepository.countActiveSubscriptions(2L, LocalDate.of(2026, 7, 30))).thenReturn(0L);
+
+        var response = adminUserService.lockUser(
+                admin,
+                2L,
+                new LockUserRequest("Vi phạm nội quy phòng tập nghiêm trọng.")
+        );
+
+        assertThat(response.subscriptionStatus()).isEqualTo("NO_ACTIVE_SUBSCRIPTION (không thay đổi)");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "Khóa vì gói tập đã hết hạn",
@@ -276,5 +374,11 @@ class AdminUserServiceTest {
         assertThatThrownBy(callable)
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR));
+    }
+
+    private void assertSystemError(org.assertj.core.api.ThrowableAssert.ThrowingCallable callable) {
+        assertThatThrownBy(callable)
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_CONFIGURATION_ERROR));
     }
 }
