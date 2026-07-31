@@ -6,18 +6,17 @@ import { useAuth } from "../features/auth/hooks/useAuth";
 import { MemberHomePage } from "../features/member/pages/MemberHomePage";
 import { AdminLayout } from "../layouts/AdminLayout";
 import { AuthRouteLoading, ProtectedRoute } from "./routes/ProtectedRoute";
+import { PublicOnlyRoute } from "./routes/PublicOnlyRoute";
 import { RoleRoute } from "./routes/RoleRoute";
+import { getAuthenticatedHomePath } from "../features/auth/utils/authNavigation";
 
 function RootRedirect() {
     const { user, isRestoringSession } = useAuth();
     if (isRestoringSession) {
         return <AuthRouteLoading />;
     }
-    if (user?.role === "ROLE_ADMIN") {
-        return <Navigate to="/admin/users" replace />;
-    }
     if (user) {
-        return <Navigate to="/member" replace />;
+        return <Navigate to={getAuthenticatedHomePath(user.role)} replace />;
     }
     return <Navigate to="/login" replace />;
 }
@@ -25,10 +24,14 @@ function RootRedirect() {
 export function AppRouter() {
     return (
         <Routes>
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/login" element={<LoginPage />} />
+            <Route element={<PublicOnlyRoute />}>
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/login" element={<LoginPage />} />
+            </Route>
             <Route element={<ProtectedRoute />}>
-                <Route path="/member" element={<MemberHomePage />} />
+                <Route element={<RoleRoute allowedRoles={["ROLE_MEMBER", "ROLE_PT"]} />}>
+                    <Route path="/member" element={<MemberHomePage />} />
+                </Route>
                 <Route element={<RoleRoute allowedRoles={["ROLE_ADMIN"]} />}>
                     <Route path="/admin" element={<AdminLayout />}>
                         <Route index element={<Navigate to="users" replace />} />

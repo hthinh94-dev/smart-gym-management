@@ -2,6 +2,7 @@ import axios from "axios";
 import { clearAuthSession, getStoredAccessToken } from "../features/auth/storage/authSession";
 
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+const SESSION_TERMINATING_ERROR_CODES = new Set(["ACC-004", "ACC-005", "ACC-006"]);
 
 export const API_BASE_URL = (configuredApiBaseUrl || "http://localhost:8080/api/v1").replace(/\/+$/, "");
 
@@ -27,7 +28,8 @@ httpClient.interceptors.response.use(
     (error: unknown) => {
         if (axios.isAxiosError(error) && error.response?.data) {
             const payload = error.response.data as Record<string, unknown>;
-            if (payload.errorCode === "ACC-005") {
+            if (typeof payload.errorCode === "string"
+                && SESSION_TERMINATING_ERROR_CODES.has(payload.errorCode)) {
                 clearAuthSession();
             }
         }

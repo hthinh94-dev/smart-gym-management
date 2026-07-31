@@ -18,8 +18,9 @@ function saveTestSession() {
     });
 }
 
-function apiErrorAdapter(errorCode: "ACC-005" | "ACC-007") {
+function apiErrorAdapter(errorCode: "ACC-004" | "ACC-005" | "ACC-006" | "ACC-007") {
     return async (config: InternalAxiosRequestConfig) => {
+        const status = errorCode === "ACC-007" || errorCode === "ACC-005" ? 401 : 403;
         throw new AxiosError(
             "Unauthorized",
             "ERR_BAD_REQUEST",
@@ -27,8 +28,8 @@ function apiErrorAdapter(errorCode: "ACC-005" | "ACC-007") {
             undefined,
             {
                 data: { success: false, errorCode, message: "Unauthorized", details: {} },
-                status: 401,
-                statusText: "Unauthorized",
+                status,
+                statusText: status === 401 ? "Unauthorized" : "Forbidden",
                 headers: new AxiosHeaders(),
                 config,
             },
@@ -61,15 +62,18 @@ describe("httpClient auth interceptors", () => {
         expect(authorization).toBe("Bearer interceptor-token");
     });
 
-    it("xóa session khi backend trả ACC-005", async () => {
+    it.each(["ACC-004", "ACC-005", "ACC-006"] as const)(
+        "xóa session khi backend trả %s",
+        async (errorCode) => {
         saveTestSession();
 
         await expect(httpClient.get("/probe", {
-            adapter: apiErrorAdapter("ACC-005") as AxiosRequestConfig["adapter"],
+            adapter: apiErrorAdapter(errorCode) as AxiosRequestConfig["adapter"],
         })).rejects.toBeInstanceOf(AxiosError);
 
         expect(sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY)).toBeNull();
-    });
+        },
+    );
 
     it("không xóa session khi Login trả ACC-007", async () => {
         saveTestSession();

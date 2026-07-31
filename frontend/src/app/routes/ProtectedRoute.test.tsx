@@ -5,6 +5,7 @@ import { AuthContext } from "../../features/auth/context/AuthContext";
 import type { AuthContextValue } from "../../features/auth/context/AuthContext";
 import type { AuthUser } from "../../features/auth/types/auth.types";
 import { ProtectedRoute } from "./ProtectedRoute";
+import { PublicOnlyRoute } from "./PublicOnlyRoute";
 import { RoleRoute } from "./RoleRoute";
 
 const member: AuthUser = {
@@ -16,7 +17,15 @@ const member: AuthUser = {
     createdAt: "2026-07-29T08:00:00Z",
 };
 
-function renderRoutes(value: Partial<AuthContextValue>, initialEntry = "/admin") {
+const admin: AuthUser = {
+    ...member,
+    id: 1,
+    fullName: "Quản trị hệ thống",
+    email: "admin@smartgym.com",
+    role: "ROLE_ADMIN",
+};
+
+function renderRoutes(value: Partial<AuthContextValue>, initialEntry = "/admin/users") {
     const contextValue: AuthContextValue = {
         user: null,
         isAuthenticated: false,
@@ -30,11 +39,16 @@ function renderRoutes(value: Partial<AuthContextValue>, initialEntry = "/admin")
         <AuthContext.Provider value={contextValue}>
             <MemoryRouter initialEntries={[initialEntry]}>
                 <Routes>
-                    <Route path="/login" element={<p>Trang đăng nhập</p>} />
-                    <Route path="/member" element={<p>Khu vực hội viên</p>} />
+                    <Route element={<PublicOnlyRoute />}>
+                        <Route path="/login" element={<p>Trang đăng nhập</p>} />
+                        <Route path="/register" element={<p>Trang đăng ký</p>} />
+                    </Route>
                     <Route element={<ProtectedRoute />}>
+                        <Route element={<RoleRoute allowedRoles={["ROLE_MEMBER", "ROLE_PT"]} />}>
+                            <Route path="/member" element={<p>Khu vực hội viên</p>} />
+                        </Route>
                         <Route element={<RoleRoute allowedRoles={["ROLE_ADMIN"]} />}>
-                            <Route path="/admin" element={<p>Quản lý tài khoản</p>} />
+                            <Route path="/admin/users" element={<p>Quản lý tài khoản</p>} />
                         </Route>
                     </Route>
                 </Routes>
@@ -53,6 +67,23 @@ describe("ProtectedRoute và RoleRoute", () => {
         renderRoutes({ user: member, isAuthenticated: true });
         expect(screen.getByText("Khu vực hội viên")).toBeInTheDocument();
         expect(screen.queryByText("Quản lý tài khoản")).not.toBeInTheDocument();
+    });
+
+    it("cho Admin vào khu vực Admin", () => {
+        renderRoutes({ user: admin, isAuthenticated: true });
+        expect(screen.getByText("Quản lý tài khoản")).toBeInTheDocument();
+    });
+
+    it("không cho Admin mở trực tiếp khu vực Member", () => {
+        renderRoutes({ user: admin, isAuthenticated: true }, "/member");
+        expect(screen.getByText("Quản lý tài khoản")).toBeInTheDocument();
+        expect(screen.queryByText("Khu vực hội viên")).not.toBeInTheDocument();
+    });
+
+    it("chuyển tài khoản đã có session ra khỏi Login", () => {
+        renderRoutes({ user: member, isAuthenticated: true }, "/login");
+        expect(screen.getByText("Khu vực hội viên")).toBeInTheDocument();
+        expect(screen.queryByText("Trang đăng nhập")).not.toBeInTheDocument();
     });
 
     it("hiển thị loading ổn định khi đang restore session", () => {

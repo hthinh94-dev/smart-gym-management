@@ -6,7 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { AuthApiError } from "../api/authApi";
 import { useAuth } from "../hooks/useAuth";
 import { loginSchema } from "../schemas/loginSchema";
-import type { AuthErrorCode, LoginFormValues, RoleName } from "../types/auth.types";
+import type { AuthErrorCode, LoginFormValues } from "../types/auth.types";
+import { getAuthenticatedHomePath } from "../utils/authNavigation";
 
 type AuthRoute = "/register" | "/login";
 
@@ -18,10 +19,6 @@ type LoginMessage = {
     title: string;
     description: string;
 };
-
-function authenticatedPath(role: RoleName) {
-    return role === "ROLE_ADMIN" ? "/admin/users" : "/member";
-}
 
 const loginErrorMessages: Record<AuthErrorCode, LoginMessage> = {
     "ACC-001": {
@@ -111,7 +108,7 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
     const loginMutation = useMutation({
         mutationFn: login,
         onSuccess: (authenticatedUser) => {
-            routerNavigate(authenticatedPath(authenticatedUser.role), { replace: true });
+            routerNavigate(getAuthenticatedHomePath(authenticatedUser.role), { replace: true });
         },
     });
     const {
@@ -133,7 +130,7 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
             return;
         }
 
-        routerNavigate(authenticatedPath(user.role), { replace: true });
+        routerNavigate(getAuthenticatedHomePath(user.role), { replace: true });
     }, [isRestoringSession, routerNavigate, user]);
 
     function navigateTo(path: AuthRoute) {

@@ -12,6 +12,7 @@ export function AdminLayout() {
 
     return (
         <div className="admin-shell">
+            <a className="skip-link" href="#main-content">Chuyển đến nội dung chính</a>
             <aside className="admin-sidebar">
                 <div className="admin-brand">
                     <div className="brand-badge admin-brand-badge" aria-label="Smart Gym logo">

@@ -20,7 +20,7 @@ const currentUserResponse = {
 };
 
 function AuthProbe() {
-    const { user, isAuthenticated, isRestoringSession, login } = useAuth();
+    const { user, isAuthenticated, isRestoringSession, login, logout } = useAuth();
     return (
         <div>
             <span>{isRestoringSession ? "restoring" : "ready"}</span>
@@ -31,6 +31,7 @@ function AuthProbe() {
             >
                 login
             </button>
+            <button type="button" onClick={logout}>logout</button>
         </div>
     );
 }
@@ -120,6 +121,29 @@ describe("AuthContext", () => {
         await user.click(screen.getByRole("button", { name: "login" }));
 
         await waitFor(() => expect(sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY)).toBeNull());
+        expect(screen.getByText("anonymous")).toBeInTheDocument();
+    });
+
+    it("xóa token và user state khi logout", async () => {
+        saveAuthSession({
+            accessToken: "logout-token",
+            tokenType: "Bearer",
+            expiresIn: 3600,
+            user: {
+                id: 88,
+                fullName: "Trần Hưng Thịnh",
+                email: "thinh@smartgym.com",
+                role: "ROLE_MEMBER",
+            },
+        });
+        vi.spyOn(httpClient, "get").mockResolvedValue({ data: currentUserResponse, status: 200 });
+        const user = userEvent.setup();
+        render(<AuthProvider><AuthProbe /></AuthProvider>);
+
+        expect(await screen.findByText("Trần Hưng Thịnh")).toBeInTheDocument();
+        await user.click(screen.getByRole("button", { name: "logout" }));
+
+        expect(sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY)).toBeNull();
         expect(screen.getByText("anonymous")).toBeInTheDocument();
     });
 });
