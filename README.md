@@ -8,7 +8,7 @@ Backend kiểm duyệt.
 ## Trạng thái hiện tại
 
 Dự án đã nghiệm thu local từ **Ngày 5 - Security/JWT Foundation** đến
-**Ngày 8 - Admin Account Status**:
+**Ngày 9 - React Skeleton và OpenAPI Gate**:
 
 - Backend foundation bằng Java 21 và Spring Boot 3.4.3.
 - 8 Flyway migration tạo schema MVP trên MySQL 8.
@@ -17,7 +17,7 @@ Dự án đã nghiệm thu local từ **Ngày 5 - Security/JWT Foundation** đ�
 - `AccountStatusGuard` phân biệt `ACTIVE`, `LOCKED`, `DISABLED`.
 - Response lỗi Security chuẩn hóa bằng `ACC-004`, `ACC-005`, `ACC-006` và
   `AUTH-002`.
-- Regression backend có 110 test pass, gồm toàn bộ 83 test đến hết Ngày 7.
+- Regression backend có 175 test pass, gồm toàn bộ 110 test đến hết Ngày 8.
 - `POST /api/v1/auth/register` đã có DTO, validation, transaction service,
   `ROLE_MEMBER`, `ACTIVE`, BCrypt, error handler và OpenAPI.
 - `POST /api/v1/auth/login` dùng `AuthenticationManager`, chuẩn hóa email, giữ
@@ -27,14 +27,18 @@ Dự án đã nghiệm thu local từ **Ngày 5 - Security/JWT Foundation** đ�
 - Admin API hỗ trợ danh sách tài khoản có search/filter/pagination và thao tác
   lock/unlock; không cho tự khóa Admin, khóa Admin khác hoặc khóa vì hết hạn gói.
 - Swagger/OpenAPI khai báo `bearerAuth` dạng HTTP Bearer JWT để kiểm thử endpoint
-  bảo vệ bằng nút `Authorize` mà không phải tự ghép header.
+  bảo vệ bằng nút `Authorize`; success/error response có schema cụ thể và các
+  trường password được đánh dấu `writeOnly`.
 - Frontend Register/Login dùng React Router, React Query, React Hook Form, Zod,
   Auth Context và Axios; JWT được lưu trong `sessionStorage`, Bearer interceptor
   tự gắn token và `/users/me` xác nhận phiên trước khi cập nhật auth state.
-- Frontend có Protected Route, layout Admin/Member và trang quản lý tài khoản;
-  33 test Vitest pass và production build thành công.
-- Postman collection bao phủ Register, Login, `/users/me`, `ACC-001`, `ACC-002`,
-  `ACC-004`, `ACC-005`, `ACC-007`, `AUTH-002` và luồng Admin lock/unlock.
+- Frontend có Public Only Route, Protected Route, Role Route, layout Admin/Member
+  và trang quản lý tài khoản; phiên cũ được xác minh qua `/users/me`, lỗi
+  `ACC-004`/`ACC-005`/`ACC-006` xóa session; 43 test Vitest pass và production
+  build thành công.
+- Postman collection có 21 request bao phủ Register, Login, `/users/me`,
+  `ACC-001`, `ACC-002`, `ACC-004`, `ACC-005`, `ACC-007`, `AUTH-002` và luồng
+  Admin list/search/filter/lock/unlock.
 - CORS đọc danh sách origin cụ thể từ environment và từ chối wildcard.
 
 Profile, Membership và AI API chưa được triển khai. Deploy staging chưa nằm trong
@@ -84,7 +88,7 @@ smart-gym-management/
 |   `-- erd-gym-management.mmd
 |-- docs/                    # Đặc tả, API, dữ liệu, kiến trúc và tiến độ
 |-- frontend/                # React Auth, Protected Route và Admin User Management
-|-- postman/                 # Collection kiểm thử UC-01, UC-02 và UC-10
+|-- postman/                 # 21 request kiểm thử đầy đủ Auth/RBAC/Admin M1
 |-- .env.example             # Mẫu biến môi trường cấp repository
 `-- README.md
 ```
@@ -148,10 +152,10 @@ cd backend
 .\mvnw.cmd clean test
 ```
 
-Regression backend sau Admin Account Status Ngày 8:
+Regression backend sau OpenAPI Gate Ngày 9:
 
 ```text
-Tests run: 110, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 175, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -162,7 +166,7 @@ Chạy riêng test Admin Account Status trước khi chạy regression toàn b�
 .\mvnw.cmd clean test
 ```
 
-Toàn bộ 83 test đến hết Ngày 7 tiếp tục pass. Flyway validate đủ 8 migration và
+Toàn bộ 110 test đến hết Ngày 8 tiếp tục pass. Flyway validate đủ 8 migration và
 Hibernate khởi tạo `EntityManagerFactory` thành công.
 
 Frontend:
@@ -174,7 +178,7 @@ npm run test -- --run
 npm run build
 ```
 
-Kết quả xác nhận: 33 test Vitest pass và Vite production build thành công.
+Kết quả xác nhận: 43 test Vitest pass và Vite production build thành công.
 
 ## Chạy Backend
 
@@ -204,6 +208,7 @@ npm run dev
 
 - Register: `http://localhost:5173/register`
 - Login: `http://localhost:5173/login`
+- Member home: `http://localhost:5173/member`
 - Admin users: `http://localhost:5173/admin/users`
 - API base URL local: `http://localhost:8080/api/v1`
 

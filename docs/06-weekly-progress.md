@@ -423,3 +423,47 @@ Authorize và các trường hợp lỗi xác thực đã được xác nhận h
 khoản đúng RBAC và state transition; JWT stateless vẫn bị Guard chặn theo trạng thái
 DB hiện hành, còn subscription độc lập với thao tác lock/unlock. Deploy tiếp tục hoãn
 đến Gate đóng M1.
+
+---
+
+## Ngày 9 — React Skeleton và OpenAPI Gate (31/07/2026)
+
+### Đã triển khai source
+
+- [x] Chuẩn hóa OpenAPI cho toàn bộ Auth, Current User và Admin User API; response
+  thành công/lỗi dùng schema cụ thể, Bearer JWT được khai báo nhất quán và các
+  trường password chỉ dùng để ghi (`writeOnly`).
+- [x] Bổ sung test OpenAPI kiểm tra đủ sáu operation M1, security requirement,
+  response schema và bảo đảm password không xuất hiện trong response DTO.
+- [x] Hoàn thiện React application shell với Public Only Route, Protected Route,
+  Role Route, layout Member/Admin và điều hướng mặc định theo role hiện hành.
+- [x] Khôi phục phiên bằng `/users/me`; interceptor xóa session khi gặp
+  `ACC-004`, `ACC-005` hoặc `ACC-006`, ngăn trạng thái đăng nhập thành công cũ
+  xuất hiện lại khi người dùng chưa submit form.
+- [x] Sửa entry HTML dùng đúng `src/main.tsx`, cập nhật title dùng chung và giữ
+  production build độc lập với source JavaScript cũ không tồn tại.
+- [x] Postman có 21 request bao phủ Register, Login, Current User, Admin
+  list/search/filter/lock/unlock và các mã lỗi Auth/RBAC bắt buộc của M1.
+
+### Kiểm thử và minh chứng
+
+- [x] `mvnw.cmd clean test`: 175 test pass, 0 failure, 0 error, 0 skipped;
+  toàn bộ 110 test đến hết Ngày 8 tiếp tục pass.
+- [x] Flyway validate đủ 8 migration, schema version 8; Hibernate khởi tạo
+  `EntityManagerFactory` thành công trên MySQL 8.
+- [x] Frontend có 43 test pass; Vite production build thành công.
+- [x] Full flow localhost đã xác nhận: Register/Login/restore/logout, Member bị
+  chặn khỏi Admin, Admin bị chặn khỏi Member, Admin list/search, lock Member làm
+  token cũ bị chặn, unlock và đăng nhập lại thành công.
+- [x] Swagger UI có nút `Authorize`; sáu operation M1 hiển thị response contract
+  đúng và không yêu cầu ghép thủ công Authorization header.
+
+### Lưu ý hardening
+
+- Cảnh báo Mockito dynamic Java Agent và Spring `AuthenticationProvider` không
+  làm thất bại build; xử lý trong đợt Review M1 đã lên kế hoạch, không thay đổi
+  provider trong phạm vi Ngày 9.
+
+**Kết luận:** Ngày 9 hoàn thành trong phạm vi local. OpenAPI contract, React shell,
+auth session và route protection đã đồng bộ với Backend; M1 sẵn sàng bước Review,
+hardening và tạo tag theo kế hoạch.
