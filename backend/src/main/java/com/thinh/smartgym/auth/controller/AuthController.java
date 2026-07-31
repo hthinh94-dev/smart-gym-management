@@ -5,6 +5,7 @@ import com.thinh.smartgym.auth.dto.LoginResponse;
 import com.thinh.smartgym.auth.dto.RegisterRequest;
 import com.thinh.smartgym.auth.dto.RegisterResponse;
 import com.thinh.smartgym.auth.service.AuthService;
+import com.thinh.smartgym.common.config.OpenApiResponseSchemas;
 import com.thinh.smartgym.common.response.ApiResponse;
 import com.thinh.smartgym.common.response.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,7 +44,9 @@ public class AuthController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "201",
                 description = "Đăng ký thành công",
-                content = @Content(schema = @Schema(implementation = ApiResponse.class))
+                content = @Content(schema = @Schema(
+                        implementation = OpenApiResponseSchemas.RegisterSuccessResponse.class
+                ))
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400",
@@ -82,7 +85,14 @@ public class AuthController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
                 description = "Đăng nhập thành công",
-                content = @Content(schema = @Schema(implementation = ApiResponse.class))
+                content = @Content(schema = @Schema(
+                        implementation = OpenApiResponseSchemas.LoginSuccessResponse.class
+                ))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "Request body hoặc dữ liệu đăng nhập không hợp lệ (VAL-001)",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "401",
@@ -91,7 +101,12 @@ public class AuthController {
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "403",
-                description = "Tài khoản LOCKED hoặc DISABLED",
+                description = "Tài khoản LOCKED (ACC-004) hoặc DISABLED (ACC-006)",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "Lỗi cấu hình hệ thống (SYS-001)",
                 content = @Content(schema = @Schema(implementation = ErrorResponse.class))
         )
     })

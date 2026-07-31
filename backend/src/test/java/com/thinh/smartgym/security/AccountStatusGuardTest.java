@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.Optional;
 
@@ -81,6 +82,42 @@ class AccountStatusGuardTest {
         assertThatThrownBy(() -> accountStatusGuard.isAccountActive(EMAIL))
                 .isInstanceOfSatisfying(AccountStatusAccessDeniedException.class,
                         exception -> assertThat(exception.getErrorCode()).isEqualTo("ACC-004"));
+    }
+
+    /** Kiểm tra email null được chuẩn hóa và user không tồn tại bị từ chối rõ ràng. */
+    @Test
+    @DisplayName("Guard tu choi email null hoac khong ton tai")
+    void validateAccountStatusByEmail_WithUnknownUser_ShouldThrowUsernameNotFoundException() {
+        when(userRepository.findByEmailIgnoreCase("")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> accountStatusGuard.validateAccountStatusByEmail(null))
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessage("User not found with email: ");
+
+        verify(userRepository).findByEmailIgnoreCase("");
+    }
+
+    /** Kiểm tra user id không tồn tại không được xem như tài khoản ACTIVE. */
+    @Test
+    @DisplayName("Guard tu choi user id khong ton tai")
+    void validateAccountStatusByUserId_WithUnknownUser_ShouldThrowUsernameNotFoundException() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> accountStatusGuard.validateAccountStatusByUserId(999L))
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessage("User not found with id: 999");
+
+        verify(userRepository).findById(999L);
+    }
+
+    /** Kiểm tra boolean guard trả true duy nhất cho account ACTIVE. */
+    @Test
+    @DisplayName("isAccountActive tra true cho tai khoan ACTIVE")
+    void isAccountActive_WithActiveAccount_ShouldReturnTrue() {
+        when(userRepository.findByEmailIgnoreCase(EMAIL))
+                .thenReturn(Optional.of(userWithStatus(AccountStatus.ACTIVE)));
+
+        assertThat(accountStatusGuard.isAccountActive(EMAIL)).isTrue();
     }
 
     private User userWithStatus(AccountStatus status) {

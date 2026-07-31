@@ -13,11 +13,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.Optional;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,6 +79,32 @@ class CustomUserDetailsServiceTest {
 
         assertThat(userDetails.isEnabled()).isFalse();
         assertThat(userDetails.isAccountNonLocked()).isTrue();
+    }
+
+    /** Kiểm tra email không tồn tại bị từ chối bằng contract chuẩn của UserDetailsService. */
+    @Test
+    @DisplayName("Tu choi email khong ton tai sau khi chuan hoa")
+    void loadUserByUsername_WithUnknownEmail_ShouldThrowUsernameNotFoundException() {
+        when(userRepository.findByEmailWithRolesIgnoreCase(EMAIL)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userDetailsService.loadUserByUsername("  MEMBER@SMARTGYM.COM "))
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessage("User not found with email: " + EMAIL);
+
+        verify(userRepository).findByEmailWithRolesIgnoreCase(EMAIL);
+    }
+
+    /** Kiểm tra null email được chuẩn hóa an toàn và không gây NullPointerException. */
+    @Test
+    @DisplayName("Null email duoc chuan hoa thanh chuoi rong")
+    void loadUserByUsername_WithNullEmail_ShouldQueryEmptyIdentity() {
+        when(userRepository.findByEmailWithRolesIgnoreCase("")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userDetailsService.loadUserByUsername(null))
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessage("User not found with email: ");
+
+        verify(userRepository).findByEmailWithRolesIgnoreCase("");
     }
 
     private User userWithStatus(AccountStatus status) {
