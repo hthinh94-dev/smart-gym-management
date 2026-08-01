@@ -7,8 +7,8 @@ Backend kiểm duyệt.
 
 ## Trạng thái hiện tại
 
-Dự án đã nghiệm thu local từ **Ngày 5 - Security/JWT Foundation** đến
-**Ngày 9 - React Skeleton và OpenAPI Gate**:
+Dự án đã hoàn tất nghiệm thu local **Milestone M1 - Authentication, Security,
+OpenAPI và React Skeleton** từ Ngày 5 đến hết Ngày 10 (01/08/2026):
 
 - Backend foundation bằng Java 21 và Spring Boot 3.4.3.
 - 8 Flyway migration tạo schema MVP trên MySQL 8.
@@ -40,6 +40,13 @@ Dự án đã nghiệm thu local từ **Ngày 5 - Security/JWT Foundation** đ�
   `ACC-001`, `ACC-002`, `ACC-004`, `ACC-005`, `ACC-007`, `AUTH-002` và luồng
   Admin list/search/filter/lock/unlock.
 - CORS đọc danh sách origin cụ thể từ environment và từ chối wildcard.
+- Surefire nạp Mockito `5.14.2` bằng Java agent cố định; `AuthenticationManager`
+  dùng `DaoAuthenticationProvider` được wiring tường minh với
+  `CustomUserDetailsService` và BCrypt strength 12, không dùng auto-configuration
+  ngầm.
+- Gate cuối M1 đã xác nhận 6 OpenAPI operation, 21 request trong Postman
+  collection và 66 assertion API thật cho Register/Login/Current User/RBAC/Admin
+  lock-unlock; dữ liệu test được dọn và subscription không bị thay đổi.
 
 Profile, Membership và AI API chưa được triển khai. Deploy staging chưa nằm trong
 phạm vi nghiệm thu local hiện tại. Thứ tự tiếp theo được quản lý tại
@@ -145,14 +152,22 @@ Không commit `.env`, JWT thật, password hoặc API key.
 
 ## Build và kiểm thử
 
-Sau khi nạp biến môi trường:
+Nạp biến môi trường vào đúng PowerShell process trước khi chạy Backend. Spring
+Boot không tự đọc file `.env`:
 
 ```powershell
+cd "F:\DO AN TOT NGHIEP\Smart-gym-management"
+Get-Content -Encoding UTF8 .env | ForEach-Object {
+    if ($_ -match '^\s*([^#][^=]*)=(.*)$') {
+        [Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2], 'Process')
+    }
+}
+
 cd backend
 .\mvnw.cmd clean test
 ```
 
-Regression backend sau OpenAPI Gate Ngày 9:
+Regression backend sau OpenAPI Gate và hardening M1:
 
 ```text
 Tests run: 200, Failures: 0, Errors: 0, Skipped: 0
@@ -179,6 +194,10 @@ npm run build
 ```
 
 Kết quả xác nhận: 43 test Vitest pass và Vite production build thành công.
+
+Gate M1 local ngày 01/08/2026 cũng xác nhận Frontend phục vụ được các route
+`/login`, `/register`, `/member`, `/admin/users`; API health `UP`, OpenAPI có đúng
+6 operation và full flow Auth/RBAC/Admin pass 66 assertion. M1 không deploy web.
 
 ## Chạy Backend
 

@@ -458,12 +458,51 @@ DB hiện hành, còn subscription độc lập với thao tác lock/unlock. Dep
 - [x] Swagger UI có nút `Authorize`; sáu operation M1 hiển thị response contract
   đúng và không yêu cầu ghép thủ công Authorization header.
 
-### Lưu ý hardening
-
-- Cảnh báo Mockito dynamic Java Agent và Spring `AuthenticationProvider` không
-  làm thất bại build; xử lý trong đợt Review M1 đã lên kế hoạch, không thay đổi
-  provider trong phạm vi Ngày 9.
-
 **Kết luận:** Ngày 9 hoàn thành trong phạm vi local. OpenAPI contract, React shell,
-auth session và route protection đã đồng bộ với Backend; M1 sẵn sàng bước Review,
-hardening và tạo tag theo kế hoạch.
+auth session và route protection đã đồng bộ với Backend; M1 chuyển sang Review
+hardening theo kế hoạch.
+
+---
+
+## Review M1 — Hardening Backend (01/08/2026)
+
+### Đã xử lý
+
+- [x] Cấu hình Maven Surefire nạp Mockito `5.14.2` bằng `-javaagent` từ local
+  Maven repository; không thay đổi dependency test hoặc phạm vi test.
+- [x] Loại bỏ cảnh báo Spring tự dò `UserDetailsService` khi đã có provider:
+  `AuthenticationManager` hiện tạo `ProviderManager` với
+  `DaoAuthenticationProvider`, `CustomUserDetailsService` và BCrypt strength 12
+  một cách tường minh.
+- [x] Loại `UserDetailsServiceAutoConfiguration` khỏi bốn `@WebMvcTest` controller
+  slice; không còn bean in-memory/password ngẫu nhiên hoặc cảnh báo hai
+  `UserDetailsService` trong log test.
+- [x] Giữ nguyên `JwtAuthenticationFilter`, `AccountStatusGuard`, stateless
+  session, RBAC và các mã lỗi `ACC-004`, `ACC-005`, `ACC-006`.
+
+### Kiểm thử và minh chứng
+
+- [x] Sau khi nạp biến từ `.env` vào PowerShell process, `mvnw.cmd clean test`:
+  200 test pass, 0 failure, 0 error, 0 skipped.
+- [x] Flyway validate đủ 8 migration, Hibernate khởi tạo thành công trên MySQL 8.
+- [x] Log Surefire không còn cảnh báo Mockito dynamic attach hoặc cảnh báo
+  `AuthenticationProvider`/`UserDetailsService` auto-configuration.
+- [x] Frontend regression không bị ảnh hưởng: 43 test pass và Vite production
+  build thành công.
+- [x] OpenAPI runtime có đúng 6 operation M1 và `bearerAuth` dạng HTTP Bearer JWT;
+  Postman collection parse hợp lệ với 21 request, `baseUrl` local đúng
+  `/api/v1`.
+- [x] Smoke test API thật pass 66 assertion: normalize email, chống tự gán
+  role/status, `ACC-001`, `ACC-002`, `ACC-004`, `ACC-005`, `ACC-007`,
+  `AUTH-002`, current user, Admin search/filter/page, lock, token cũ, unlock và
+  đăng nhập lại.
+- [x] Snapshot database trước/sau smoke test giữ nguyên 13 user và 1
+  subscription; không còn dữ liệu `m1.e2e.*`, Flyway vẫn có 8 migration thành
+  công ở schema version 8.
+- [x] Frontend local trả HTTP 200 cho `/`, `/login`, `/register`, `/member`,
+  `/admin/users`; route protection, loading/error/empty state tiếp tục được bao
+  phủ bởi 43 test component/router.
+
+**Kết luận:** M1 đã hoàn thành trong phạm vi local và đạt gate kỹ thuật để tạo
+commit/tag `v0.1.0-m1-auth`. Cấu hình xác thực rõ ràng hơn nhưng hành vi đăng
+nhập, JWT, Guard, RBAC và subscription không đổi. Không deploy web trong M1.

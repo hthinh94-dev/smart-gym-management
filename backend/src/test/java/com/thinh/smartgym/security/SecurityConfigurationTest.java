@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -35,12 +34,6 @@ class SecurityConfigurationTest {
 
     @Mock
     private RestAccessDeniedHandler accessDeniedHandler;
-
-    @Mock
-    private AuthenticationConfiguration authenticationConfiguration;
-
-    @Mock
-    private AuthenticationManager authenticationManager;
 
     private SecurityConfiguration configuration;
 
@@ -78,7 +71,7 @@ class SecurityConfigurationTest {
                         encoder.encode("SecurePass1"),
                         List.of(new SimpleGrantedAuthority("ROLE_MEMBER"))
                 ));
-        AuthenticationProvider provider = configuration.authenticationProvider();
+        AuthenticationProvider provider = configuration.authenticationProvider(encoder);
         Authentication request = UsernamePasswordAuthenticationToken.unauthenticated(
                 "member@smartgym.com",
                 "SecurePass1"
@@ -94,15 +87,28 @@ class SecurityConfigurationTest {
         verify(userDetailsService).loadUserByUsername("member@smartgym.com");
     }
 
-    /** Kiểm tra AuthenticationManager bean chỉ ủy quyền cho Spring AuthenticationConfiguration. */
+    /** Kiểm tra AuthenticationManager dùng chính provider DAO đã cấu hình, không qua auto-configuration. */
     @Test
-    @DisplayName("AuthenticationManager lay tu AuthenticationConfiguration")
-    void authenticationManager_ShouldDelegateToSpringConfiguration() throws Exception {
-        when(authenticationConfiguration.getAuthenticationManager()).thenReturn(authenticationManager);
+    @DisplayName("AuthenticationManager dung DAO provider tuong minh")
+    void authenticationManager_ShouldUseExplicitDaoProvider() {
+        PasswordEncoder encoder = configuration.passwordEncoder();
+        when(userDetailsService.loadUserByUsername("member@smartgym.com"))
+                .thenReturn(new User(
+                        "member@smartgym.com",
+                        encoder.encode("SecurePass1"),
+                        List.of(new SimpleGrantedAuthority("ROLE_MEMBER"))
+                ));
 
-        AuthenticationManager result = configuration.authenticationManager(authenticationConfiguration);
+        AuthenticationManager manager = configuration.authenticationManager(encoder);
+        Authentication result = manager.authenticate(
+                UsernamePasswordAuthenticationToken.unauthenticated(
+                        "member@smartgym.com",
+                        "SecurePass1"
+                )
+        );
 
-        assertThat(result).isSameAs(authenticationManager);
-        verify(authenticationConfiguration).getAuthenticationManager();
+        assertThat(result).isNotNull();
+        assertThat(result.isAuthenticated()).isTrue();
+        verify(userDetailsService).loadUserByUsername("member@smartgym.com");
     }
 }

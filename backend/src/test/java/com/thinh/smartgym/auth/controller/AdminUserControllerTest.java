@@ -18,6 +18,7 @@ import com.thinh.smartgym.security.JwtService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -40,7 +41,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AdminUserController.class)
+@WebMvcTest(
+        controllers = AdminUserController.class,
+        excludeAutoConfiguration = UserDetailsServiceAutoConfiguration.class
+)
 @Import(GlobalExceptionHandler.class)
 @AutoConfigureMockMvc
 class AdminUserControllerTest {

@@ -51,7 +51,7 @@ Nguồn đối chiếu chính:
 
 | Milestone | Thời gian | Trọng tâm | FR/UC chính | Kết quả demo bắt buộc | Tag |
 | --- | --- | --- | --- | --- | --- |
-| M1 | 27/07 - 02/08 | Authentication, Security, OpenAPI và React skeleton | FR-AUTH, FR-ADMIN-02, UC-01, UC-02, UC-10 | Register, Login, JWT, RBAC, khóa/mở khóa tài khoản, React auth flow | `v0.1.0-m1-auth` |
+| M1 | 27/07 - 01/08 - Hoàn thành local | Authentication, Security, OpenAPI và React skeleton | FR-AUTH, FR-ADMIN-02, UC-01, UC-02, UC-10 | Register, Login, JWT, RBAC, khóa/mở khóa tài khoản, React auth flow | `v0.1.0-m1-auth` |
 | M2 | 03/08 - 09/08 | Member Profile, Calculator và Body Progress nền | FR-PROFILE, FR-NUTRITION-01..04, FR-PROGRESS-01..02, UC-03 | Member cập nhật profile, Backend tính BMI/BMR/TDEE/macros, ghi cân nặng trong ngày | `v0.2.0-m2-profile` |
 | M3 | 10/08 - 16/08 | Membership, Subscription, Renewal và SubscriptionGuard | FR-SUB, UC-04, UC-05 | Guest xem gói, Member đăng ký/gia hạn, Admin duyệt/hủy, guard chặn đúng | `v0.3.0-m3-membership` |
 | M4 | 17/08 - 23/08 | Exercise Library và Workout Plan core | FR-EXR, FR-WORKOUT-04..05, UC-06, một phần UC-07 | Admin quản lý bài tập, Member xem/kích hoạt plan, seed 30-50 bài tập | `v0.4.0-m4-exercise-workout` |
@@ -70,7 +70,7 @@ Nguồn đối chiếu chính:
 | 29/07 - Buổi 3 - Hoàn thành local | Login, current user và RBAC | Đã tạo `POST /api/v1/auth/login`, `GET /api/v1/users/me`; giữ role matcher; bắt `ACC-007`, `ACC-004`, `ACC-006` | Login API thật, Auth Context, `sessionStorage`, Axios Bearer interceptor | 83 backend test và 22 frontend test pass; build và kiểm thử localhost thủ công thành công | Người dùng đăng nhập nhận JWT và gọi được `/users/me` |
 | 30/07 - Buổi 4 - Hoàn thành local | Admin account status | Đã tạo `GET /api/v1/admin/users`, `PATCH /api/v1/admin/users/{id}/lock`, `PATCH /api/v1/admin/users/{id}/unlock`; không khóa vì hết hạn gói | Protected Route, layout Admin/Member và User Management | 110 backend test, 33 frontend test; lock/unlock, token cũ và bảo toàn subscription đã kiểm tra local | Admin khóa/mở khóa được, subscription không bị thay đổi |
 | 31/07 - Buổi 5 - Hoàn thành local | React skeleton và OpenAPI gate | Đã chuẩn hóa OpenAPI annotation, typed success/error schema, Bearer JWT và password `writeOnly` | Hoàn thiện auth state, Public Only/Protected/Role Route, layout Member/Admin và điều hướng theo role | 200 backend test, 43 frontend test; full flow Register -> Login -> `/users/me` -> Admin denied/allowed, lock/unlock đã kiểm tra local | Demo M1 local và README/docs đã cập nhật |
-| 01/08 - 02/08 | Review M1 | Sửa lỗi nhỏ, chuẩn hóa package theo File 13; xử lý cảnh báo Mockito Java Agent và rà cảnh báo cấu hình `AuthenticationProvider` | Chỉnh UI responsive tối thiểu | Chạy `mvn test`, test thủ công Swagger/Postman; xác nhận không còn cảnh báo hardening M1 | Tag `v0.1.0-m1-auth` |
+| 01/08 - Hoàn thành local | Review M1 | Đã cấu hình Mockito `5.14.2` làm Surefire Java agent; wiring tường minh `ProviderManager` + `DaoAuthenticationProvider` + `CustomUserDetailsService` + BCrypt strength 12; loại auto-config in-memory khỏi WebMvc slice; không đổi JWT/Guard/RBAC/error code | React shell Ngày 9 giữ nguyên; 43 test và build pass, các route M1 phục vụ HTTP 200 | 200 backend test; log không còn hai cảnh báo hardening; 6 OpenAPI operation, Postman 21 request và API thật pass 66 assertion; DB/subscription giữ nguyên | Gate M1 đạt, sẵn sàng commit/tag `v0.1.0-m1-auth`; không deploy web |
 
 ### M2 - Member Profile, Calculator và Body Progress nền
 

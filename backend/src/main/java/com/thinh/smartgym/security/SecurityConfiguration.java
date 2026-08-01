@@ -6,8 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -76,8 +76,7 @@ public class SecurityConfiguration {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
 
-                // Đăng ký AuthenticationProvider và chèn JwtAuthenticationFilter trước UsernamePasswordAuthenticationFilter
-                .authenticationProvider(authenticationProvider())
+                // AuthenticationManager đã chủ động chứa DaoAuthenticationProvider bên dưới.
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -94,27 +93,25 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Bean Cung cấp Cơ chế Xác thực dựa trên DAO (CustomUserDetailsService + BCryptPasswordEncoder).
+     * Tạo provider DAO cho AuthenticationManager (CustomUserDetailsService + BCryptPasswordEncoder).
      *
      * @return AuthenticationProvider
      */
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
+    AuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
+        provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
 
     /**
      * Bean Quản lý Xác thực (AuthenticationManager) cho toàn ứng dụng.
      *
-     * @param config Cấu hình xác thực từ Spring Security
+     * @param passwordEncoder BCrypt encoder được dùng bởi DaoAuthenticationProvider
      * @return AuthenticationManager
-     * @throws Exception Ngoại lệ khi lấy AuthenticationManager
      */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder) {
+        return new ProviderManager(authenticationProvider(passwordEncoder));
     }
 }
