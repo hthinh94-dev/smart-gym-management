@@ -21,6 +21,9 @@ target/
 backend/.env
 backend/src/main/resources/application-local.yml
 
+# Local-only test credentials
+docs/local-test-accounts.md
+
 # Node.js
 node_modules/
 frontend/dist/
