@@ -4,7 +4,9 @@ import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { useAuth } from "../features/auth/hooks/useAuth";
 import { MemberHomePage } from "../features/member/pages/MemberHomePage";
+import { MemberProfilePage } from "../features/member/profile/pages/MemberProfilePage";
 import { AdminLayout } from "../layouts/AdminLayout";
+import { MemberLayout } from "../layouts/MemberLayout";
 import { AuthRouteLoading, ProtectedRoute } from "./routes/ProtectedRoute";
 import { PublicOnlyRoute } from "./routes/PublicOnlyRoute";
 import { RoleRoute } from "./routes/RoleRoute";
@@ -30,7 +32,12 @@ export function AppRouter() {
             </Route>
             <Route element={<ProtectedRoute />}>
                 <Route element={<RoleRoute allowedRoles={["ROLE_MEMBER", "ROLE_PT"]} />}>
-                    <Route path="/member" element={<MemberHomePage />} />
+                    <Route path="/member" element={<MemberLayout />}>
+                        <Route index element={<MemberHomePage />} />
+                        <Route element={<RoleRoute allowedRoles={["ROLE_MEMBER"]} fallbackPath="/member" />}>
+                            <Route path="profile" element={<MemberProfilePage />} />
+                        </Route>
+                    </Route>
                 </Route>
                 <Route element={<RoleRoute allowedRoles={["ROLE_ADMIN"]} />}>
                     <Route path="/admin" element={<AdminLayout />}>

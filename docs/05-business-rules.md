@@ -79,8 +79,8 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 - **Hiện thực hóa kỹ thuật:** Hiển thị một cảnh báo rõ ràng trên giao diện người dùng (Disclaimer Banner) trước khi hiển thị kết quả AI và yêu cầu người dùng xác nhận đồng ý điều khoản trước khi bắt đầu sử dụng lộ trình.
 
 ### [BR-13] - Giới hạn phạm vi sở hữu dữ liệu tiến độ (Data Ownership Constraint)
-- **Mô tả nghiệp vụ:** Hội viên chỉ được quyền xem, sửa đổi hoặc xóa dữ liệu nhật ký tập luyện và tiến trình phát triển thể trạng của chính tài khoản mình sở hữu.
-- **Hiện thực hóa kỹ thuật:** Triển khai kiểm tra logic tại Service bằng cách so sánh `userId` của bản ghi cần cập nhật với `userId` trích xuất từ Principal trong Security Context của JWT Token hiện hành. Có thể sử dụng annotation `@PostAuthorize("returnObject.user.email == authentication.name")` ở tầng Repository hoặc Service.
+- **Mô tả nghiệp vụ:** Hội viên chỉ được quyền xem, sửa đổi hoặc xóa hồ sơ, dữ liệu nhật ký tập luyện và tiến trình phát triển thể trạng của chính tài khoản mình sở hữu. Member mới đăng ký chưa có `MemberProfile` là trạng thái hợp lệ; hệ thống không tự tạo hồ sơ bằng dữ liệu giả.
+- **Hiện thực hóa kỹ thuật:** Service luôn lấy `userId` từ `AuthenticatedUserPrincipal` trong Security Context, không nhận `memberId` từ path/query/body. `GET /api/v1/member/profile` không tìm thấy hồ sơ của principal hiện hành trả HTTP 404 với `PROF-001`; `PUT` profile thực hiện upsert từ Ngày 13.
 
 ### [BR-14] - Xóa mềm danh mục bài tập (Soft Delete for Master Data)
 - **Mô tả nghiệp vụ:** Trong MVP, mọi thao tác xóa Exercise đều là xóa mềm, không phân biệt bài tập đã có liên kết lịch sử hay chưa. Bài tập được chuyển sang trạng thái ngưng hoạt động (`isActive = false`) để bảo toàn tham chiếu và giữ hành vi API nhất quán.
@@ -160,6 +160,7 @@ Bảng này xác lập các `ErrorCode` cần kết xuất trong phản hồi AP
 | `ACC-005` | Tài khoản | 401 | JWT Token hết hạn hoặc không hợp lệ |
 | `ACC-006` | Tài khoản | 403 | Tài khoản đã bị vô hiệu hóa vĩnh viễn (DISABLED) |
 | `ACC-007` | Tài khoản | 401 | Email hoặc mật khẩu đăng nhập không chính xác |
+| `PROF-001` | Hồ sơ hội viên | 404 | Member hiện hành chưa hoàn thiện hồ sơ thể trạng |
 | `SUB-001` | Gói tập | 403 | Không có gói tập Active |
 | `SUB-002` | Gói tập | 404 | Không tìm thấy gói tập |
 | `SUB-003` | Gói tập | 409 | Gói tập đã ngừng hoạt động, không thể đăng ký hoặc gia hạn |

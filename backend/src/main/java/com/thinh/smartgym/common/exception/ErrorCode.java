@@ -29,6 +29,11 @@ public enum ErrorCode {
             HttpStatus.UNAUTHORIZED,
             "Tên đăng nhập hoặc mật khẩu không chính xác."
     ),
+    PROFILE_NOT_FOUND(
+            "PROF-001",
+            HttpStatus.NOT_FOUND,
+            "Hồ sơ thể trạng chưa được hoàn thiện."
+    ),
     VALIDATION_ERROR(
             "VAL-001",
             HttpStatus.BAD_REQUEST,

@@ -254,7 +254,9 @@ exception parser hoặc tên class Java.
 ## 4. Member Profile API
 
 ### GET /api/v1/member/profile
-**Mô tả:** Lấy toàn bộ thông tin hồ sơ thể trạng và sở thích dinh dưỡng của hội viên đang đăng nhập, cùng các chỉ số sinh học đã được Backend tính toán.
+**Mô tả:** Lấy toàn bộ thông tin hồ sơ thể trạng và sở thích dinh dưỡng của hội viên đang đăng nhập. Ownership được xác định từ JWT Principal; endpoint không nhận `memberId` từ client.
+
+**Quy ước Ngày 12:** Member mới đăng ký chưa có Profile là trạng thái hợp lệ. Endpoint trả `PROF-001` và không tự tạo dữ liệu giả. `calculatedTargets` chỉ được bổ sung sau khi Calculator hoàn thành trong Ngày 13, vì vậy chưa xuất hiện trong response hiện tại.
 
 **Headers:**
 - `Authorization: Bearer <token>` (Role: MEMBER)
@@ -286,17 +288,18 @@ exception parser hoặc tên class Java.
       "excludedFoods": ["BEEF"],
       "mealsPerDay": 4
     },
-    "calculatedTargets": {
-      "bmi": 22.86,
-      "bmr": 1706.25,
-      "tdee": 2644.69,
-      "dailyCaloriesKcal": 2944.69,
-      "proteinGrams": 154.0,
-      "fatGrams": 81.74,
-      "carbGrams": 383.26
-    },
     "updatedAt": "2026-07-15T10:30:00Z"
   }
+}
+```
+
+**Response lỗi - Chưa hoàn thiện hồ sơ (HTTP 404 Not Found):**
+```json
+{
+  "success": false,
+  "errorCode": "PROF-001",
+  "message": "Hồ sơ thể trạng chưa được hoàn thiện.",
+  "details": {}
 }
 ```
 

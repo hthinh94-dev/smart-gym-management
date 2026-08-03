@@ -1,6 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../../auth/context/AuthContext";
 import type { AuthContextValue } from "../../auth/context/AuthContext";
@@ -16,27 +14,20 @@ const member: AuthUser = {
     createdAt: "2026-07-29T08:00:00Z",
 };
 
-function renderMemberHome(user: AuthUser, logout = vi.fn()) {
+function renderMemberHome(user: AuthUser) {
     const value: AuthContextValue = {
         user,
         isAuthenticated: true,
         isRestoringSession: false,
         login: vi.fn(),
-        logout,
+        logout: vi.fn(),
     };
 
     render(
         <AuthContext.Provider value={value}>
-            <MemoryRouter initialEntries={["/member"]}>
-                <Routes>
-                    <Route path="/member" element={<MemberHomePage />} />
-                    <Route path="/login" element={<p>Trang đăng nhập</p>} />
-                </Routes>
-            </MemoryRouter>
+            <MemberHomePage />
         </AuthContext.Provider>,
     );
-
-    return logout;
 }
 
 describe("MemberHomePage", () => {
@@ -45,22 +36,13 @@ describe("MemberHomePage", () => {
 
         expect(screen.getByRole("heading", { name: /Nguyễn Minh Khang/ })).toBeInTheDocument();
         expect(screen.getAllByText("Hội viên").length).toBeGreaterThan(0);
-        expect(screen.getAllByText("khang@smartgym.com").length).toBeGreaterThan(0);
+        expect(screen.getByText("khang@smartgym.com")).toBeInTheDocument();
         expect(screen.getAllByText("Đang hoạt động").length).toBeGreaterThan(0);
     });
 
     it("hiển thị đúng vai trò huấn luyện viên", () => {
         renderMemberHome({ ...member, role: "ROLE_PT" });
+
         expect(screen.getAllByText("Huấn luyện viên").length).toBeGreaterThan(0);
-    });
-
-    it("logout và điều hướng về Login", async () => {
-        const logout = renderMemberHome(member);
-        const user = userEvent.setup();
-
-        await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
-
-        expect(logout).toHaveBeenCalledOnce();
-        expect(screen.getByText("Trang đăng nhập")).toBeInTheDocument();
     });
 });

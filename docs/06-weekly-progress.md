@@ -506,3 +506,41 @@ hardening theo kế hoạch.
 **Kết luận:** M1 đã hoàn thành trong phạm vi local và đạt gate kỹ thuật để tạo
 commit/tag `v0.1.0-m1-auth`. Cấu hình xác thực rõ ràng hơn nhưng hành vi đăng
 nhập, JWT, Guard, RBAC và subscription không đổi. Không deploy web trong M1.
+
+---
+
+## Ngày 12 — Profile Persistence (03/08/2026)
+
+### Đã triển khai source
+
+- [x] Chốt `PROF-001`: Member mới chưa có Profile là trạng thái hợp lệ; GET
+  profile trả HTTP 404 và không tạo dữ liệu thể trạng giả.
+- [x] Bổ sung tám enum Profile khớp migration V2 và File 11.
+- [x] Ánh xạ `MemberProfile` với User và năm collection table bằng
+  `@ElementCollection`; không sửa migration V2 hoặc thêm quan hệ ngược vào User.
+- [x] Hoàn thiện repository, response DTO, service read-only và
+  `GET /api/v1/member/profile`; ownership lấy từ `AuthenticatedUserPrincipal` và
+  `AccountStatusGuard` chạy trước nghiệp vụ.
+- [x] Cập nhật OpenAPI và API Draft cho response 200, `PROF-001`, `ACC-004`,
+  `ACC-005`, `ACC-006` và `AUTH-002`; chưa đưa `calculatedTargets` vào Ngày 12.
+- [x] Hoàn thiện Member layout và Profile shell desktop/laptop với loading,
+  empty, read-only, network error, retry và CTA chuẩn bị cho Ngày 13.
+- [x] Route `/member/profile` chỉ cho `ROLE_MEMBER`; API client gọi đúng
+  `/api/v1/member/profile` và kiểm tra response contract trước khi hiển thị.
+
+### Kiểm thử và minh chứng
+
+- [x] Targeted Backend: 16 test pass, 0 failure, 0 error, 0 skipped.
+- [x] Flyway validate đủ 8 migration; Hibernate khởi tạo thành công với schema
+  version 8 trên MySQL 8.0.44.
+- [x] Targeted Frontend Ngày 12: 10 test pass; kiểm tra route bảo vệ bổ sung:
+  6 test pass.
+- [x] Không chạy full M1 regression, frontend production build hoặc manual
+  localhost, đúng giới hạn Coding Day của kế hoạch M2.
+- [x] Cập nhật Chương 3 và Chương 4 của bản nháp báo cáo với thiết kế miền
+  Profile, năm collection table, ownership theo Principal, API đọc và kết quả
+  targeted test.
+
+**Kết luận:** Ngày 12 hoàn thành Gate Profile Persistence. Backend, Frontend,
+database schema, security ownership và response contract đã đồng bộ; sẵn sàng
+chuyển sang Profile update và Calculator của Ngày 13.

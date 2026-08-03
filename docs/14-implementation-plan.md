@@ -2,7 +2,7 @@
 
 ## 1. Mục đích
 
-Tài liệu này chuẩn hóa kế hoạch triển khai từ **Ngày 5 - 27/07/2026** đến khi đóng đồ án vào **13/09/2026**. Kế hoạch được lập sau khi đối chiếu các tài liệu `01` đến `13`, giữ đúng phạm vi MVP 9 tuần và hiện trạng đã hoàn thành ở Ngày 4.
+Tài liệu này chuẩn hóa kế hoạch triển khai từ **Ngày 5 - 27/07/2026** đến khi đóng đồ án vào **31/08/2026**. Kế hoạch tăng tốc được chốt ngày 03/08/2026 sau khi M1 đã hoàn thành local, bỏ Ngày 11 (02/08), tăng khối lượng công việc mỗi ngày và giữ nguyên các quality gate bắt buộc.
 
 Nguồn đối chiếu chính:
 
@@ -11,26 +11,27 @@ Nguồn đối chiếu chính:
 - `03-functional-requirements.md`: AI Hybrid, whitelist, schema và fallback.
 - `04-non-functional-requirements.md`: hiệu năng, bảo mật, Docker, SpringDoc, Resilience4j.
 - `05-business-rules.md`: ràng buộc nghiệp vụ, error code và warning code.
-- `06-weekly-progress.md`: hiện trạng sau Ngày 4.
+- `06-weekly-progress.md`: hiện trạng triển khai và kết quả kiểm thử.
 - `07-actors-and-roles.md`: RBAC và vai trò Admin/Member/PT.
-- `08-functional-requirements-detail.md`: 44 FR.
-- `09-use-case-specification.md`: 10 Use Case cốt lõi.
-- `10-api-draft.md`: 32 API contract và response format.
-- `11-database-design.md`: 25 bảng vật lý, constraints và indexes.
-- `12-entity-relationship-mapping.md`: 16 Entity và 9 `@ElementCollection`.
+- `08-functional-requirements-detail.md`: yêu cầu chức năng chi tiết.
+- `09-use-case-specification.md`: các Use Case cốt lõi.
+- `10-api-draft.md`: API contract và response format.
+- `11-database-design.md`: schema, constraints và indexes.
+- `12-entity-relationship-mapping.md`: quy tắc ánh xạ JPA.
 - `13-architecture-decision.md`: Modular Layered Monolith và quy ước hiện thực.
 
-## 2. Baseline trước Ngày 5
+## 2. Baseline trước Ngày 12
 
 | Hạng mục | Trạng thái đã chốt |
 | --- | --- |
+| M1 | Hoàn thành local ngày 01/08; Backend 200 test, Frontend 43 test và production build pass; tag `v0.1.0-m1-auth`. |
 | Kiến trúc | Modular Layered Monolith, package theo module nghiệp vụ dưới `com.thinh.smartgym`. |
-| Database | MySQL 8, Flyway sở hữu DDL, 25 bảng vật lý đã chia migration theo module. |
-| JPA | Hibernate chỉ `validate`, `open-in-view=false`, auditing đã bật. |
-| Auth persistence | Đã có `User`, `Role`, `UserRole`, `UserRoleId`, repository Auth và seed `ROLE_ADMIN`, `ROLE_MEMBER`, `ROLE_PT`. |
-| Bảo mật | JWT stateless; `JwtAuthenticationFilter` xác thực chữ ký/hạn dùng và nạp identity/roles nhưng không quyết định `accountStatus`; trạng thái tài khoản được kiểm tra bằng `AccountStatusGuard`/Method Security. |
-| Frontend | Register, Login, auth state, Protected Route và phân layout Admin/Member đã kết nối API thật, pass test/build; M1 tiếp tục hardening và hoàn thiện auth shell. |
-| Phạm vi | MVP chỉ yêu cầu luồng Admin và Member; PT, payment thật, refresh token, mobile app, IoT, chat realtime là ngoài phạm vi giai đoạn này. |
+| Database | MySQL 8, Flyway sở hữu DDL; không sửa migration đã áp dụng. |
+| Bảo mật | JWT stateless, RBAC, `AccountStatusGuard`, Protected/Public Only/Role Route đã hoạt động. |
+| Frontend | Register, Login, Auth Context, Member/Admin shell và Admin User Management đã kết nối API thật. |
+| Deploy | Không deploy riêng M1; deploy theo cụm sau M3, sau M6 và bản final M7. |
+| Ngày 11 | **Bỏ Ngày 11 - 02/08/2026**; phần chuẩn bị M2 được nhập vào Ngày 12. |
+| Phạm vi PT | Không làm module PT đầy đủ. Chỉ bổ sung phạm vi đọc thời hạn gói và cảnh báo 30 ngày cho hội viên được phân công, theo yêu cầu nghiệp vụ mới. |
 
 ## 3. Quy tắc triển khai xuyên suốt
 
@@ -39,137 +40,178 @@ Nguồn đối chiếu chính:
 | R1 | Không sửa migration Flyway đã áp dụng; thay đổi schema phải tạo migration mới. |
 | R2 | Controller chỉ nhận/trả DTO; không serialize JPA Entity ra API. |
 | R3 | Transaction đặt tại Service; Controller không chứa business rule hoặc gọi Repository trực tiếp. |
-| R4 | Mọi tài nguyên cá nhân lấy `memberId` từ Principal/Security Context, không tin `memberId` do Client gửi. |
-| R5 | Response tuân thủ `ApiResponse`, `ErrorResponse`, `PageResponse` và Error Code Registry ở File 05. |
-| R6 | Swagger/OpenAPI bằng SpringDoc được cập nhật khi tạo controller mới. |
-| R7 | Backend sở hữu BMI, BMR, TDEE, calories và macros; AI chỉ tạo `workoutSchedule` và `nutritionPlan.mealStructure`. |
-| R8 | Recommendation/fallback đều phải qua cùng hậu kiểm: JSON schema, whitelist, planned values, số ngày tập, số bữa ăn và dietary constraints. |
-| R9 | Các endpoint cao cấp gồm tạo recommendation, kích hoạt plan và ghi workout log phải kiểm tra subscription hợp lệ theo `status = ACTIVE`, `startDate <= today < endDate`. |
-| R10 | Mỗi milestone chỉ được đóng khi có test, tài liệu cập nhật, demo được và tag phiên bản. |
+| R4 | Tài nguyên cá nhân lấy `memberId` từ Principal/Security Context; không tin ID do Client gửi. |
+| R5 | Response tuân thủ `ApiResponse`, `ErrorResponse`, `PageResponse` và Error Code Registry File 05. |
+| R6 | Swagger/OpenAPI và Postman được cập nhật khi tạo endpoint mới. |
+| R7 | Backend sở hữu BMI, BMR, TDEE, calories và macros; AI không được tự tính các giá trị chính thức. |
+| R8 | AI và fallback đều phải qua JSON schema, whitelist và business validator dùng chung. |
+| R9 | Recommendation, kích hoạt plan và ghi workout log phải kiểm tra subscription hợp lệ động. |
+| R10 | Ngày code phải viết test cùng chức năng và chỉ chạy targeted unit/integration test cho phần vừa thay đổi; không bắt buộc full regression, production build hoặc test thủ công localhost. |
+| R11 | Ngày cuối mỗi milestone được dành riêng cho full local QA và fix: chạy toàn bộ Backend test, Frontend test/build, kiểm thử thủ công localhost, sửa lỗi rồi chạy lại đến khi pass. |
+| R12 | Deploy web theo cụm: M1-M3 ngày 12/08, M4-M6 ngày 27/08, final ngày 31/08. |
+| R13 | Không làm mobile app hoặc tối ưu giao diện mobile; chỉ kiểm tra desktop/laptop. |
+| R14 | Không chuyển sang milestone tiếp theo nếu ngày local QA/fix chưa pass; mỗi milestone phải có tài liệu, commit sạch, demo local và tag phiên bản. |
+| R15 | Không thêm Should-have mới ngoài Landing Page và PT expiry view đã được chốt trong kế hoạch tăng tốc. |
 
-## 4. Tổng quan milestone
+## 4. Tổng quan milestone tăng tốc
 
-| Milestone | Thời gian | Trọng tâm | FR/UC chính | Kết quả demo bắt buộc | Tag |
-| --- | --- | --- | --- | --- | --- |
-| M1 | 27/07 - 01/08 - Hoàn thành local | Authentication, Security, OpenAPI và React skeleton | FR-AUTH, FR-ADMIN-02, UC-01, UC-02, UC-10 | Register, Login, JWT, RBAC, khóa/mở khóa tài khoản, React auth flow | `v0.1.0-m1-auth` |
-| M2 | 03/08 - 09/08 | Member Profile, Calculator và Body Progress nền | FR-PROFILE, FR-NUTRITION-01..04, FR-PROGRESS-01..02, UC-03 | Member cập nhật profile, Backend tính BMI/BMR/TDEE/macros, ghi cân nặng trong ngày | `v0.2.0-m2-profile` |
-| M3 | 10/08 - 16/08 | Membership, Subscription, Renewal và SubscriptionGuard | FR-SUB, UC-04, UC-05 | Guest xem gói, Member đăng ký/gia hạn, Admin duyệt/hủy, guard chặn đúng | `v0.3.0-m3-membership` |
-| M4 | 17/08 - 23/08 | Exercise Library và Workout Plan core | FR-EXR, FR-WORKOUT-04..05, UC-06, một phần UC-07 | Admin quản lý bài tập, Member xem/kích hoạt plan, seed 30-50 bài tập | `v0.4.0-m4-exercise-workout` |
-| M5 | 24/08 - 30/08 | AI Hybrid Recommendation, validator, fallback và nutrition suggestion | FR-WORKOUT-01..03, FR-NUTRITION-05..06, UC-07 | AI/fallback tạo DRAFT plan, whitelist hoạt động, warning code đúng | `v0.5.0-m5-ai-recommendation` |
-| M6 | 31/08 - 06/09 | Workout Log và Progress Analytics | FR-WORKOUT-06..07, FR-PROGRESS-03..04, UC-08, UC-09 | Ghi log, update-in-place, xem lịch sử, biểu đồ cân nặng/mức tạ/tần suất | `v0.6.0-m6-progress` |
-| M7 | 07/09 - 13/09 | Hardening, Docker, deploy, báo cáo, slide và demo | NFR-09, NFR-10, toàn bộ UC | Docker Compose chạy một lệnh, dữ liệu demo, báo cáo/slide/video/backups hoàn chỉnh | `v1.0.0-final` |
+| Milestone | Thời gian mới | Trọng tâm | Kết quả demo bắt buộc | Tag |
+| --- | --- | --- | --- | --- |
+| M1 | 27/07 - 01/08 - Hoàn thành local | Authentication, Security, OpenAPI, React shell | Register, Login, JWT, RBAC, khóa/mở khóa | `v0.1.0-m1-auth` |
+| M2 | **03/08 - 06/08** | Member Profile, Calculator, Body Progress nền | Cập nhật profile, tính BMI/BMR/TDEE/macros, ghi cân nặng | `v0.2.0-m2-profile` |
+| M3 | **07/08 - 11/08** | Landing Page, Membership, Renewal, SubscriptionGuard, expiry reminder | Guest xem Landing/gói; Member đăng ký/gia hạn; Admin duyệt; Admin/PT thấy thời hạn | `v0.3.0-m3-membership` |
+| Deploy 1 | **12/08** | Deploy và regression M1-M3 | Full flow Landing/Auth/Profile/Membership pass trên web | `deploy-m1-m3` |
+| M4 | **13/08 - 17/08** | Exercise Library và Workout Plan core | Exercise CRUD, seed, plan activation, fallback nền | `v0.4.0-m4-exercise-workout` |
+| M5 | **18/08 - 22/08** | AI Hybrid Recommendation | AI/fallback tạo DRAFT plan, validator và whitelist hoạt động | `v0.5.0-m5-ai-recommendation` |
+| M6 | **23/08 - 26/08** | Workout Log và Progress Analytics | Ghi log, lịch sử và biểu đồ tiến trình | `v0.6.0-m6-progress` |
+| Deploy 2 | **27/08** | Deploy và regression M4-M6 | Full Member journey M1-M6 pass trên web | `deploy-m4-m6` |
+| M7 | **28/08 - 31/08** | Docker, hardening, tài liệu, slide, demo và đóng gói | Bản final chạy được, báo cáo/slide/video/backups hoàn chỉnh | `v1.0.0-final` |
 
-## 5. Kế hoạch chi tiết theo buổi
+## 5. Kế hoạch chi tiết theo ngày
 
-### M1 - Authentication, Security, OpenAPI và React skeleton
+### M1 - Authentication, Security, OpenAPI và React shell
 
-| Ngày/Buổi | Trọng tâm | Backend | Frontend | Test/QA | Đầu ra bắt buộc |
-| --- | --- | --- | --- | --- | --- |
-| 27/07 - Buổi 1 | Security foundation | Hoàn thiện `SecurityFilterChain`, `JwtService`, `JwtAuthenticationFilter`, `CustomUserDetailsService`, `AccountStatusGuard`, `AuthenticationEntryPoint`, `AccessDeniedHandler`; bổ sung SpringDoc nếu chưa có | Chưa bắt buộc | Context load, JWT valid/expired/invalid signature, request thiếu token | Endpoint bảo mật phân biệt được `401`, `403`, `AUTH-002`, `ACC-005`, `ACC-004`, `ACC-006` |
-| 28/07 - Buổi 2 - Hoàn thành local | Register | Tạo DTO/controller/service cho `POST /api/v1/auth/register`; normalize email; validate password/confirmPassword; BCrypt; gán `ROLE_MEMBER`, `ACTIVE` | Trang Register, client validation, hiển thị lỗi API | 61 backend test và 6 frontend test pass; production build thành công | Register chạy đúng API Draft, không log password/confirmPassword |
-| 29/07 - Buổi 3 - Hoàn thành local | Login, current user và RBAC | Đã tạo `POST /api/v1/auth/login`, `GET /api/v1/users/me`; giữ role matcher; bắt `ACC-007`, `ACC-004`, `ACC-006` | Login API thật, Auth Context, `sessionStorage`, Axios Bearer interceptor | 83 backend test và 22 frontend test pass; build và kiểm thử localhost thủ công thành công | Người dùng đăng nhập nhận JWT và gọi được `/users/me` |
-| 30/07 - Buổi 4 - Hoàn thành local | Admin account status | Đã tạo `GET /api/v1/admin/users`, `PATCH /api/v1/admin/users/{id}/lock`, `PATCH /api/v1/admin/users/{id}/unlock`; không khóa vì hết hạn gói | Protected Route, layout Admin/Member và User Management | 110 backend test, 33 frontend test; lock/unlock, token cũ và bảo toàn subscription đã kiểm tra local | Admin khóa/mở khóa được, subscription không bị thay đổi |
-| 31/07 - Buổi 5 - Hoàn thành local | React skeleton và OpenAPI gate | Đã chuẩn hóa OpenAPI annotation, typed success/error schema, Bearer JWT và password `writeOnly` | Hoàn thiện auth state, Public Only/Protected/Role Route, layout Member/Admin và điều hướng theo role | 200 backend test, 43 frontend test; full flow Register -> Login -> `/users/me` -> Admin denied/allowed, lock/unlock đã kiểm tra local | Demo M1 local và README/docs đã cập nhật |
-| 01/08 - Hoàn thành local | Review M1 | Đã cấu hình Mockito `5.14.2` làm Surefire Java agent; wiring tường minh `ProviderManager` + `DaoAuthenticationProvider` + `CustomUserDetailsService` + BCrypt strength 12; loại auto-config in-memory khỏi WebMvc slice; không đổi JWT/Guard/RBAC/error code | React shell Ngày 9 giữ nguyên; 43 test và build pass, các route M1 phục vụ HTTP 200 | 200 backend test; log không còn hai cảnh báo hardening; 6 OpenAPI operation, Postman 21 request và API thật pass 66 assertion; DB/subscription giữ nguyên | Gate M1 đạt, sẵn sàng commit/tag `v0.1.0-m1-auth`; không deploy web |
+M1 đã hoàn thành local ngày 01/08/2026. Giữ nguyên toàn bộ kết quả, test và tag đã ghi trong `06-weekly-progress.md`. Không deploy riêng M1.
 
 ### M2 - Member Profile, Calculator và Body Progress nền
 
-| Ngày/Buổi | Trọng tâm | Backend | Frontend | Test/QA | Đầu ra bắt buộc |
-| --- | --- | --- | --- | --- | --- |
-| 03/08 - Buổi 1 | Profile persistence | Tạo enum/profile entity còn thiếu, repository, DTO và mapper thủ công; `GET /api/v1/member/profile` | Trang Profile shell | Test ownership đọc hồ sơ chính mình | Profile API không trả Entity |
-| 04/08 - Buổi 2 | Profile update | `PUT /api/v1/member/profile`; validate BR-23; sanitize list `foodAllergies`, `excludedFoods`; cập nhật/tạo `BodyProgress` khi weight thay đổi | Form profile đầy đủ trường Must-have | Test `VAL-001`, enum sai, `mealsPerDay` ngoài 1-6 | Lưu profile và trả dữ liệu chuẩn |
-| 05/08 - Buổi 3 | Calculator | `BiometricCalculationService`: BMI, BMR Mifflin-St Jeor, TDEE, daily calories, protein/fat/carb | Dashboard hiển thị chỉ số | Unit test công thức nam/nữ, tuổi, boundary | `calculatedTargets` nhất quán ở GET/PUT profile |
-| 06/08 - Buổi 4 | Body Progress nền | `POST /api/v1/member/body-progress`; upsert theo `(member_id, record_date)`; Clock `Asia/Ho_Chi_Minh` | Widget nhập cân nặng hôm nay | Test tạo mới/cập nhật cùng ngày, ngày tương lai | BR-22 hoạt động, không sinh bản ghi trùng ngày |
-| 07/08 - Buổi 5 | Integration và tài liệu | Rà OpenAPI Profile/Progress; cập nhật API notes | Hoàn thiện UX lỗi validation | Regression Auth + Profile end-to-end | Ảnh minh chứng profile/calculator |
-| 08/08 - 09/08 | Review M2 | Sửa lỗi nhỏ | Responsive profile page | `mvn test`, Postman Profile | Tag `v0.2.0-m2-profile` |
+| Ngày | Trọng tâm | Backend | Frontend | Test/QA và đầu ra |
+| --- | --- | --- | --- | --- |
+| **Ngày 12 - 03/08** | Profile persistence | Chốt `PROF-001`; tạo enum, `MemberProfile`, repository, DTO, mapper và `GET /api/v1/member/profile`; ownership theo Principal; không trả Entity | Dành thời gian tự thiết kế Profile desktop/laptop; tạo Profile shell, route và empty state `PROF-001` | Viết và chạy targeted entity/repository/service/controller test; chưa chạy full M1 regression hoặc manual localhost |
+| **Ngày 13 - 04/08** | Profile update và Calculator | `PUT /api/v1/member/profile` upsert; BR-23; sanitize collection; `BiometricCalculationService` cho BMI/BMR/TDEE/calories/macros | Form profile đầy đủ và khu vực `calculatedTargets`; loading/error/success state | Targeted test create/update, validation và toàn bộ công thức/boundary; chưa chạy full local QA |
+| **Ngày 14 - 05/08** | Body Progress và tích hợp M2 | `POST /api/v1/member/body-progress`; atomic upsert theo `(member_id, record_date)`; Clock; OpenAPI và Postman | Widget cân nặng, hoàn thiện Profile desktop/laptop và kết nối GET/PUT/Progress | Targeted test upsert, ngày tương lai, không trùng dòng; hoàn thiện source M2 trước ngày QA |
+| **Ngày 15 - 06/08** | **Local QA và fix M2** | Không thêm feature; chạy full Backend regression M1-M2, kiểm tra Flyway/MySQL, sửa lỗi rồi chạy lại | Chạy full Frontend test/build; test thủ công Profile/Calculator/Body Progress trên localhost; sửa UI/API integration | Dành trọn ngày test/fix; cập nhật docs/ảnh/Postman; tag `v0.2.0-m2-profile` chỉ khi tất cả pass |
 
-### M3 - Membership, Subscription, Renewal và SubscriptionGuard
+### M3 - Landing Page, Membership và SubscriptionGuard
 
-| Ngày/Buổi | Trọng tâm | Backend | Frontend | Test/QA | Đầu ra bắt buộc |
-| --- | --- | --- | --- | --- | --- |
-| 10/08 - Buổi 1 | Package catalog | Entity/repository/service package; `GET /api/v1/packages`, Admin CRUD package; normalize name; soft inactive | Trang gói tập public và Admin package | Test `SUB-002`, `SUB-003`, `SUB-007`, `VAL-001` | Guest xem gói, Admin tạo/sửa/vô hiệu hóa |
-| 11/08 - Buổi 2 | New subscription | `POST /api/v1/member/subscriptions`, `GET /api/v1/member/subscriptions/current`; snapshot package; chặn ACTIVE/PENDING | Member chọn gói, xem trạng thái hiện hành | Test `SUB-004`, `SUB-006`, ownership | Tạo request PENDING đúng BR-04 |
-| 12/08 - Buổi 3 | Approval/cancel | `POST /api/v1/admin/subscriptions/{id}/approve`, `POST /api/v1/admin/subscriptions/{id}/cancel`; lock theo Member; `@Version`; Clock | Admin duyệt/hủy request | Test phê duyệt, hủy, concurrent conflict `CON-001` nếu khả thi | Subscription ACTIVE có `startDate`, `endDate` exclusive |
-| 13/08 - Buổi 4 | Renewal và Guard | `POST /api/v1/member/subscriptions/{activeSubscriptionId}/renewal-requests`; duyệt renewal cộng dồn `endDate`; `SubscriptionGuard` reusable | Member gửi gia hạn, Admin duyệt gia hạn | Test BR-24, BR-25, package mismatch, renewal PENDING trùng | Guard có thể dùng cho Recommendation/WorkoutLog ở M5/M6 |
-| 14/08 - Buổi 5 | Admin/member flow | Admin users/package/subscription views; public package polish | Hoàn thiện UI membership | Regression Auth/Profile/Membership | Demo đăng ký mới và gia hạn mô phỏng |
-| 15/08 - 16/08 | Review M3 | Cập nhật OpenAPI, README, weekly progress | Chỉnh lỗi UI | `mvn test`, Postman collection | Tag `v0.3.0-m3-membership` |
+| Ngày | Trọng tâm | Backend | Frontend | Test/QA và đầu ra |
+| --- | --- | --- | --- | --- |
+| **Ngày 16 - 07/08** | Landing Page và Package catalog | Package entity/repository/service; public GET; Admin CRUD, normalize name và soft inactive | Dành 2 giờ tự thiết kế Landing; tạo `/`, visual hero, package preview, CTA Login/Register và Admin Package UI | Targeted Package API/component tests; không chạy full local QA |
+| **Ngày 17 - 08/08** | New subscription | Tạo/current subscription; package snapshot; chặn ACTIVE/PENDING trùng | Member chọn gói, xem trạng thái PENDING/ACTIVE và current subscription | Targeted BR-04, `SUB-004`, `SUB-006`, ownership và inactive package tests |
+| **Ngày 18 - 09/08** | Approval, cancel và renewal | Admin list/approve/cancel; lock theo Member; `@Version`; thiết lập ngày; renewal request/approve và cộng dồn `endDate` | Admin duyệt/hủy; Member xem ngày và gửi gia hạn | Targeted transition, concurrency, renewal trùng và package mismatch tests |
+| **Ngày 19 - 10/08** | Guard, expiry reminder và tích hợp M3 | `SubscriptionGuard`; query `1..30` ngày; quan hệ PT-Member tối thiểu; rà OpenAPI/Postman/query | Admin expiry list; PT read-only assigned member; hoàn thiện Landing/Membership desktop/laptop | Targeted guard, mốc 30/1/0 ngày và PT ownership tests; hoàn thiện source M3 |
+| **Ngày 20 - 11/08** | **Local QA và fix M3** | Không thêm feature; full Backend regression M1-M3; Flyway, scheduler và query verification; sửa lỗi | Full Frontend test/build; test thủ công Landing/Auth/Profile/Membership/Admin/PT trên localhost; sửa lỗi | Dành trọn ngày test/fix; cập nhật docs/ảnh/Postman; tag `v0.3.0-m3-membership` khi pass |
+
+### Deploy Gate 1 - M1 đến M3
+
+| Ngày | Công việc | Gate bắt buộc |
+| --- | --- | --- |
+| **Ngày 21 - 12/08** | Deploy Backend, Frontend và database; cấu hình environment, CORS, JWT, Flyway; test Landing/Auth/Profile/Package/Subscription/Renewal/expiry reminder | Full flow M1-M3 pass trên web; không còn lỗi P0/P1; chỉ sau đó mới chuyển M4 |
 
 ### M4 - Exercise Library và Workout Plan core
 
-| Ngày/Buổi | Trọng tâm | Backend | Frontend | Test/QA | Đầu ra bắt buộc |
-| --- | --- | --- | --- | --- | --- |
-| 17/08 - Buổi 1 | Exercise entity và seed | Tạo `Exercise` + 4 collection metadata; seed 30-50 bài tập qua Flyway/DataInitializer idempotent | Chưa bắt buộc | Test Flyway/seed, enum khớp File 11 | Master data đủ để demo và whitelist |
-| 18/08 - Buổi 2 | Exercise API | `GET /api/v1/exercises`, `GET /api/v1/exercises/{id}`, Admin CRUD; search/filter/pagination/sorting; soft delete | Exercise Library và Admin Exercise | Test `EXR-001`, `EXR-002`, soft delete, pagination | Danh mục hiện hành không trả exercise inactive |
-| 19/08 - Buổi 3 | Workout Plan core | Entity/repository/service cho `WorkoutPlan`, `WorkoutDay`, `WorkoutPlanExercise`; `GET /api/v1/member/workout-plans/current`; activation service | Trang Current Workout Plan | Test DRAFT/ACTIVE/ARCHIVED, planned constraints | Kích hoạt plan trong transaction, chỉ một ACTIVE |
-| 20/08 - Buổi 4 | Fallback base | Tạo fallback/rule-based generator nội bộ dùng whitelist và validate BR-09A/BR-10; chưa cần gọi AI thật | Preview plan/fallback cơ bản | Unit test whitelist, day count, no duplicate exercise/day | Có nguồn plan an toàn để M5 dùng lại |
-| 21/08 - Buổi 5 | UI và tài liệu | OpenAPI Exercise/Workout Plan; cập nhật docs ảnh UI/API | Hoàn thiện Exercise/Admin/Plan UI | Regression M1-M4 | Demo exercise CRUD và plan activation |
-| 22/08 - 23/08 | Review M4 | Sửa lỗi nhỏ, rà query N+1 | Responsive library/plan | `mvn test`, Swagger/Postman | Tag `v0.4.0-m4-exercise-workout` |
+| Ngày | Trọng tâm | Backend | Frontend | Test/QA và đầu ra |
+| --- | --- | --- | --- | --- |
+| **Ngày 22 - 13/08** | Exercise persistence và API | `Exercise`, metadata, seed 30-50 bài; list/detail/Admin CRUD/search/filter/page/sort | Tạo Exercise Library và Admin Exercise nền | Targeted Flyway/seed/API/soft inactive tests |
+| **Ngày 23 - 14/08** | Exercise UI và Workout Plan persistence | Hoàn thiện Exercise query; tạo `WorkoutPlan`, `WorkoutDay`, `WorkoutPlanExercise`, current endpoint | Hoàn thiện Exercise UI; tạo Current Workout Plan shell | Targeted repository/service/controller tests; chưa chạy full local QA |
+| **Ngày 24 - 15/08** | Plan activation | Activation transaction, ownership, archive ACTIVE cũ và chỉ một ACTIVE | Preview/current/activate plan flow | Targeted lifecycle, rollback và concurrency tests |
+| **Ngày 25 - 16/08** | Fallback và tích hợp M4 | Rule-based generator, whitelist và planned-value validator; OpenAPI/query review | Preview fallback; hoàn thiện Exercise/Plan desktop/laptop | Targeted whitelist/day count/injury/no-duplicate tests; hoàn thiện source M4 |
+| **Ngày 26 - 17/08** | **Local QA và fix M4** | Full Backend regression M1-M4, Flyway/seed/N+1 review; sửa lỗi và chạy lại | Full Frontend test/build; test thủ công Exercise CRUD/Plan activation/fallback localhost | Dành trọn ngày test/fix; docs/ảnh/Postman; tag `v0.4.0-m4-exercise-workout` |
 
 ### M5 - AI Hybrid Recommendation
 
-| Ngày/Buổi | Trọng tâm | Backend | Frontend | Test/QA | Đầu ra bắt buộc |
-| --- | --- | --- | --- | --- | --- |
-| 24/08 - Buổi 1 | Recommendation pipeline | `POST /api/v1/member/recommendations`; kiểm tra subscription, profile completeness, calculator, exercise whitelist | Recommendation page shell, disclaimer | Test chặn `SUB-001`, profile invalid không gọi AI | Pipeline nội bộ có đủ input sạch |
-| 25/08 - Buổi 2 | AI port và prompt | `AiRecommendationClient` port, provider adapter, `PromptSanitizerService`, `PromptBuilder`, JSON schema, thêm Resilience4j | Loading state 30s, disable double submit | Unit test sanitizer, không nhận `customPrompt` | AI chỉ nhận dữ liệu allowlist và whitelist |
-| 26/08 - Buổi 3 | Validator và fallback | `AiResponseValidator` dùng chung cho AI/fallback; reject toàn bộ payload sai; retry/tái sinh tối đa 1 lần; warning code | Preview `AI_GENERATED`/`FALLBACK_TEMPLATE` | Test invalid JSON, ID ngoài whitelist, planned values sai, meal count sai | Fallback trả HTTP 200 với `AI_TIMEOUT`/`AI_RESPONSE_INVALID` |
-| 27/08 - Buổi 4 | Persist recommendation | Lưu `WorkoutPlan DRAFT`, `AiRecommendation`, `NutritionMealSuggestion` trong cùng transaction; `GET /api/v1/member/recommendations/latest` | Member xem latest recommendation và kích hoạt plan | Test rollback khi fallback không an toàn, `AI-001` | Không lưu dữ liệu recommendation một phần |
-| 28/08 - Buổi 5 | Frontend integration | Hoàn thiện page generate, preview workout/meal, calculatedTargets, warning banner | Nút activate nối API M4 | E2E: profile + active sub + generate + activate | Demo AI/fallback hoàn chỉnh |
-| 29/08 - 30/08 | Review M5 | Cập nhật OpenAPI, docs AI Hybrid, screenshot | Chỉnh UI fallback/disclaimer | `mvn test`, mock AI timeout/429/5xx | Tag `v0.5.0-m5-ai-recommendation` |
+| Ngày | Trọng tâm | Backend | Frontend | Test/QA và đầu ra |
+| --- | --- | --- | --- | --- |
+| **Ngày 27 - 18/08** | Pipeline và AI port | Recommendation pre-check; `AiRecommendationClient` và provider adapter | Recommendation shell, disclaimer và loading nền | Targeted `SUB-001`, profile completeness và port tests |
+| **Ngày 28 - 19/08** | Prompt và resilience | Sanitizer, prompt builder, JSON schema, timeout/retry/circuit breaker | Loading 30s và chống submit trùng | Targeted sanitizer/allowlist/secret tests |
+| **Ngày 29 - 20/08** | Validator và fallback | Validator dùng chung, tái sinh tối đa một lần, warning code và fallback | Preview nguồn AI/fallback và warning state | Targeted timeout/429/5xx/invalid payload/whitelist tests |
+| **Ngày 30 - 21/08** | Persist và frontend integration | Transaction lưu DRAFT plan/recommendation/nutrition; latest endpoint; OpenAPI | Generate, preview, targets, warning, latest và activate | Targeted rollback/`AI-001`/component integration tests; hoàn thiện source M5 |
+| **Ngày 31 - 22/08** | **Local QA và fix M5** | Full Backend regression M1-M5 với provider mock success/timeout/invalid; sửa lỗi | Full Frontend test/build; local E2E Profile + Subscription + Generate + Activate | Dành trọn ngày test/fix; docs/ảnh/Postman; tag `v0.5.0-m5-ai-recommendation` |
 
 ### M6 - Workout Log và Progress Analytics
 
-| Ngày/Buổi | Trọng tâm | Backend | Frontend | Test/QA | Đầu ra bắt buộc |
-| --- | --- | --- | --- | --- | --- |
-| 31/08 - Buổi 1 | Workout Session/Log | `POST /api/v1/member/workout-logs`; tạo/tải session theo ngày; validate BR-09B, BR-28; update-in-place BR-19 | Form ghi log theo bài trong plan ACTIVE | Test create/update, actual limits, ngày tương lai | Member ghi log mới khi có subscription hợp lệ |
-| 01/09 - Buổi 2 | Workout log history | `GET /api/v1/member/workout-logs`, `GET /api/v1/member/workout-logs/exercises/{exerciseId}`; DTO projection đọc exercise inactive | Lịch sử log và filter ngày | Test pagination, ownership, inactive exercise history | Lịch sử vẫn xem được khi gói hết hạn |
-| 02/09 - Buổi 3 | Body Progress analytics | `GET /api/v1/member/body-progress`; timeseries cân nặng và `workoutFrequencyByWeek` | Biểu đồ cân nặng/tần suất | Test sort tăng dần, week ISO, ownership | Dữ liệu biểu đồ dùng trực tiếp trên UI |
-| 03/09 - Buổi 4 | Progress chart strength | Aggregate max weight theo exercise/date; tối ưu query | Biểu đồ mức tạ/reps cơ bản | Test group by ngày, exercise không thuộc Member không lộ dữ liệu | Progress Analytics đủ UC-09 |
-| 04/09 - Buổi 5 | UI completion | Rà workflow Member: profile -> subscription -> recommendation -> activation -> log -> progress | Hoàn thiện dashboard Member | Regression M1-M6 | Demo end-to-end Member |
-| 05/09 - 06/09 | Review M6 | Cập nhật docs, screenshot, Postman | Chỉnh responsive | `mvn test`, Postman collection | Tag `v0.6.0-m6-progress` |
+| Ngày | Trọng tâm | Backend | Frontend | Test/QA và đầu ra |
+| --- | --- | --- | --- | --- |
+| **Ngày 32 - 23/08** | Workout Log và history | Create/update-in-place log, session theo ngày, guard, history endpoints và inactive exercise projection | Form log, lịch sử và filter ngày | Targeted BR-09B/BR-19/BR-28, ownership, pagination và history tests |
+| **Ngày 33 - 24/08** | Progress analytics API | Body Progress read, ISO-week frequency và max weight theo exercise/date | Biểu đồ cân nặng/tần suất/mức tạ nền | Targeted grouping/timezone/ownership/empty-data tests |
+| **Ngày 34 - 25/08** | Dashboard và tích hợp M6 | Tối ưu query, OpenAPI và Postman | Hoàn thiện Member Dashboard, charts và full journey UI | Targeted API/component tests; hoàn thiện source M6 |
+| **Ngày 35 - 26/08** | **Local QA và fix M6** | Full Backend regression M1-M6; kiểm tra query, guard, history khi hết hạn; sửa lỗi | Full Frontend test/build; local E2E toàn Member journey; sửa lỗi | Dành trọn ngày test/fix; docs/ảnh/Postman; tag `v0.6.0-m6-progress` |
 
-### M7 - Hardening, Docker, báo cáo và demo
+### Deploy Gate 2 - M4 đến M6
+
+| Ngày | Công việc | Gate bắt buộc |
+| --- | --- | --- |
+| **Ngày 36 - 27/08** | Deploy M4-M6; regression toàn hệ thống; test AI success/fallback và Member journey | Landing -> Register -> Profile -> Subscription -> Recommendation -> Activate -> Log -> Progress pass trên web |
+
+### M7 - Hardening, Docker, báo cáo và đóng gói
 
 | Ngày | Trọng tâm | Công việc bắt buộc | Gate |
 | --- | --- | --- | --- |
-| 07/09 | Test sweep | Chạy toàn bộ unit/integration test; bổ sung test thiếu cho calculator, subscription renewal, AI validator/fallback, activation plan, workout log ownership | Không còn lỗi P0/P1 |
-| 08/09 | Docker và seed demo | Hoàn thiện Dockerfile backend/frontend, `docker-compose.yml`, `.env.example`, MySQL volume/healthcheck; seed admin, member mẫu, package, 30-50 exercise | `docker compose up --build` chạy được từ máy sạch |
-| 09/09 | Documentation | README, Swagger, Postman collection, API/ERD cập nhật nếu có migration mới; chụp screenshot UI/API; viết Chương 4/5/Kết luận | Tài liệu đủ tái chạy và đủ minh chứng |
-| 10/09 | Feature Freeze | Đóng băng chức năng mới; chỉ cho phép sửa bug demo, lỗi bảo mật, lỗi dữ liệu hoặc lỗi build | Không thêm endpoint/module mới sau ngày này |
-| 11/09 | Rehearsal demo | Tập demo với dữ liệu mẫu; ghi lại lỗi/điểm vấp; chuẩn bị script demo dự phòng | Demo chạy liên tục không cần nhập dữ liệu thủ công phức tạp |
-| 12/09 | Bugfix cuối và slide | Chỉ sửa lỗi đã ghi ở rehearsal; hoàn thiện slide, video demo dự phòng, database backup | Bản trình diễn ổn định |
-| 13/09 | Đóng gói | Xuất PDF báo cáo, backup source/database/video/Postman, tạo tag `v1.0.0-final` | Sẵn sàng nộp và bảo vệ |
+| **Ngày 37 - 28/08** | Docker và seed demo | Dockerfile Backend/Frontend, `docker-compose.yml`, MySQL volume/healthcheck, `.env.example`, seed Admin/Member/PT/package/exercise/demo assignment | `docker compose up --build` chạy từ môi trường sạch |
+| **Ngày 38 - 29/08** | Tài liệu và chuẩn bị nghiệm thu | Cập nhật README, Swagger, Postman, ERD/API, screenshot, Chương 4/5/Kết luận, slide/video và checklist demo | Tài liệu đủ tái chạy; chưa thực hiện full local QA final |
+| **Ngày 39 - 30/08** | **Full local QA/fix final và Feature Freeze** | Chạy toàn bộ unit/integration/E2E và Docker Compose local; chỉ sửa lỗi P0/P1, security, data hoặc build; rehearsal demo | Dành trọn ngày test/fix; không thêm feature; demo local chạy liên tục và bản trình diễn ổn định |
+| **Ngày 40 - 31/08** | Final deploy và đóng đồ án | Deploy final, smoke test, xuất PDF báo cáo, backup source/database/video/Postman, tạo tag `v1.0.0-final` | Sẵn sàng nộp và bảo vệ trong tháng 8 |
 
-## 6. Quality gate theo milestone
+## 6. Quality gate bắt buộc
 
 | Gate | Áp dụng | Điều kiện đạt |
 | --- | --- | --- |
-| Build/Test | Mọi milestone | `mvn test` pass; không có test context lỗi; frontend build pass từ M1 trở đi. |
-| API Contract | Mọi endpoint mới | Đúng prefix `/api/v1`, response format File 10, error/warning code File 05. |
-| Security | Mọi endpoint bảo vệ | JWT hợp lệ, role đúng, `AccountStatusGuard` chạy; endpoint cá nhân kiểm tra ownership ở Service/query. |
-| Database | Mọi thay đổi persistence | Entity/Repository khớp Flyway; không sửa migration cũ; không tạo Entity ngoài 16 Entity MVP nếu chưa có lý do. |
-| AI | M5 trở đi | AI không trả calculated targets; response/fallback đều qua validator; lỗi không lưu dữ liệu một phần. |
-| Demo | Mỗi milestone | Có kịch bản demo ngắn, screenshot hoặc Postman evidence, cập nhật `06-weekly-progress.md`. |
-| Tag | Mỗi milestone | Commit sạch các thay đổi thuộc milestone và tạo tag đúng bảng tổng quan. |
+| Coding Day Check | Ngày phát triển feature | Viết test cùng code và chạy targeted unit/integration/component test cho phần vừa thay đổi; không yêu cầu full regression hoặc manual localhost. |
+| Module Local QA | Ngày 06, 11, 17, 22, 26 và 30/08 | Dành trọn ngày chạy full Backend regression, Frontend test/build, manual localhost và fix; chạy lại toàn bộ sau mỗi lỗi ảnh hưởng rộng. |
+| API Contract | Endpoint mới | Prefix `/api/v1`, DTO đúng File 10, error/warning code đúng File 05, OpenAPI cập nhật. |
+| Security | Endpoint bảo vệ | JWT, role, AccountStatus, subscription và ownership được kiểm tra đúng tầng. |
+| Database | Persistence | Entity/Repository khớp Flyway; migration mới có test; không sửa migration cũ. |
+| Landing | M3 | Guest thấy Landing trước Login/Register; authenticated user được chuyển dashboard; package API có loading/error/empty. |
+| PT expiry | M3 | Admin thấy toàn bộ gói sắp hết hạn; PT chỉ thấy assigned member; cảnh báo khi `1 <= daysRemaining <= 30`. |
+| AI | M5 trở đi | AI/fallback qua validator chung; timeout/invalid có fallback; không lưu dữ liệu một phần. |
+| Deploy 1 | 12/08 | M1-M3 pass trên web trước khi bắt đầu M4. |
+| Deploy 2 | 27/08 | M1-M6 pass trên web trước khi đóng M7. |
+| Final | 31/08 | Docker, deploy, báo cáo, slide, video, backup và tag final hoàn chỉnh. |
 
-## 7. Checklist demo cuối
+## 7. Kiểm thử, báo cáo và Git theo milestone
 
-| Nhóm | Checklist |
-| --- | --- |
-| Auth/RBAC | Register; Login; `/users/me`; Member bị chặn ở Admin API; Admin khóa/mở khóa; LOCKED/DISABLED bị chặn. |
-| Profile/Calculator | Cập nhật profile; validation BR-23; tính BMI, BMR, TDEE, daily calories, protein/carb/fat; BodyProgress update-in-place. |
-| Membership | Guest xem gói; Admin CRUD/vô hiệu hóa package; Member đăng ký mới; Admin duyệt; Member gia hạn; Admin duyệt renewal; subscription hết hạn chặn tính năng cao cấp nhưng không khóa login. |
-| Exercise/Workout | Admin CRUD exercise; search/filter/pagination; soft delete; Member xem plan hiện hành; kích hoạt DRAFT và archive ACTIVE cũ. |
-| AI Hybrid | Tạo recommendation bằng AI; timeout/invalid response chuyển fallback; whitelist chặn ID ngoài danh sách; warning code hiển thị; calculated targets do Backend ghép. |
-| Workout Log/Progress | Ghi workout log; update-in-place cùng bài/ngày; xem lịch sử; xem biểu đồ cân nặng, tần suất tập và mức tạ theo bài. |
-| Deploy/Docs | `docker compose up --build`; Swagger truy cập được; README đủ; Postman collection; dữ liệu demo; video demo; backup database/source. |
+### Ngày code
+
+- Viết unit/integration/component test cùng chức năng, không dồn việc viết test sang ngày QA.
+- Chỉ chạy test mục tiêu cho package, service, controller hoặc component vừa sửa.
+- Có thể compile/build phần liên quan khi cần, nhưng không bắt buộc chạy full regression hoặc kiểm thử thủ công localhost.
+- Commit và push phần source đã hoàn thành để tránh dồn thay đổi lớn vào ngày QA.
+
+### Ngày local QA và fix cuối milestone
+
+```powershell
+cd backend
+.\mvnw.cmd clean test
+
+cd ..\frontend
+npm.cmd test
+npm.cmd run build
+```
+
+Sau full automation, khởi động Backend/Frontend và kiểm thử thủ công trên localhost toàn bộ module vừa hoàn thành cùng regression module cũ. Ngày QA không thêm feature mới; chỉ sửa bug, chạy lại test và hoàn thiện tài liệu/tag. Chỉ deploy ở ba gate đã quy định.
+
+### Phần báo cáo cần cập nhật theo milestone
+
+- M2: Chương 3 - thiết kế Profile/Calculator; Chương 4 - hiện thực và kiểm thử M2.
+- M3: Chương 3 - Subscription lifecycle/Guard; Chương 4 - Landing Page, Membership và expiry reminder.
+- M4: Chương 3 - Exercise/Workout domain; Chương 4 - hiện thực và kiểm thử M4.
+- M5: Chương 3 - AI Hybrid/validator/fallback; Chương 4 - kết quả AI và fallback.
+- M6: Chương 3 - Workout Log/Progress aggregation; Chương 4 - biểu đồ và full Member journey.
+- M7: hoàn thiện Chương 4, Chương 5, Kết luận, phụ lục, slide và kịch bản demo.
+
+### Git
+
+- Chỉ `git add` đúng file thuộc nhiệm vụ; không dùng `git add .` khi còn file ngoài phạm vi.
+- Tách commit Backend, Frontend và docs/test khi thay đổi đủ lớn.
+- Push `main` sau mỗi nhóm source hoàn chỉnh; tạo tag chỉ sau ngày module local QA/fix vượt gate.
+- Không commit `.env`, credential, JWT secret, AI key, log, `target/` hoặc `dist/`.
 
 ## 8. Nội dung không triển khai trước khi đóng MVP
 
 | Không làm | Lý do |
 | --- | --- |
-| Refresh token/OAuth2 login | Không có trong File 02/10; tăng bề mặt bảo mật và thời gian test. |
-| Payment gateway thật | Won't-have; MVP chỉ dùng luồng xác nhận mô phỏng của Admin. |
-| API/UI nghiệp vụ PT | Should-have; không chặn luồng Admin/Member. |
-| Nutrition log chi tiết | Không nằm trong schema 25 bảng MVP. |
-| Mobile app, realtime chat, IoT, face recognition | Won't-have theo phạm vi MVP. |
-| Microservice, Kafka/RabbitMQ, CQRS/Event Sourcing | Trái quyết định Modular Layered Monolith ở File 13. |
+| Refresh token/OAuth2 login | Không có trong phạm vi API hiện tại; tăng bề mặt bảo mật. |
+| Payment gateway thật | MVP chỉ dùng luồng Admin xác nhận mô phỏng. |
+| Module PT đầy đủ | Chỉ làm read-only expiry view cho assigned member; không làm dashboard/plan/chat PT. |
+| Nutrition log chi tiết | Không nằm trong schema MVP. |
+| Mobile app hoặc tối ưu mobile | Ngoài phạm vi; chỉ desktop/laptop. |
+| Realtime chat, IoT, face recognition | Won't-have. |
+| Microservice, Kafka/RabbitMQ, CQRS/Event Sourcing | Trái quyết định Modular Layered Monolith. |
+
+## 9. Cảnh báo tiến độ
+
+- Lịch mới yêu cầu trung bình **8-10 giờ làm việc tập trung mỗi ngày** và gần như không còn buffer.
+- Nếu M2 chưa đóng ngày 06/08, phải cắt polish không bắt buộc để bảo vệ Deploy Gate 1 ngày 12/08.
+- AI key/provider và môi trường deploy phải sẵn sàng trước ngày 18/08; không chờ đến M5/M7 mới chuẩn bị.
+- Nếu trễ quá một ngày, chỉ được giảm trang trí hoặc Should-have chưa chốt; không cắt security, ownership, validation, test, Landing Page, expiry reminder hoặc luồng MVP chính.
+- Feature Freeze bắt buộc từ ngày 30/08; ngày 31/08 chỉ dành cho final deploy, smoke test và đóng gói.
