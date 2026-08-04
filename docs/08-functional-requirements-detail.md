@@ -79,7 +79,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Input chính:** `gender` (Enum: `MALE`, `FEMALE`), `dateOfBirth`, `heightCm`, `weightKg`, `activityLevel`, `workoutDaysPerWeek`, `maxSessionMinutes`, `availableEquipment`, `targetMuscleGroups`, `injuryConstraints`
 **Output:** Hồ sơ thể chất mới được lưu trữ trong DB, tự động kích hoạt tính toán lại BMI, BMR, TDEE, Calories và Macros.
 **Business Rules liên quan:** BR-13 (Quyền sở hữu dữ liệu), BR-22 (Chỉ có 1 bản ghi tiến độ thể chất trong ngày), BR-23 (Kiểm duyệt hồ sơ thể chất).
-**Ghi chú kỹ thuật:** Khi thay đổi cân nặng ở hồ sơ thể chất, hệ thống đồng thời tạo hoặc cập nhật một bản ghi tiến trình thể trạng (`BodyProgress`) cho ngày hiện tại để vẽ biểu đồ tiến độ.
+**Ghi chú kỹ thuật:** Trong Ngày 13, hệ thống chỉ upsert `MemberProfile` và trả lại các chỉ số Calculator trong response. Việc tạo hoặc cập nhật bản ghi tiến trình thể trạng (`BodyProgress`) cho ngày hiện tại được tách sang Ngày 14 để bảo đảm đúng ownership, timezone nghiệp vụ và cơ chế update-in-place BR-22.
 
 ### [FR-PROFILE-03] Cập nhật mục tiêu tập luyện
 **Mức ưu tiên:** Must-have
@@ -327,7 +327,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Ghi chú kỹ thuật:** Sử dụng công thức Mifflin-St Jeor:
 - Nam: $BMR = 10 \times weightKg + 6.25 \times heightCm - 5 \times Age + 5$
 - Nữ: $BMR = 10 \times weightKg + 6.25 \times heightCm - 5 \times Age - 161$
-Tuổi (Age) được tính chính xác bằng cách so sánh `dateOfBirth` với ngày hiện hành.
+Tuổi (Age) được tính theo số năm đã hoàn tất bằng cách so sánh `dateOfBirth` với ngày hiện hành từ `Clock` của hệ thống; không phụ thuộc timezone mặc định của máy chạy.
 
 ### [FR-NUTRITION-03] Backend tính TDEE
 **Mức ưu tiên:** Must-have
@@ -351,9 +351,11 @@ Tuổi (Age) được tính chính xác bằng cách so sánh `dateOfBirth` vớ
 **Business Rules liên quan:** BR-09C (Backend sở hữu tính toán).
 **Ghi chú kỹ thuật:**
 - *Calories*: `BULK` (+300 kcal), `CUT` (-500 kcal), `MAINTAIN` (giữ nguyên TDEE).
-- *Protein*: 2.0g đến 2.5g trên mỗi kg cân nặng (ví dụ: 2.2 * weightKg).
-- *Fat*: Chiếm 20% đến 25% tổng lượng Calories (1g Fat = 9 kcal).
+- *Protein*: chốt cố định `2.2g * weightKg` trong MVP.
+- *Fat*: chốt cố định `25%` tổng lượng Calories, sau đó chia `9` để đổi sang gram.
 - *Carbohydrate*: Lượng calories còn lại chia cho 4 (1g Carb = 4 kcal).
+
+Toàn bộ kết quả BMI, BMR, TDEE, Calories và Macronutrients được làm tròn `HALF_UP` đến 2 chữ số thập phân. Calculator phải từ chối kết quả nếu calories còn lại cho Carbohydrate âm.
 
 ### [FR-NUTRITION-05] AI gợi ý cấu trúc bữa ăn
 **Mức ưu tiên:** Must-have

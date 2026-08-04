@@ -828,3 +828,43 @@ Theo giới hạn của ngày phát triển feature, dự án chỉ chạy các 
 Tổng cộng 16 targeted backend test và 16 frontend/component-route test đều không có failure. Trong quá trình chạy Backend, Flyway validate đủ tám migration, schema ở version 8 và Hibernate khởi tạo `EntityManagerFactory` thành công trên MySQL 8.0.44.
 
 Kết quả cho thấy persistence mapping, ownership theo Principal, error contract và kết nối contract giữa Frontend với Backend đã hoàn thành cho phạm vi đọc Profile. Full regression, production build và kiểm thử thủ công localhost được dành cho ngày local QA/fix của M2 theo kế hoạch.
+
+## 4.6. Hiện thực Profile Update và Calculator Ngày 13
+
+### 4.6.1. Thiết kế module Calculator
+
+`BiometricCalculationService` được triển khai như một service stateless, không
+truy cập Repository và nhận `Clock` từ cấu hình hệ thống. Tuổi được tính theo
+ngày nghiệp vụ `Asia/Ho_Chi_Minh`, không phụ thuộc timezone mặc định của JVM.
+Các công thức sử dụng BMI, Mifflin-St Jeor, hệ số hoạt động 1.2/1.375/1.55/1.725,
+điều chỉnh BULK/CUT/MAINTAIN, protein 2.2 g/kg, chất béo 25% calories và
+carbohydrate là phần calories còn lại chia 4. Mọi kết quả được làm tròn hai
+chữ số; carbohydrate âm bị từ chối.
+
+### 4.6.2. API cập nhật Profile
+
+`PUT /api/v1/member/profile` nhận toàn bộ `MemberProfileUpsertRequest`. Service
+chuẩn hóa và sanitize collection, tạo mới hoặc cập nhật đúng Profile thuộc
+Principal hiện hành, rồi trả `MemberProfileResponse` kèm
+`calculatedTargets`. Các chỉ tiêu chỉ được tính trong response, không được lưu
+vào bảng `member_profiles`; dữ liệu `BodyProgress` được để sang Ngày 14.
+`AccountStatusGuard` chạy trước truy vấn/ghi và Security chỉ cho phép
+`ROLE_MEMBER` truy cập endpoint.
+
+### 4.6.3. Giao diện Profile Form
+
+Frontend sử dụng React Hook Form kết hợp Zod để quản lý form chỉnh sửa Profile.
+CTA tạo Profile đã hoạt động; Profile hiện có được điền sẵn. Client gọi cùng
+contract `/api/v1/member/profile`, hiển thị lỗi validation theo field, khóa
+nút khi đang lưu, cập nhật React Query cache sau thành công và hiển thị các
+chỉ tiêu do Backend trả về thay vì tự tạo số liệu giả.
+
+### 4.6.4. Kết quả kiểm thử Ngày 13
+
+Backend targeted có **53 test đạt**, gồm controller, service, entity,
+Calculator và integration test xác nhận transaction rollback trên MySQL;
+Frontend targeted có **16 test đạt** cho form, API contract,
+validation, cache update và chống submit lặp. Không có failure hoặc error.
+Backend đồng thời validate đủ 8 Flyway migration và khởi tạo Hibernate thành
+công trên MySQL 8.0.44. Full regression, production build và manual localhost
+được dành cho ngày Local QA M2, đúng phạm vi kế hoạch.

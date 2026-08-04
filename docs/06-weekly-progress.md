@@ -544,3 +544,40 @@ nhập, JWT, Guard, RBAC và subscription không đổi. Không deploy web trong
 **Kết luận:** Ngày 12 hoàn thành Gate Profile Persistence. Backend, Frontend,
 database schema, security ownership và response contract đã đồng bộ; sẵn sàng
 chuyển sang Profile update và Calculator của Ngày 13.
+
+---
+
+## Ngày 13 — Profile Update và Calculator (04/08/2026)
+
+### Đã triển khai source
+
+- [x] Thêm `PUT /api/v1/member/profile` dạng upsert theo Member hiện hành;
+  owner lấy từ `AuthenticatedUserPrincipal`, không nhận ID từ client.
+- [x] Áp dụng `AccountStatusGuard`, RBAC `ROLE_MEMBER`, transaction và không
+  tạo `BodyProgress` trong Ngày 13.
+- [x] Thêm `BiometricCalculationService` stateless, dùng `Clock` và ngày
+  nghiệp vụ `Asia/Ho_Chi_Minh`; tính BMI, BMR, TDEE, calories và macros theo
+  công thức đã chốt, làm tròn hai chữ số và không lưu calculated targets.
+- [x] Bổ sung validation BR-23, sanitize collection, giới hạn 10 phần tử và
+  50 ký tự mỗi phần tử; response trả đủ `calculatedTargets`.
+- [x] Frontend dùng React Hook Form + Zod cho form Profile, hỗ trợ create,
+  update, loading/error/success state, lỗi theo field, React Query cache và
+  chống submit lặp.
+- [x] Frontend gọi cùng contract `/api/v1/member/profile`; API client kiểm
+  tra response và tự gắn Bearer token qua Axios instance.
+
+### Kiểm thử và minh chứng
+
+- [x] Backend targeted: 53 test pass, 0 failure, 0 error, 0 skipped; integration
+  test trên MySQL xác nhận transaction rollback khi Calculator lỗi sau bước save.
+- [x] Frontend targeted Profile: 16 test pass, 0 failure, 0 error.
+- [x] Flyway validate đủ 8 migration; Hibernate khởi tạo thành công trên
+  MySQL 8.0.44.
+- [x] Kiểm thử có tuổi trước/trong/sau sinh nhật, bốn mức hoạt động, ba mục
+  tiêu, nữ/nam, timezone mặc định khác nhau, ngày nghiệp vụ Việt Nam,
+  validation boundary và response contract.
+
+**Kết luận:** Ngày 13 hoàn thành phần source và targeted verification. API
+Profile Update, Calculator và giao diện Profile đã đồng bộ; full regression,
+production build và manual localhost được giữ cho ngày Local QA M2 theo kế
+hoạch.

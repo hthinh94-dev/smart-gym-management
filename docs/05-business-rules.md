@@ -56,7 +56,7 @@ Tài liệu này định hình các ràng buộc nghiệp vụ của hệ thốn
 
 ### [BR-09C] - Quyền sở hữu số liệu dinh dưỡng định lượng của Backend (Backend-owned Nutrition Targets)
 - **Mô tả nghiệp vụ:** BMI, BMR, TDEE, `dailyCaloriesKcal`, `proteinGrams`, `carbGrams` và `fatGrams` là số liệu định lượng do Backend tính toán theo công thức đã chọn. AI chỉ được đề xuất `workoutSchedule` và `nutritionPlan.mealStructure`; không được trả, thay đổi hoặc quyết định các chỉ số này.
-- **Hiện thực hóa kỹ thuật:** JSON Schema của AI không chứa các trường số liệu định lượng. Sau khi AI response hợp lệ, `RecommendationService` ghép `calculatedTargets` do `CalculationService` tạo vào response trả Client; payload AI có trường ngoài schema bị từ chối và kích hoạt luồng retry/fallback.
+- **Hiện thực hóa kỹ thuật:** JSON Schema của AI không chứa các trường số liệu định lượng. Calculator dùng BMI và Mifflin-St Jeor, hệ số hoạt động `1.2/1.375/1.55/1.725`, điều chỉnh `BULK +300`, `CUT -500`, `MAINTAIN +0`, Protein cố định `2.2g/kg`, Fat cố định `25% calories` và Carb nhận phần calories còn lại. Kết quả làm tròn `HALF_UP` đến 2 chữ số. Sau khi AI response hợp lệ, `RecommendationService` ghép `calculatedTargets` do Backend tạo vào response; payload AI có trường ngoài schema bị từ chối và kích hoạt luồng retry/fallback.
 
 ---
 

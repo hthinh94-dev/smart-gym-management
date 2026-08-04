@@ -1,5 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { getMemberProfile, MemberProfileApiError } from "../api/memberProfileApi";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getMemberProfile, MemberProfileApiError, updateMemberProfile } from "../api/memberProfileApi";
+import { CalculatedTargets } from "../components/CalculatedTargets";
+import { ProfileForm } from "../components/ProfileForm";
+import { useState } from "react";
 import type { MemberProfile } from "../types/memberProfile.types";
 
 const PROFILE_QUERY_KEY = ["member-profile"] as const;
@@ -96,7 +99,7 @@ function ProfileLoadingState() {
     );
 }
 
-function ProfileEmptyState() {
+function ProfileEmptyState({ onStart }: { onStart: () => void }) {
     return (
         <section className="profile-state profile-empty-state" aria-labelledby="emptyProfileTitle">
             <p className="profile-state-code">PROF-001</p>
@@ -105,7 +108,7 @@ function ProfileEmptyState() {
                 Hồ sơ thể trạng và dinh dưỡng chưa được thiết lập. Smart Gym sẽ dùng thông tin này
                 để chuẩn bị các tính toán và đề xuất phù hợp trong bước tiếp theo.
             </p>
-            <button type="button" disabled title="Chức năng cập nhật hồ sơ sẽ được mở ở bước tiếp theo">
+            <button type="button" onClick={onStart}>
                 Hoàn thiện hồ sơ
             </button>
             <small>Chưa có dữ liệu giả nào được tạo cho tài khoản này.</small>
@@ -134,7 +137,7 @@ function ProfileErrorState({ error, onRetry }: { error: unknown; onRetry: () => 
     );
 }
 
-function ProfileOverview({ profile }: { profile: MemberProfile }) {
+function ProfileOverview({ profile, onEdit }: { profile: MemberProfile; onEdit: () => void }) {
     const { bioProfile, nutritionProfile } = profile;
 
     return (
@@ -145,7 +148,7 @@ function ProfileOverview({ profile }: { profile: MemberProfile }) {
                         <p>Thông tin nền</p>
                         <h2 id="bioProfileTitle">Thể trạng và mục tiêu</h2>
                     </div>
-                    <span>Cập nhật {formatDateTime(profile.updatedAt)}</span>
+                    <div className="profile-section-header-actions"><span>Cập nhật {formatDateTime(profile.updatedAt)}</span><button type="button" className="profile-edit-button" onClick={onEdit}>Chỉnh sửa</button></div>
                 </header>
 
                 <dl className="profile-data-grid">
@@ -176,6 +179,8 @@ function ProfileOverview({ profile }: { profile: MemberProfile }) {
                 </div>
             </section>
 
+            <CalculatedTargets targets={profile.calculatedTargets} />
+
             <section className="profile-section" aria-labelledby="nutritionProfileTitle">
                 <header>
                     <div>
@@ -205,9 +210,20 @@ function ProfileOverview({ profile }: { profile: MemberProfile }) {
 }
 
 export function MemberProfilePage() {
+    const queryClient = useQueryClient();
+    const [isEditing, setIsEditing] = useState(false);
+    const [saveMessage, setSaveMessage] = useState<string>();
     const profileQuery = useQuery({
         queryKey: PROFILE_QUERY_KEY,
         queryFn: getMemberProfile,
+    });
+    const saveMutation = useMutation({
+        mutationFn: updateMemberProfile,
+        onSuccess: (response) => {
+            queryClient.setQueryData(PROFILE_QUERY_KEY, response);
+            setSaveMessage("Đã lưu hồ sơ.");
+            setIsEditing(false);
+        },
     });
 
     const isProfileEmpty = profileQuery.error instanceof MemberProfileApiError
@@ -221,15 +237,17 @@ export function MemberProfilePage() {
                     <h1>Thông tin thể trạng</h1>
                     <p>Dữ liệu nền được dùng cho các tính toán và đề xuất tập luyện của Smart Gym.</p>
                 </div>
-                <span className="profile-readonly-label">Chỉ xem</span>
+                {!isEditing && profileQuery.data && <span className="profile-readonly-label">Hồ sơ của bạn</span>}
             </header>
 
+            {saveMessage && <div className="profile-success-notice" role="status">{saveMessage}</div>}
+            {isEditing && <ProfileForm profile={profileQuery.data?.data} isSaving={saveMutation.isPending} error={saveMutation.error} onCancel={() => { saveMutation.reset(); setIsEditing(false); }} onSubmit={(request) => { setSaveMessage(undefined); saveMutation.mutate(request); }} />}
             {profileQuery.isLoading && <ProfileLoadingState />}
-            {isProfileEmpty && <ProfileEmptyState />}
+            {isProfileEmpty && !isEditing && <ProfileEmptyState onStart={() => setIsEditing(true)} />}
             {profileQuery.isError && !isProfileEmpty && (
                 <ProfileErrorState error={profileQuery.error} onRetry={() => void profileQuery.refetch()} />
             )}
-            {profileQuery.data && <ProfileOverview profile={profileQuery.data.data} />}
+            {profileQuery.data && !isEditing && <ProfileOverview profile={profileQuery.data.data} onEdit={() => { setSaveMessage(undefined); setIsEditing(true); }} />}
         </main>
     );
 }

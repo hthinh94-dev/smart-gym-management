@@ -169,6 +169,26 @@ public class MemberProfile extends BaseEntity {
     @Column(name = "food_name", nullable = false, length = 50)
     private Set<String> excludedFoods = new HashSet<>();
 
+    public void setAvailableEquipment(Set<Equipment> values) {
+        this.availableEquipment = mutableCopy(values);
+    }
+
+    public void setTargetMuscleGroups(Set<MuscleGroup> values) {
+        this.targetMuscleGroups = mutableCopy(values);
+    }
+
+    public void setInjuryConstraints(Set<ContraindicationTag> values) {
+        this.injuryConstraints = mutableCopy(values);
+    }
+
+    public void setFoodAllergies(Set<String> values) {
+        this.foodAllergies = mutableCopy(values);
+    }
+
+    public void setExcludedFoods(Set<String> values) {
+        this.excludedFoods = mutableCopy(values);
+    }
+
     public MemberProfile(
             User user,
             Gender gender,
@@ -195,6 +215,51 @@ public class MemberProfile extends BaseEntity {
         this.maxSessionMinutes = maxSessionMinutes;
         this.dietaryPreference = dietaryPreference;
         this.mealsPerDay = mealsPerDay;
+    }
+
+    public void updateFrom(
+            Gender gender,
+            LocalDate dateOfBirth,
+            BigDecimal heightCm,
+            BigDecimal weightKg,
+            FitnessGoal fitnessGoal,
+            FitnessLevel fitnessLevel,
+            ActivityLevel activityLevel,
+            Byte workoutDaysPerWeek,
+            Short maxSessionMinutes,
+            DietaryPreference dietaryPreference,
+            Byte mealsPerDay,
+            Set<Equipment> availableEquipment,
+            Set<MuscleGroup> targetMuscleGroups,
+            Set<ContraindicationTag> injuryConstraints,
+            Set<String> foodAllergies,
+            Set<String> excludedFoods
+    ) {
+        this.gender = gender;
+        this.dateOfBirth = dateOfBirth;
+        this.heightCm = heightCm;
+        this.weightKg = weightKg;
+        this.fitnessGoal = fitnessGoal;
+        this.fitnessLevel = fitnessLevel;
+        this.activityLevel = activityLevel;
+        this.workoutDaysPerWeek = workoutDaysPerWeek;
+        this.maxSessionMinutes = maxSessionMinutes;
+        this.dietaryPreference = dietaryPreference;
+        this.mealsPerDay = mealsPerDay;
+        replace(this.availableEquipment, availableEquipment);
+        replace(this.targetMuscleGroups, targetMuscleGroups);
+        replace(this.injuryConstraints, injuryConstraints);
+        replace(this.foodAllergies, foodAllergies);
+        replace(this.excludedFoods, excludedFoods);
+    }
+
+    private <T> void replace(Set<T> target, Set<T> values) {
+        target.clear();
+        target.addAll(values);
+    }
+
+    private <T> Set<T> mutableCopy(Set<T> values) {
+        return values == null ? new HashSet<>() : new HashSet<>(values);
     }
 
     @Override

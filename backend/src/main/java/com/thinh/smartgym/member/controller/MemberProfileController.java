@@ -4,6 +4,7 @@ import com.thinh.smartgym.common.config.OpenApiResponseSchemas;
 import com.thinh.smartgym.common.response.ApiResponse;
 import com.thinh.smartgym.common.response.ErrorResponse;
 import com.thinh.smartgym.member.dto.MemberProfileResponse;
+import com.thinh.smartgym.member.dto.MemberProfileUpsertRequest;
 import com.thinh.smartgym.member.service.MemberProfileService;
 import com.thinh.smartgym.security.AuthenticatedUserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,10 +14,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -63,6 +67,45 @@ public class MemberProfileController {
         return ApiResponse.success(
                 "Lấy hồ sơ thể trạng thành công",
                 memberProfileService.getCurrentProfile(principal)
+        );
+    }
+
+    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Tạo mới hoặc cập nhật hồ sơ hội viên hiện hành",
+            description = "Upsert hồ sơ theo User ID trong principal và trả các chỉ số do Backend tính toán."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "Lưu hồ sơ và tính toán chỉ số thành công",
+                content = @Content(schema = @Schema(
+                        implementation = OpenApiResponseSchemas.MemberProfileSuccessResponse.class
+                ))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "Dữ liệu Profile vi phạm BR-23 (VAL-001)",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "JWT thiếu, sai hoặc hết hạn (ACC-005)",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "403",
+                description = "Thiếu ROLE_MEMBER (AUTH-002) hoặc tài khoản bị chặn (ACC-004/ACC-006)",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    public ApiResponse<MemberProfileResponse> upsertCurrentProfile(
+            @AuthenticationPrincipal AuthenticatedUserPrincipal principal,
+            @Valid @RequestBody MemberProfileUpsertRequest request
+    ) {
+        return ApiResponse.success(
+                "Cập nhật hồ sơ thể trạng thành công",
+                memberProfileService.upsertCurrentProfile(principal, request)
         );
     }
 }

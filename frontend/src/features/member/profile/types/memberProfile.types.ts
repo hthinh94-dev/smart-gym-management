@@ -50,10 +50,23 @@ export type NutritionProfile = {
     mealsPerDay: number;
 };
 
+export type CalculatedTargets = {
+    bmi: number;
+    bmr: number;
+    tdee: number;
+    dailyCaloriesKcal: number;
+    proteinGrams: number;
+    fatGrams: number;
+    carbGrams: number;
+};
+
+export type MemberProfileUpsertRequest = BioProfile & NutritionProfile;
+
 export type MemberProfile = {
     memberId: number;
     bioProfile: BioProfile;
     nutritionProfile: NutritionProfile;
+    calculatedTargets: CalculatedTargets;
     updatedAt: string;
 };
 
@@ -62,6 +75,7 @@ export type MemberProfileErrorCode =
     | "ACC-004"
     | "ACC-005"
     | "ACC-006"
+    | "VAL-001"
     | "NETWORK-001"
     | "SYS-001";
 

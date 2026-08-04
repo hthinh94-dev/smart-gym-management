@@ -10,6 +10,7 @@ public record MemberProfileResponse(
         Long memberId,
         BioProfileResponse bioProfile,
         NutritionProfileResponse nutritionProfile,
+        CalculatedTargetsResponse calculatedTargets,
         @Schema(type = "string", format = "date-time", example = "2026-08-03T10:30:00Z")
         Instant updatedAt
 ) {

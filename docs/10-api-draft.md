@@ -256,7 +256,7 @@ exception parser hoặc tên class Java.
 ### GET /api/v1/member/profile
 **Mô tả:** Lấy toàn bộ thông tin hồ sơ thể trạng và sở thích dinh dưỡng của hội viên đang đăng nhập. Ownership được xác định từ JWT Principal; endpoint không nhận `memberId` từ client.
 
-**Quy ước Ngày 12:** Member mới đăng ký chưa có Profile là trạng thái hợp lệ. Endpoint trả `PROF-001` và không tự tạo dữ liệu giả. `calculatedTargets` chỉ được bổ sung sau khi Calculator hoàn thành trong Ngày 13, vì vậy chưa xuất hiện trong response hiện tại.
+**Quy ước từ Ngày 13:** Member mới đăng ký chưa có Profile là trạng thái hợp lệ. Endpoint trả `PROF-001` và không tự tạo dữ liệu giả. Khi Profile tồn tại, Backend tính và trả `calculatedTargets` từ dữ liệu đang lưu; các chỉ số này không được lưu trong `member_profiles`.
 
 **Headers:**
 - `Authorization: Bearer <token>` (Role: MEMBER)
@@ -287,6 +287,15 @@ exception parser hoặc tên class Java.
       "foodAllergies": ["PEANUTS"],
       "excludedFoods": ["BEEF"],
       "mealsPerDay": 4
+    },
+    "calculatedTargets": {
+      "bmi": 22.86,
+      "bmr": 1658.75,
+      "tdee": 2571.06,
+      "dailyCaloriesKcal": 2871.06,
+      "proteinGrams": 154.00,
+      "fatGrams": 79.75,
+      "carbGrams": 384.32
     },
     "updatedAt": "2026-07-15T10:30:00Z"
   }
@@ -363,12 +372,12 @@ exception parser hoặc tên class Java.
     },
     "calculatedTargets": {
       "bmi": 23.67,
-      "bmr": 1729.0,
-      "tdee": 2679.95,
-      "dailyCaloriesKcal": 2979.95,
-      "proteinGrams": 159.5,
-      "fatGrams": 82.78,
-      "carbGrams": 388.61
+      "bmr": 1683.75,
+      "tdee": 2609.81,
+      "dailyCaloriesKcal": 2909.81,
+      "proteinGrams": 159.50,
+      "fatGrams": 80.83,
+      "carbGrams": 386.09
     },
     "updatedAt": "2026-07-15T11:00:00Z"
   }
@@ -1258,12 +1267,12 @@ exception parser hoặc tên class Java.
     "generatedAt": "2026-07-15T14:05:00Z",
     "calculatedTargets": {
       "bmi": 23.67,
-      "bmr": 1729.0,
-      "tdee": 2679.95,
-      "dailyCaloriesKcal": 2979.95,
-      "proteinGrams": 159.5,
-      "fatGrams": 82.78,
-      "carbGrams": 388.61
+      "bmr": 1683.75,
+      "tdee": 2609.81,
+      "dailyCaloriesKcal": 2909.81,
+      "proteinGrams": 159.50,
+      "fatGrams": 80.83,
+      "carbGrams": 386.09
     },
     "aiSuggestion": {
       "splitModel": "Push/Pull/Legs",
@@ -1386,12 +1395,12 @@ exception parser hoặc tên class Java.
     "generatedAt": "2026-07-15T14:05:30Z",
     "calculatedTargets": {
       "bmi": 23.67,
-      "bmr": 1729.0,
-      "tdee": 2679.95,
-      "dailyCaloriesKcal": 2979.95,
-      "proteinGrams": 159.5,
-      "fatGrams": 82.78,
-      "carbGrams": 388.61
+      "bmr": 1683.75,
+      "tdee": 2609.81,
+      "dailyCaloriesKcal": 2909.81,
+      "proteinGrams": 159.50,
+      "fatGrams": 80.83,
+      "carbGrams": 386.09
     },
     "aiSuggestion": {
       "splitModel": "Full Body",
@@ -1551,12 +1560,12 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
     "generatedAt": "2026-07-15T14:05:00Z",
     "calculatedTargets": {
       "bmi": 23.67,
-      "bmr": 1729.0,
-      "tdee": 2679.95,
-      "dailyCaloriesKcal": 2979.95,
-      "proteinGrams": 159.5,
-      "fatGrams": 82.78,
-      "carbGrams": 388.61
+      "bmr": 1683.75,
+      "tdee": 2609.81,
+      "dailyCaloriesKcal": 2909.81,
+      "proteinGrams": 159.50,
+      "fatGrams": 80.83,
+      "carbGrams": 386.09
     },
     "aiSuggestion": {
       "splitModel": "Push/Pull/Legs",

@@ -11,6 +11,7 @@ import type {
     MemberProfile,
     MemberProfileApiErrorResponse,
     MemberProfileApiSuccess,
+    MemberProfileUpsertRequest,
     MemberProfileErrorCode,
     MuscleGroup,
 } from "../types/memberProfile.types";
@@ -20,6 +21,7 @@ const PROFILE_ERROR_CODES = new Set<MemberProfileErrorCode>([
     "ACC-004",
     "ACC-005",
     "ACC-006",
+    "VAL-001",
     "NETWORK-001",
     "SYS-001",
 ]);
@@ -102,11 +104,23 @@ function isNutritionProfile(value: unknown): value is MemberProfile["nutritionPr
         && isInteger(value.mealsPerDay);
 }
 
+function isCalculatedTargets(value: unknown): value is NonNullable<MemberProfile["calculatedTargets"]> {
+    return isRecord(value)
+        && isFiniteNumber(value.bmi)
+        && isFiniteNumber(value.bmr)
+        && isFiniteNumber(value.tdee)
+        && isFiniteNumber(value.dailyCaloriesKcal)
+        && isFiniteNumber(value.proteinGrams)
+        && isFiniteNumber(value.fatGrams)
+        && isFiniteNumber(value.carbGrams);
+}
+
 function isMemberProfile(value: unknown): value is MemberProfile {
     return isRecord(value)
         && isInteger(value.memberId)
         && isBioProfile(value.bioProfile)
         && isNutritionProfile(value.nutritionProfile)
+        && isCalculatedTargets(value.calculatedTargets)
         && typeof value.updatedAt === "string";
 }
 
@@ -170,6 +184,36 @@ export async function getMemberProfile(): Promise<MemberProfileApiSuccess> {
 
     if (status < 200 || status >= 300 || !isApiSuccess(payload)) {
         throwProfileError("SYS-001", "Hệ thống trả về phản hồi hồ sơ không đúng contract. Vui lòng thử lại.");
+    }
+
+    return payload;
+}
+
+export async function updateMemberProfile(
+    request: MemberProfileUpsertRequest,
+): Promise<MemberProfileApiSuccess> {
+    let payload: unknown;
+    let status: number;
+
+    try {
+        const response = await httpClient.put("/member/profile", request);
+        payload = response.data;
+        status = response.status;
+    } catch (error) {
+        if (!axios.isAxiosError(error) || !error.response) {
+            throwProfileError("NETWORK-001", "Không thể kết nối đến hệ thống. Vui lòng thử lại.");
+        }
+
+        payload = error.response.data;
+        status = error.response.status;
+    }
+
+    if (isApiError(payload)) {
+        throw new MemberProfileApiError(payload);
+    }
+
+    if (status < 200 || status >= 300 || !isApiSuccess(payload)) {
+        throwProfileError("SYS-001", "Hệ thống trả về phản hồi cập nhật hồ sơ không đúng contract.");
     }
 
     return payload;
