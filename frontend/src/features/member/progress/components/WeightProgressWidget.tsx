@@ -1,0 +1,2 @@
+import type { MemberBodyProgress } from "../types/memberBodyProgress.types";
+export function WeightProgressWidget({ latest }: { latest?: MemberBodyProgress }) { return <section className="progress-latest" aria-labelledby="latestWeightTitle"><p>Lần ghi nhận gần nhất</p><h2 id="latestWeightTitle">Cân nặng hiện tại</h2><strong>{latest ? `${latest.weightKg.toFixed(2)} kg` : "--"}</strong><span>{latest ? `Ghi nhận ngày ${latest.recordDate}` : "Chưa có dữ liệu cân nặng"}</span></section>; }

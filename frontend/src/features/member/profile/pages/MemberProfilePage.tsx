@@ -4,6 +4,9 @@ import { CalculatedTargets } from "../components/CalculatedTargets";
 import { ProfileForm } from "../components/ProfileForm";
 import { useState } from "react";
 import type { MemberProfile } from "../types/memberProfile.types";
+import { upsertMemberBodyProgress } from "../../progress/api/memberBodyProgressApi";
+import type { BodyProgressUpsertRequest } from "../../progress/types/memberBodyProgress.types";
+import { getVietnamBusinessDate } from "../../progress/utils/businessDate";
 
 const PROFILE_QUERY_KEY = ["member-profile"] as const;
 
@@ -213,9 +216,17 @@ export function MemberProfilePage() {
     const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = useState(false);
     const [saveMessage, setSaveMessage] = useState<string>();
+    const [pendingProgressRequest, setPendingProgressRequest] = useState<BodyProgressUpsertRequest>();
     const profileQuery = useQuery({
         queryKey: PROFILE_QUERY_KEY,
         queryFn: getMemberProfile,
+    });
+    const progressMutation = useMutation({
+        mutationFn: upsertMemberBodyProgress,
+        onSuccess: () => {
+            setPendingProgressRequest(undefined);
+            void queryClient.invalidateQueries({ queryKey: ["member-body-progress"] });
+        },
     });
     const saveMutation = useMutation({
         mutationFn: updateMemberProfile,
@@ -223,6 +234,13 @@ export function MemberProfilePage() {
             queryClient.setQueryData(PROFILE_QUERY_KEY, response);
             setSaveMessage("Đã lưu hồ sơ.");
             setIsEditing(false);
+            const progressRequest = {
+                recordDate: getVietnamBusinessDate(),
+                weightKg: response.data.bioProfile.weightKg,
+            };
+            setPendingProgressRequest(progressRequest);
+            progressMutation.reset();
+            progressMutation.mutate(progressRequest);
         },
     });
 
@@ -240,8 +258,25 @@ export function MemberProfilePage() {
                 {!isEditing && profileQuery.data && <span className="profile-readonly-label">Hồ sơ của bạn</span>}
             </header>
 
-            {saveMessage && <div className="profile-success-notice" role="status">{saveMessage}</div>}
-            {isEditing && <ProfileForm profile={profileQuery.data?.data} isSaving={saveMutation.isPending} error={saveMutation.error} onCancel={() => { saveMutation.reset(); setIsEditing(false); }} onSubmit={(request) => { setSaveMessage(undefined); saveMutation.mutate(request); }} />}
+            {saveMessage && (
+                <div className="profile-success-notice" role="status">
+                    <span>{saveMessage}</span>
+                    {progressMutation.isPending && <span>Đang ghi nhận cân nặng hôm nay...</span>}
+                    {progressMutation.isSuccess && <span>Đã ghi nhận cân nặng hôm nay.</span>}
+                    {progressMutation.isError && (
+                        <span>
+                            Hồ sơ đã lưu nhưng chưa ghi nhận được cân nặng. {progressMutation.error.message}
+                            <button
+                                type="button"
+                                onClick={() => pendingProgressRequest && progressMutation.mutate(pendingProgressRequest)}
+                            >
+                                Thử ghi cân nặng lại
+                            </button>
+                        </span>
+                    )}
+                </div>
+            )}
+            {isEditing && <ProfileForm profile={profileQuery.data?.data} isSaving={saveMutation.isPending} error={saveMutation.error} onCancel={() => { saveMutation.reset(); setIsEditing(false); }} onSubmit={(request) => { setSaveMessage(undefined); setPendingProgressRequest(undefined); progressMutation.reset(); saveMutation.mutate(request); }} />}
             {profileQuery.isLoading && <ProfileLoadingState />}
             {isProfileEmpty && !isEditing && <ProfileEmptyState onStart={() => setIsEditing(true)} />}
             {profileQuery.isError && !isProfileEmpty && (

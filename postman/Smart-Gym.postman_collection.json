@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "97c29ec9-3170-4e38-9395-b1653996e1e8",
-    "name": "Smart Gym - Day 8 Auth and Admin Account Status",
-    "description": "Local verification for UC-01 registration, UC-02 login/current user and UC-10 Admin account lock/unlock. Fill local-only variables before running the Day 8 folder in order.",
+    "name": "Smart Gym - M1 and M2 Local API Verification",
+    "description": "Local verification for Auth, Admin account status, Member Profile and Body Progress. Fill local-only variables before running protected folders. Do not commit real credentials or tokens.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -52,6 +52,14 @@
     },
     {
       "key": "memberToken",
+      "value": ""
+    },
+    {
+      "key": "progressDate",
+      "value": ""
+    },
+    {
+      "key": "progressId",
       "value": ""
     }
   ],
@@ -740,6 +748,257 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/admin/users"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Day 12-13 - Member Profile and Calculator",
+      "description": "Run after memberToken has been populated. Profile and calculated targets are prerequisites for later M2/M3 Member flows.",
+      "item": [
+        {
+          "name": "01 - Upsert Member Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profile upsert returns calculated targets', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.eql(true);",
+                  "  pm.expect(body.data.bioProfile.weightKg).to.eql(72.2);",
+                  "  pm.expect(body.data.calculatedTargets).to.include.all.keys('bmi', 'bmr', 'tdee', 'dailyCaloriesKcal', 'proteinGrams', 'fatGrams', 'carbGrams');",
+                  "  pm.expect(body.data).not.to.have.any.keys('password', 'passwordHash', 'accessToken');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{memberToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gender\": \"MALE\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"heightCm\": 175,\n  \"weightKg\": 72.2,\n  \"fitnessGoal\": \"MAINTAIN\",\n  \"fitnessLevel\": \"BEGINNER\",\n  \"activityLevel\": \"MODERATELY_ACTIVE\",\n  \"workoutDaysPerWeek\": 4,\n  \"maxSessionMinutes\": 75,\n  \"availableEquipment\": [\"BARBELL\", \"DUMBBELL\"],\n  \"targetMuscleGroups\": [\"CHEST\", \"BACK\", \"LEGS\"],\n  \"injuryConstraints\": [],\n  \"dietaryPreference\": \"OMNIVORE\",\n  \"foodAllergies\": [],\n  \"excludedFoods\": [],\n  \"mealsPerDay\": 4\n}"
+            },
+            "url": "{{baseUrl}}/member/profile"
+          }
+        },
+        {
+          "name": "02 - Get Current Member Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profile GET returns the principal owner only', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.eql(true);",
+                  "  pm.expect(body.data).to.include.all.keys('memberId', 'bioProfile', 'nutritionProfile', 'calculatedTargets', 'updatedAt');",
+                  "  pm.expect(body.data.bioProfile.weightKg).to.eql(72.2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{memberToken}}" }],
+            "url": "{{baseUrl}}/member/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Day 14 - Member Body Progress",
+      "description": "Run after memberToken has been populated by a successful Member login. Requests 01-03 should be run in order to verify atomic update-in-place.",
+      "item": [
+        {
+          "name": "01 - Record Daily Weight",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());",
+                  "const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));",
+                  "pm.collectionVariables.set('progressDate', `${values.year}-${values.month}-${values.day}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200 with safe Body Progress contract', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.eql(true);",
+                  "  pm.expect(body.data).to.include.all.keys('id', 'memberId', 'recordDate', 'weightKg', 'createdAt', 'updatedAt');",
+                  "  pm.expect(body.data.recordDate).to.eql(pm.collectionVariables.get('progressDate'));",
+                  "  pm.expect(body.data).not.to.have.any.keys('password', 'passwordHash', 'accessToken', 'user');",
+                  "  pm.collectionVariables.set('progressId', String(body.data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{memberToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"recordDate\": \"{{progressDate}}\",\n  \"weightKg\": 72.20\n}" },
+            "url": "{{baseUrl}}/member/body-progress"
+          }
+        },
+        {
+          "name": "02 - Update Same Day In Place",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Same date updates the existing row', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(String(body.data.id)).to.eql(pm.collectionVariables.get('progressId'));",
+                  "  pm.expect(body.data.weightKg).to.eql(71.8);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{memberToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"recordDate\": \"{{progressDate}}\",\n  \"weightKg\": 71.80\n}" },
+            "url": "{{baseUrl}}/member/body-progress"
+          }
+        },
+        {
+          "name": "03 - Get Weight History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('History is ordered and has one row for the test date', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.be.an('array');",
+                  "  pm.expect(data.filter(item => item.recordDate === pm.collectionVariables.get('progressDate'))).to.have.lengthOf(1);",
+                  "  pm.expect(data.map(item => item.recordDate)).to.eql([...data.map(item => item.recordDate)].sort());",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{memberToken}}" }],
+            "url": "{{baseUrl}}/member/body-progress"
+          }
+        },
+        {
+          "name": "04 - Reject Future Date VAL-001",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const tomorrow = new Date(Date.now() + 86400000);",
+                  "const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(tomorrow);",
+                  "const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));",
+                  "pm.variables.set('futureProgressDate', `${values.year}-${values.month}-${values.day}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Future date returns HTTP 400 VAL-001', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().errorCode).to.eql('VAL-001');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{memberToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"recordDate\": \"{{futureProgressDate}}\",\n  \"weightKg\": 72.20\n}" },
+            "url": "{{baseUrl}}/member/body-progress"
+          }
+        },
+        {
+          "name": "05 - Reject Non-positive Weight VAL-001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Zero weight returns HTTP 400 VAL-001', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().errorCode).to.eql('VAL-001');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{memberToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"recordDate\": \"{{progressDate}}\",\n  \"weightKg\": 0\n}" },
+            "url": "{{baseUrl}}/member/body-progress"
+          }
+        },
+        {
+          "name": "06 - Missing Token ACC-005",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing token returns HTTP 401 ACC-005', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().errorCode).to.eql('ACC-005');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/member/body-progress"
           }
         }
       ]

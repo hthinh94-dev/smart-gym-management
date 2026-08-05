@@ -8,7 +8,12 @@ Backend kiểm duyệt.
 ## Trạng thái hiện tại
 
 Dự án đã hoàn tất nghiệm thu local **Milestone M1 - Authentication, Security,
-OpenAPI và React Skeleton** từ Ngày 5 đến hết Ngày 10 (01/08/2026):
+OpenAPI và React Skeleton** ngày 01/08/2026, đã gắn tag `v0.1.0-m1-auth`.
+Source **Milestone M2 - Member Profile, Calculator và Body Progress nền** đã
+hoàn thành đến hết Ngày 14 (05/08/2026); Ngày 15 dành cho manual local QA và
+đóng tag M2.
+
+Nền M1:
 
 - Backend foundation bằng Java 21 và Spring Boot 3.4.3.
 - 8 Flyway migration tạo schema MVP trên MySQL 8.
@@ -17,7 +22,7 @@ OpenAPI và React Skeleton** từ Ngày 5 đến hết Ngày 10 (01/08/2026):
 - `AccountStatusGuard` phân biệt `ACTIVE`, `LOCKED`, `DISABLED`.
 - Response lỗi Security chuẩn hóa bằng `ACC-004`, `ACC-005`, `ACC-006` và
   `AUTH-002`.
-- Regression backend có 200 test pass, gồm toàn bộ 110 test đến hết Ngày 8.
+- Gate M1 có 200 Backend test và 43 Frontend test pass.
 - `POST /api/v1/auth/register` đã có DTO, validation, transaction service,
   `ROLE_MEMBER`, `ACTIVE`, BCrypt, error handler và OpenAPI.
 - `POST /api/v1/auth/login` dùng `AuthenticationManager`, chuẩn hóa email, giữ
@@ -29,14 +34,13 @@ OpenAPI và React Skeleton** từ Ngày 5 đến hết Ngày 10 (01/08/2026):
 - Swagger/OpenAPI khai báo `bearerAuth` dạng HTTP Bearer JWT để kiểm thử endpoint
   bảo vệ bằng nút `Authorize`; success/error response có schema cụ thể và các
   trường password được đánh dấu `writeOnly`.
-- Frontend Register/Login dùng React Router, React Query, React Hook Form, Zod,
+- Frontend Register/Login dùng React + TypeScript, React Router, React Query, React Hook Form, Zod,
   Auth Context và Axios; JWT được lưu trong `sessionStorage`, Bearer interceptor
   tự gắn token và `/users/me` xác nhận phiên trước khi cập nhật auth state.
 - Frontend có Public Only Route, Protected Route, Role Route, layout Admin/Member
   và trang quản lý tài khoản; phiên cũ được xác minh qua `/users/me`, lỗi
-  `ACC-004`/`ACC-005`/`ACC-006` xóa session; 43 test Vitest pass và production
-  build thành công.
-- Postman collection có 21 request bao phủ Register, Login, `/users/me`,
+  `ACC-004`/`ACC-005`/`ACC-006` xóa session.
+- M1 Postman có 21 request bao phủ Register, Login, `/users/me`,
   `ACC-001`, `ACC-002`, `ACC-004`, `ACC-005`, `ACC-007`, `AUTH-002` và luồng
   Admin list/search/filter/lock/unlock.
 - CORS đọc danh sách origin cụ thể từ environment và từ chối wildcard.
@@ -48,8 +52,23 @@ OpenAPI và React Skeleton** từ Ngày 5 đến hết Ngày 10 (01/08/2026):
   collection và 66 assertion API thật cho Register/Login/Current User/RBAC/Admin
   lock-unlock; dữ liệu test được dọn và subscription không bị thay đổi.
 
-Profile, Membership và AI API chưa được triển khai. Deploy staging chưa nằm trong
-phạm vi nghiệm thu local hiện tại. Thứ tự tiếp theo được quản lý tại
+Source M2 hiện tại:
+
+- `GET/PUT /api/v1/member/profile` dùng Principal ownership,
+  `AccountStatusGuard`, `PROF-001`, BR-23 và năm collection table.
+- `BiometricCalculationService` tính BMI, BMR, TDEE, calories và macros bằng
+  `Clock`/timezone Việt Nam; calculated targets chỉ trả trong response.
+- `GET/POST /api/v1/member/body-progress` lưu lịch sử cân nặng, chặn ngày tương
+  lai và atomic upsert theo `(member_id, record_date)` đúng BR-22.
+- Frontend có Profile Form, calculated targets, Body Progress form/history/widget
+  và luồng Profile thành công → Progress; lỗi Progress có retry độc lập.
+- Regression hiện tại có 271 Backend test và 75 Frontend test pass; Vite
+  production build thành công. OpenAPI hiện có 10 operation M1–M2.
+- Postman hiện có 29 request, gồm 21 request M1, 2 request Profile và 6 request
+  Body Progress.
+
+Membership và AI API chưa được triển khai. Deploy staging chưa nằm trong phạm vi
+nghiệm thu local hiện tại. Thứ tự tiếp theo được quản lý tại
 [Implementation Plan](./docs/14-implementation-plan.md).
 
 ## Công nghệ
@@ -61,7 +80,7 @@ phạm vi nghiệm thu local hiện tại. Thứ tự tiếp theo được quả
 | Security | Spring Security, BCrypt, JJWT 0.12.6 |
 | Persistence | Spring Data JPA, Hibernate, MySQL 8 |
 | Migration | Flyway Core và Flyway MySQL |
-| Frontend | React, Vite, React Router, React Query, React Hook Form, Zod, Axios |
+| Frontend | React, TypeScript, Vite, React Router, React Query, React Hook Form, Zod, Axios |
 | Test | JUnit 5, Mockito, MockMvc, Vitest, Testing Library |
 
 ## Kiến trúc
@@ -75,9 +94,8 @@ Luồng request bảo mật hiện tại:
 1. `JwtAuthenticationFilter` đọc Bearer token, xác thực chữ ký/hạn dùng và nạp
    identity/roles qua `CustomUserDetailsService`.
 2. Spring Security thiết lập `SecurityContext` và áp dụng RBAC.
-3. `AccountStatusGuard` cung cấp nền kiểm tra trạng thái tài khoản hiện hành để
-   gắn tại endpoint hoặc Method Security; filter JWT không quyết định
-   `accountStatus`.
+3. `AccountStatusGuard` kiểm tra trạng thái hiện hành tại Current User, Admin,
+   Member Profile và Body Progress; filter JWT không quyết định `accountStatus`.
 4. Guard nghiệp vụ như `SubscriptionGuard` được bổ sung tại endpoint cần gói tập
    ACTIVE ở milestone tương ứng.
 
@@ -94,8 +112,8 @@ smart-gym-management/
 |-- diagrams/
 |   `-- erd-gym-management.mmd
 |-- docs/                    # Đặc tả, API, dữ liệu, kiến trúc và tiến độ
-|-- frontend/                # React Auth, Protected Route và Admin User Management
-|-- postman/                 # 21 request kiểm thử đầy đủ Auth/RBAC/Admin M1
+|-- frontend/                # React + TypeScript Auth, Admin và Member M1-M2
+|-- postman/                 # 29 request Auth/RBAC/Admin/Profile/Progress
 |-- .env.example             # Mẫu biến môi trường cấp repository
 `-- README.md
 ```
@@ -110,7 +128,7 @@ Phân loại file:
   và truy vết bắt buộc của đồ án.
 - Hai file `.env.example` được giữ để hỗ trợ chạy từ project root hoặc thư mục
   `backend`; nội dung phải luôn đồng bộ.
-- `frontend/` là workspace React cho Auth và Admin shell; `postman/` chứa collection
+- `frontend/` là workspace React + TypeScript cho Auth, Member và Admin shell; `postman/` chứa collection
   kiểm thử API có thể chạy tuần tự trên local.
 - `.env`, `backend/target/`, log và cấu hình IDE là file cục bộ hoặc sinh tự động,
   không được commit.
@@ -167,22 +185,22 @@ cd backend
 .\mvnw.cmd clean test
 ```
 
-Regression backend sau OpenAPI Gate và hardening M1:
+Regression backend hiện tại sau khi hoàn tất source Ngày 14:
 
 ```text
-Tests run: 200, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 271, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Chạy riêng test Admin Account Status trước khi chạy regression toàn bộ:
+Chạy riêng test M2 trước khi chạy regression toàn bộ:
 
 ```powershell
-.\mvnw.cmd "-Dtest=AdminUserServiceTest,AdminUserControllerTest,AdminUserIntegrationTest" test
+.\mvnw.cmd "-Dtest=MemberProfileTest,MemberProfileServiceTest,MemberProfileControllerTest,MemberProfileIntegrationTest,BiometricCalculationServiceTest,BodyProgressTest,BodyProgressRepositoryTest,BodyProgressServiceTest,BodyProgressControllerTest,BodyProgressIntegrationTest" test
 .\mvnw.cmd clean test
 ```
 
-Toàn bộ 110 test đến hết Ngày 8 tiếp tục pass. Flyway validate đủ 8 migration và
-Hibernate khởi tạo `EntityManagerFactory` thành công.
+Toàn bộ test M1 tiếp tục pass. Flyway validate đủ 8 migration và Hibernate khởi
+tạo `EntityManagerFactory` thành công trên MySQL 8.0.44.
 
 Frontend:
 
@@ -193,7 +211,7 @@ npm run test -- --run
 npm run build
 ```
 
-Kết quả xác nhận: 43 test Vitest pass và Vite production build thành công.
+Kết quả xác nhận hiện tại: 75 test Vitest pass và Vite production build thành công.
 
 Gate M1 local ngày 01/08/2026 cũng xác nhận Frontend phục vụ được các route
 `/login`, `/register`, `/member`, `/admin/users`; API health `UP`, OpenAPI có đúng
@@ -215,6 +233,8 @@ Các endpoint nền:
 - Admin users: `GET http://localhost:8080/api/v1/admin/users`
 - Lock user: `PATCH http://localhost:8080/api/v1/admin/users/{id}/lock`
 - Unlock user: `PATCH http://localhost:8080/api/v1/admin/users/{id}/unlock`
+- Member profile: `GET/PUT http://localhost:8080/api/v1/member/profile`
+- Body progress: `GET/POST http://localhost:8080/api/v1/member/body-progress`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
@@ -228,6 +248,8 @@ npm run dev
 - Register: `http://localhost:5173/register`
 - Login: `http://localhost:5173/login`
 - Member home: `http://localhost:5173/member`
+- Member profile: `http://localhost:5173/member/profile`
+- Member progress: `http://localhost:5173/member/progress`
 - Admin users: `http://localhost:5173/admin/users`
 - API base URL local: `http://localhost:8080/api/v1`
 
@@ -244,3 +266,5 @@ npm run dev
 - [Entity Relationship Mapping](./docs/12-entity-relationship-mapping.md)
 - [Architecture Decision](./docs/13-architecture-decision.md)
 - [Implementation Plan](./docs/14-implementation-plan.md)
+- [Graduation Report Diagram Specification](./docs/15-graduation-report-diagram-specification.md)
+- [Graduation Report Draft through Day 14](./docs/graduation-report-draft-through-day-14.md)

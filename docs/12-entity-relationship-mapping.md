@@ -182,25 +182,6 @@ public class User {
                cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserRole> userRoles = new HashSet<>();
 
-    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY,
-              cascade = CascadeType.PERSIST, optional = true)
-    private MemberProfile memberProfile;
-
-    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY)
-    private List<MemberSubscription> subscriptions = new ArrayList<>();
-
-    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY)
-    private List<WorkoutPlan> workoutPlans = new ArrayList<>();
-
-    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY)
-    private List<BodyProgress> bodyProgressList = new ArrayList<>();
-
-    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY)
-    private List<AiRecommendation> aiRecommendations = new ArrayList<>();
-
-    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY)
-    private List<WorkoutSession> workoutSessions = new ArrayList<>();
-
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -228,6 +209,12 @@ public class User {
     }
 }
 ```
+
+> **Ranh giới module:** `User` chỉ ánh xạ ngược `userRoles` vì Auth sở hữu vòng
+> đời bảng liên kết này. Profile, Subscription, Workout và Progress ánh xạ
+> unidirectional từ Entity nghiệp vụ về `User`; Auth Entity không chứa collection
+> ngược. Service của từng module truy vấn theo `user.id`. Cách này đúng với source
+> M1–M2, tránh kéo lazy graph và không tạo cascade xuyên module.
 
 > **Lưu ý Fetch Join khi xác thực:**
 > ```java
@@ -1430,13 +1417,13 @@ Bảng dưới đây liệt kê toàn bộ quan hệ của 25 bảng và chiến
 | `User` | `UserRole` | `@OneToMany` | LAZY | ALL | User sở hữu bản ghi liên kết và auditing của `user_roles`; xóa User chỉ xóa link, không xóa Role. |
 | `UserRole` | `User` | `@ManyToOne` | LAZY | NONE | Association dùng `@MapsId`; lifecycle được điều khiển từ `User.userRoles`. |
 | `UserRole` | `Role` | `@ManyToOne` | LAZY | NONE | Role là Master Data được seed bằng migration; tuyệt đối không cascade PERSIST/REMOVE từ liên kết. |
-| `User` | `MemberProfile` | `@OneToOne` | LAZY | PERSIST | Cascade PERSIST để tạo Profile cùng lúc với User. Không cascade REMOVE để bảo vệ dữ liệu hồ sơ. |
+| `User` | `MemberProfile` | Không ánh xạ ngược | N/A | NONE | Profile được tạo/cập nhật bởi `MemberProfileService`; Auth không sở hữu lifecycle hoặc lazy graph Profile. |
 | `MemberProfile` | `User` | `@OneToOne` | LAZY | NONE | Profile không được phép xóa hoặc thay đổi tài khoản sở hữu bằng cascade. |
-| `User` | `MemberSubscription` | `@OneToMany` | LAZY | NONE | Subscription được tạo và quản lý độc lập bởi Service. Không cascade để bảo toàn lịch sử giao dịch. |
-| `User` | `WorkoutPlan` | `@OneToMany` | LAZY | NONE | WorkoutPlan được tạo từ AI Recommendation. Không cascade để tránh xóa toàn bộ giáo án khi xóa User. |
-| `User` | `WorkoutSession` | `@OneToMany` | LAZY | NONE | Nhật ký tập là dữ liệu lịch sử quan trọng. Không cascade. |
-| `User` | `BodyProgress` | `@OneToMany` | LAZY | NONE | Lịch sử cân nặng phải bảo toàn. Không cascade. |
-| `User` | `AiRecommendation` | `@OneToMany` | LAZY | NONE | Lịch sử AI Recommendation phải bảo toàn. Không cascade. |
+| `User` | `MemberSubscription` | Không ánh xạ ngược | N/A | NONE | Subscription Service truy vấn theo Member; Auth không sở hữu lịch sử giao dịch. |
+| `User` | `WorkoutPlan` | Không ánh xạ ngược | N/A | NONE | Workout module truy vấn theo Member; không kéo giáo án vào Auth Entity. |
+| `User` | `WorkoutSession` | Không ánh xạ ngược | N/A | NONE | Workout module sở hữu truy vấn nhật ký và bảo toàn lịch sử. |
+| `User` | `BodyProgress` | Không ánh xạ ngược | N/A | NONE | Repository Progress truy vấn theo `member.id`; lịch sử không làm tăng coupling của Auth Entity. |
+| `User` | `AiRecommendation` | Không ánh xạ ngược | N/A | NONE | Recommendation module truy vấn theo Member và bảo toàn lịch sử độc lập. |
 | `MemberProfile` | `member_available_equipment` | `@ElementCollection` | LAZY | N/A (auto) | ElementCollection có vòng đời phụ thuộc hoàn toàn vào cha. Hibernate tự cascade. |
 | `MemberProfile` | `member_target_muscle_groups` | `@ElementCollection` | LAZY | N/A (auto) | Tương tự. |
 | `MemberProfile` | `member_injury_constraints` | `@ElementCollection` | LAZY | N/A (auto) | Thẻ chấn thương quan trọng cho lọc whitelist. Tương tự. |
@@ -1681,33 +1668,21 @@ public interface BodyProgressRepository
 
 @Modifying(flushAutomatically = true, clearAutomatically = true)
 @Query(value = """
-    INSERT INTO body_progress (
-        member_id,
-        record_date,
-        weight_kg,
-        created_at,
-        updated_at
-    ) VALUES (
-        :memberId,
-        :recordDate,
-        :weightKg,
-        CURRENT_TIMESTAMP(6),
-        CURRENT_TIMESTAMP(6)
-    )
+    INSERT INTO body_progress (member_id, record_date, weight_kg)
+    VALUES (:memberId, :recordDate, :weightKg)
     ON DUPLICATE KEY UPDATE
         weight_kg = :weightKg,
         updated_at = CURRENT_TIMESTAMP(6)
     """, nativeQuery = true)
-int upsertDailyProgress(
+int upsertAtomic(
     @Param("memberId") Long memberId,
     @Param("recordDate") LocalDate recordDate,
     @Param("weightKg") BigDecimal weightKg
 );
 
-Optional<BodyProgress> findByMemberIdAndRecordDate(
-    Long memberId,
-    LocalDate recordDate
-);
+Optional<BodyProgress> findByMember_IdAndRecordDate(Long memberId, LocalDate recordDate);
+
+List<BodyProgress> findByMember_IdOrderByRecordDateAsc(Long memberId);
 }
 ```
 
@@ -1717,32 +1692,36 @@ Optional<BodyProgress> findByMemberIdAndRecordDate(
 public class BodyProgressService {
 
 private final BodyProgressRepository bodyProgressRepository;
-private final UserRepository userRepository;
-private final BodyProgressMapper bodyProgressMapper;
+private final AccountStatusGuard accountStatusGuard;
+private final Clock clock;
 
 @Transactional
-public BodyProgressDto saveOrUpdateBodyProgress(
-        Long memberId,
-        LocalDate recordDate,
-        BigDecimal weightKg) {
+public BodyProgressResponse upsertCurrentProgress(
+        AuthenticatedUserPrincipal principal,
+        BodyProgressUpsertRequest request) {
 
-    if (!userRepository.existsById(memberId)) {
-        throw new ResourceNotFoundException("Member not found: " + memberId);
-    }
+    Long memberId = requireMemberId(principal);
+    accountStatusGuard.validateAccountStatusByUserId(memberId);
+    validateRequest(request, LocalDate.now(clock.withZone(
+        ZoneId.of("Asia/Ho_Chi_Minh"))));
 
-    bodyProgressRepository.upsertDailyProgress(memberId, recordDate, weightKg);
+    bodyProgressRepository.upsertAtomic(
+        memberId, request.recordDate(), request.weightKg());
 
     BodyProgress saved = bodyProgressRepository
-        .findByMemberIdAndRecordDate(memberId, recordDate)
-        .orElseThrow(() -> new IllegalStateException(
-            "BodyProgress không tồn tại sau atomic upsert."));
+        .findByMember_IdAndRecordDate(memberId, request.recordDate())
+        .orElseThrow(() -> new BusinessException(
+            ErrorCode.INTERNAL_CONFIGURATION_ERROR));
 
-    return bodyProgressMapper.toDto(saved);
+    return BodyProgressResponse.from(saved);
 }
 }
 ```
 
 Câu lệnh atomic upsert được viết đầy đủ trong Repository phía trên, dựa trên `uk_body_progress_member_date(member_id, record_date)` và thực thi nguyên tử trong MySQL. Không bắt `DataIntegrityViolationException` để tiếp tục cùng transaction vì sau lỗi SQL transaction có thể đã bị đánh dấu rollback-only.
+Service lấy `memberId` từ `AuthenticatedUserPrincipal`, chạy
+`AccountStatusGuard`, kiểm tra `ROLE_MEMBER` và từ chối ngày tương lai theo
+`Asia/Ho_Chi_Minh`; request không chứa ID chủ sở hữu.
 
 ---
 

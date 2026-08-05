@@ -106,7 +106,7 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   - **AC-UC_02-01 (Đăng nhập thành công):**
     - **Given** người dùng có tài khoản hợp lệ có trạng thái `ACTIVE` và vai trò `ROLE_MEMBER` trong database.
     - **When** người dùng thực hiện yêu cầu đăng nhập bằng đúng Email và Mật khẩu,
-    - **Then** hệ thống trả về mã trạng thái HTTP 200 OK cùng chuỗi JWT Access Token chứa thông tin User ID và vai trò của người dùng.
+    - **Then** hệ thống trả về mã trạng thái HTTP 200 OK cùng JWT Access Token có `sub = email`, `roles`, `iat`, `exp`; User ID được nạp vào `AuthenticatedUserPrincipal` khi request sau được xác thực, không phải claim do client sử dụng.
   - **AC-UC_02-02 (Đăng nhập thất bại khi tài khoản bị khóa/vô hiệu hóa):**
     - **Given** tài khoản của Member có `accountStatus = LOCKED` (hoặc `DISABLED`).
     - **When** người dùng cố gắng thực hiện đăng nhập bằng đúng email và mật khẩu,
@@ -120,20 +120,23 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
 - **Actor phụ (nếu có):** Không
 - **Tiền điều kiện (Pre-conditions):** Hội viên đã đăng nhập và được xác thực qua JWT.
 - **Hậu điều kiện (Post-conditions):**
-  - Cập nhật thông số thể chất trong bảng `bio_profiles`.
-  - Tự động tính toán và cập nhật lại BMI, BMR, TDEE, Calories/Macros đích tại Backend.
-  - Tự động ghi nhận một bản ghi biến động cân nặng (`BodyProgress`) cho ngày hiện hành trong DB.
+  - Cập nhật thông số thể chất trong bảng `member_profiles` và năm bảng collection liên quan.
+  - Tính lại BMI, BMR, TDEE, Calories/Macros tại Backend và trả trong response; các chỉ số này không được lưu thành cột Profile.
+  - Sau khi Profile thành công, Frontend ghi nhận cân nặng qua API Body Progress độc lập cho ngày nghiệp vụ hiện hành.
 - **Luồng chính (Basic Flow):**
   1. Hội viên truy cập trang Cấu hình hồ sơ và nhập đầy đủ: `heightCm`, `weightKg`, `fitnessGoal`, `fitnessLevel`, `activityLevel`, `dietaryPreference`, `foodAllergies`, `excludedFoods`, `mealsPerDay`; đồng thời có thể cập nhật `gender` (`MALE` hoặc `FEMALE`), `dateOfBirth`, `workoutDaysPerWeek`, `maxSessionMinutes`, `availableEquipment`, `targetMuscleGroups`, `injuryConstraints`.
   2. Hội viên nhấn nút Lưu.
   3. Hệ thống xác thực tính hợp lệ của dữ liệu đầu vào.
   4. Backend tính toán chỉ số BMI, BMR (Mifflin-St Jeor), TDEE (dựa theo activityLevel) và Calories/Macros (thâm hụt/thặng dư theo mục tiêu).
-  5. Hệ thống lưu thông tin vào database và cập nhật/tạo mới bản ghi `BodyProgress` cho ngày hiện hành.
-  6. Hệ thống trả về cấu trúc hồ sơ đầy đủ cùng các chỉ số vừa tính toán.
+  5. Backend lưu Profile và trả về cấu trúc hồ sơ đầy đủ cùng các chỉ số vừa tính toán.
+  6. Frontend dùng `weightKg` trong response và ngày `Asia/Ho_Chi_Minh` để gọi `POST /api/v1/member/body-progress`.
+  7. Backend Progress atomic upsert theo `(member_id, record_date)` và Frontend thông báo kết quả.
 - **Luồng ngoại lệ (Alternative / Exception Flows):**
   - **[Ngoại lệ 03.a] - Dữ liệu không hợp lệ:**
   - Cân nặng/chiều cao âm hoặc rỗng; `gender` khác `MALE`/`FEMALE`; `dateOfBirth` ở tương lai; `workoutDaysPerWeek` ngoài khoảng 1–7; `maxSessionMinutes` không dương; `mealsPerDay` ngoài khoảng 1–6; `activityLevel`, `fitnessGoal`, `fitnessLevel` hoặc `dietaryPreference` không thuộc Enum; danh sách dị ứng/thực phẩm loại trừ vượt giới hạn BR-23.
     - Hệ thống ném mã lỗi `VAL-001` (HTTP 400 Bad Request) kèm thông báo lỗi chi tiết các trường.
+  - **[Ngoại lệ 03.b] - Profile thành công nhưng Progress thất bại:**
+    - Profile và calculated targets vẫn giữ kết quả đã lưu. Frontend hiển thị lỗi Progress riêng và cho phép gửi lại cùng `recordDate`/`weightKg`; không thông báo rollback Profile và không tự lặp PUT Profile.
 - **Business Rules liên quan:** BR-13, BR-22, BR-23.
 - **Acceptance Criteria (BDD):**
   - **AC-UC_03-01 (Cập nhật thành công):**
@@ -144,6 +147,10 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
     - **Given** hội viên điền thông số có `mealsPerDay = 8` (vượt giới hạn quy định từ 1 đến 6 của BR-23) hoặc `activityLevel` sai kiểu Enum.
     - **When** hội viên nhấn nút Lưu hồ sơ,
     - **Then** hệ thống dừng xử lý, từ chối ghi nhận vào database và trả về mã lỗi HTTP 400 Bad Request cùng Error Code `VAL-001`.
+  - **AC-UC_03-03 (Progress lỗi không làm mất Profile):**
+    - **Given** PUT Profile đã trả HTTP 200 nhưng request Body Progress sau đó thất bại,
+    - **When** giao diện nhận lỗi Progress,
+    - **Then** Profile và calculated targets vẫn hiển thị dữ liệu mới; người dùng có nút retry riêng cho Progress.
 
 ---
 

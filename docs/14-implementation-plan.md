@@ -82,6 +82,13 @@ M1 đã hoàn thành local ngày 01/08/2026. Giữ nguyên toàn bộ kết qu�
 | **Ngày 14 - 05/08** | Body Progress và tích hợp M2 | `POST /api/v1/member/body-progress`; atomic upsert theo `(member_id, record_date)`; Clock; OpenAPI và Postman | Widget cân nặng, hoàn thiện Profile desktop/laptop và kết nối GET/PUT/Progress | Targeted test upsert, ngày tương lai, không trùng dòng; hoàn thiện source M2 trước ngày QA |
 | **Ngày 15 - 06/08** | **Local QA và fix M2** | Không thêm feature; chạy full Backend regression M1-M2, kiểm tra Flyway/MySQL, sửa lỗi rồi chạy lại | Chạy full Frontend test/build; test thủ công Profile/Calculator/Body Progress trên localhost; sửa UI/API integration | Dành trọn ngày test/fix; cập nhật docs/ảnh/Postman; tag `v0.2.0-m2-profile` chỉ khi tất cả pass |
 
+**Trạng thái đến cuối Ngày 14:** source M2 đã hoàn thành và nối với nền M1 qua
+`AuthenticatedUserPrincipal`, RBAC, `AccountStatusGuard`, response/error
+contract và Axios Bearer interceptor. Full regression đạt 271 Backend test và
+75 Frontend test; production build pass; Postman có 29 request. Manual localhost
+toàn M2 và tag `v0.2.0-m2-profile` vẫn là gate Ngày 15, chưa được ghi nhận hoàn
+thành sớm.
+
 ### M3 - Landing Page, Membership và SubscriptionGuard
 
 | Ngày | Trọng tâm | Backend | Frontend | Test/QA và đầu ra |

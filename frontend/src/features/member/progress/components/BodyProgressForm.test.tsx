@@ -1,0 +1,11 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+import { BodyProgressForm } from "./BodyProgressForm";
+
+describe("BodyProgressForm", () => {
+    it.each(["0", "-1"])("blocks non-positive weight %s", async (weight) => { const onSubmit = vi.fn(); const user = userEvent.setup(); render(<BodyProgressForm isSaving={false} onSubmit={onSubmit} />); await user.clear(screen.getByLabelText("Cân nặng (kg) *")); await user.type(screen.getByLabelText("Cân nặng (kg) *"), weight); await user.click(screen.getByRole("button", { name: "Lưu cân nặng" })); expect(await screen.findByText("Cân nặng phải lớn hơn 0.")).toBeInTheDocument(); expect(onSubmit).not.toHaveBeenCalled(); });
+    it("blocks a future record date", async () => { const onSubmit = vi.fn(); const user = userEvent.setup(); render(<BodyProgressForm isSaving={false} onSubmit={onSubmit} />); await user.clear(screen.getByLabelText("Ngày ghi nhận *")); await user.type(screen.getByLabelText("Ngày ghi nhận *"), "2099-01-01"); await user.type(screen.getByLabelText("Cân nặng (kg) *"), "72.2"); await user.click(screen.getByRole("button", { name: "Lưu cân nặng" })); expect(await screen.findByText("Ngày ghi nhận không được ở tương lai.")).toBeInTheDocument(); expect(onSubmit).not.toHaveBeenCalled(); });
+    it("submits a valid date and weight", async () => { const onSubmit = vi.fn(); const user = userEvent.setup(); render(<BodyProgressForm isSaving={false} onSubmit={onSubmit} />); await user.type(screen.getByLabelText("Cân nặng (kg) *"), "72.2"); await user.click(screen.getByRole("button", { name: "Lưu cân nặng" })); expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ weightKg: 72.2 })); });
+    it("disables the submit button while saving", () => { render(<BodyProgressForm isSaving error={new Error("failed")} onSubmit={vi.fn()} />); expect(screen.getByRole("button", { name: "Đang lưu..." })).toBeDisabled(); expect(screen.getByRole("alert")).toHaveTextContent("failed"); });
+});

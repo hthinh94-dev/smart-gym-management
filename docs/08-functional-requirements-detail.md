@@ -79,7 +79,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Input chính:** `gender` (Enum: `MALE`, `FEMALE`), `dateOfBirth`, `heightCm`, `weightKg`, `activityLevel`, `workoutDaysPerWeek`, `maxSessionMinutes`, `availableEquipment`, `targetMuscleGroups`, `injuryConstraints`
 **Output:** Hồ sơ thể chất mới được lưu trữ trong DB, tự động kích hoạt tính toán lại BMI, BMR, TDEE, Calories và Macros.
 **Business Rules liên quan:** BR-13 (Quyền sở hữu dữ liệu), BR-22 (Chỉ có 1 bản ghi tiến độ thể chất trong ngày), BR-23 (Kiểm duyệt hồ sơ thể chất).
-**Ghi chú kỹ thuật:** Trong Ngày 13, hệ thống chỉ upsert `MemberProfile` và trả lại các chỉ số Calculator trong response. Việc tạo hoặc cập nhật bản ghi tiến trình thể trạng (`BodyProgress`) cho ngày hiện tại được tách sang Ngày 14 để bảo đảm đúng ownership, timezone nghiệp vụ và cơ chế update-in-place BR-22.
+**Ghi chú kỹ thuật:** `PUT /api/v1/member/profile` chỉ upsert `MemberProfile` và trả lại các chỉ số Calculator trong response. Từ Ngày 14, Frontend gọi độc lập `POST /api/v1/member/body-progress` sau khi Profile thành công, sử dụng cân nặng trong response và ngày nghiệp vụ Việt Nam. Nếu Progress thất bại, Profile vẫn được xem là đã lưu; giao diện thông báo lỗi riêng và cho retry. Cách tách hai API không giả lập một transaction xuyên module, đồng thời giữ đúng ownership, timezone và update-in-place BR-22.
 
 ### [FR-PROFILE-03] Cập nhật mục tiêu tập luyện
 **Mức ưu tiên:** Must-have
@@ -159,7 +159,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Mức ưu tiên:** Must-have
 **Actor:** Hệ thống
 **Mô tả:** Hệ thống xác minh hiệu lực gói dịch vụ của hội viên mỗi khi họ tạo recommendation AI, kích hoạt giáo án hoặc ghi workout log mới. Việc xem dữ liệu lịch sử của chính hội viên không bị chặn khi gói hết hạn.
-**Input chính:** `Authorization` header chứa JWT (trích xuất User ID)
+**Input chính:** `Authorization` header chứa JWT; User ID lấy từ `AuthenticatedUserPrincipal` sau khi `CustomUserDetailsService` tải User từ database.
 **Output:** Cho phép tiếp tục nếu tồn tại subscription thỏa mãn `status = ACTIVE`, `startDate <= currentDate < endDate`; ngược lại trả `SUB-001` (HTTP 403 Forbidden).
 **Business Rules liên quan:** BR-25 (Hiệu lực động của Subscription ACTIVE).
 **Ghi chú kỹ thuật:** Triển khai qua `SubscriptionGuard` và `@PreAuthorize("@subscriptionGuard.hasActiveSubscription(authentication)")` tại endpoint cần gói hợp lệ. Guard kiểm tra động đầy đủ trạng thái và khoảng ngày; không chỉ dựa vào cột trạng thái hoặc Scheduled Job cập nhật `EXPIRED`.

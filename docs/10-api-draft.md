@@ -2027,37 +2027,25 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
 }
 ```
 
-**Response thành công - Tạo mới (HTTP 201 Created):**
+**Response thành công - Tạo mới hoặc cập nhật cùng ngày (HTTP 200 OK):**
 ```json
 {
   "success": true,
   "message": "Ghi nhận chỉ số cân nặng thành công",
   "data": {
-    "progressId": 305,
+    "id": 305,
     "memberId": 101,
-    "weightKg": 72.2,
     "recordDate": "2026-07-15",
-    "isUpdated": false,
-    "createdAt": "2026-07-15T07:30:00Z"
-  }
-}
-```
-
-**Response thành công - Cập nhật ghi đè cùng ngày (HTTP 200 OK):**
-```json
-{
-  "success": true,
-  "message": "Chỉ số cân nặng trong ngày hôm nay đã được cập nhật thành công.",
-  "data": {
-    "progressId": 305,
-    "memberId": 101,
     "weightKg": 72.0,
-    "recordDate": "2026-07-15",
-    "isUpdated": true,
+    "createdAt": "2026-07-15T07:30:00Z",
     "updatedAt": "2026-07-15T18:00:00Z"
   }
 }
 ```
+
+Endpoint luôn trả HTTP 200 vì thao tác được mô hình hóa như một idempotent
+upsert theo khóa `(member_id, record_date)`. Client không suy luận insert hay
+update từ HTTP status và response không có trường `isUpdated`.
 
 **Response lỗi - Dữ liệu Body Progress không hợp lệ (HTTP 400 Bad Request):**
 ```json
@@ -2066,13 +2054,8 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
   "errorCode": "VAL-001",
   "message": "Dữ liệu tiến trình thể trạng không hợp lệ.",
   "details": {
-    "errors": [
-      {
-        "field": "weightKg",
-        "rejectedValue": -2.5,
-        "constraint": "weightKg phải lớn hơn 0."
-      }
-    ]
+    "field": "weightKg",
+    "constraint": "weightKg phải lớn hơn 0."
   }
 }
 ```
@@ -2080,57 +2063,39 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
 ---
 
 ### GET /api/v1/member/body-progress
-**Mô tả:** Lấy lịch sử biến động cân nặng và tần suất số ngày tập theo tuần. Tần suất được tính theo số `logDate` phân biệt trong tuần ISO, không phải số dòng exercise log.
+**Mô tả:** Lấy toàn bộ lịch sử cân nặng của Member hiện hành, sắp xếp theo `recordDate` tăng dần.
 
 **Headers:**
 - `Authorization: Bearer <token>` (Role: MEMBER)
-
-**Query Parameters:**
-- `startDate` (String yyyy-MM-dd, tùy chọn)
-- `endDate` (String yyyy-MM-dd, tùy chọn)
 
 **Response thành công (HTTP 200 OK):**
 ```json
 {
   "success": true,
   "message": "Lấy lịch sử tiến trình thể trạng thành công",
-  "data": {
-    "memberId": 101,
-    "timeseries": [
-      {
-        "recordDate": "2026-06-01",
-        "weightKg": 75.5
-      },
-      {
-        "recordDate": "2026-06-15",
-        "weightKg": 74.2
-      },
-      {
-        "recordDate": "2026-07-01",
-        "weightKg": 73.0
-      },
-      {
-        "recordDate": "2026-07-15",
-        "weightKg": 72.0
-      }
-    ],
-    "workoutFrequencyByWeek": [
-      {
-        "weekStartDate": "2026-06-29",
-        "workoutDaysLogged": 3
-      },
-      {
-        "weekStartDate": "2026-07-06",
-        "workoutDaysLogged": 4
-      },
-      {
-        "weekStartDate": "2026-07-13",
-        "workoutDaysLogged": 2
-      }
-    ]
-  }
+  "data": [
+    {
+      "id": 304,
+      "memberId": 101,
+      "recordDate": "2026-07-14",
+      "weightKg": 72.5,
+      "createdAt": "2026-07-14T07:30:00Z",
+      "updatedAt": "2026-07-14T07:30:00Z"
+    },
+    {
+      "id": 305,
+      "memberId": 101,
+      "recordDate": "2026-07-15",
+      "weightKg": 72.0,
+      "createdAt": "2026-07-15T07:30:00Z",
+      "updatedAt": "2026-07-15T18:00:00Z"
+    }
+  ]
 }
 ```
+
+Analytics theo tuần, bộ lọc khoảng ngày và kết hợp Workout Log thuộc giai đoạn
+Progress Analytics sau M2, không nằm trong endpoint nền Ngày 14.
 
 ---
 

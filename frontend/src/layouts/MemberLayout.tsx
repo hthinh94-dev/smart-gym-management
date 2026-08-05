@@ -39,6 +39,11 @@ export function MemberLayout() {
                             Hồ sơ
                         </NavLink>
                     )}
+                    {user?.role === "ROLE_MEMBER" && (
+                        <NavLink to="/member/progress" className={({ isActive }) => isActive ? "active" : ""}>
+                            Tiến độ
+                        </NavLink>
+                    )}
                 </nav>
 
                 <div className="member-session">

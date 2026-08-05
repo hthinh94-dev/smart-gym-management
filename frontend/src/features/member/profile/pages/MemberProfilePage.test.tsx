@@ -41,6 +41,14 @@ const profile: MemberProfile = {
 };
 
 const savedProfile: MemberProfile = { ...profile };
+const progressResponse = {
+    id: 305,
+    memberId: 101,
+    recordDate: "2026-08-05",
+    weightKg: 70,
+    createdAt: "2026-08-05T08:30:00Z",
+    updatedAt: "2026-08-05T08:30:00Z",
+};
 
 function successResponse(data: MemberProfile = profile) {
     return {
@@ -190,6 +198,10 @@ describe("MemberProfilePage", () => {
             status: 200,
             data: { success: true, message: "Đã cập nhật", data: savedProfile },
         });
+        vi.spyOn(httpClient, "post").mockResolvedValue({
+            status: 200,
+            data: { success: true, message: "Đã ghi nhận", data: progressResponse },
+        });
         const user = userEvent.setup();
 
         renderPage();
@@ -203,7 +215,40 @@ describe("MemberProfilePage", () => {
         })));
         expect(await screen.findByRole("heading", { name: "Chỉ tiêu của bạn" })).toBeInTheDocument();
         expect(screen.getByText("22.86")).toBeInTheDocument();
+        await waitFor(() => expect(httpClient.post).toHaveBeenCalledWith("/member/body-progress", {
+            recordDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+            weightKg: 70,
+        }));
         expect(screen.getByRole("status")).toHaveTextContent("Đã lưu hồ sơ.");
+        expect(screen.getByRole("status")).toHaveTextContent("Đã ghi nhận cân nặng hôm nay.");
+    });
+
+    it("giữ Profile đã lưu và cho retry riêng khi Progress thất bại", async () => {
+        vi.spyOn(httpClient, "get").mockResolvedValue(successResponse());
+        vi.spyOn(httpClient, "put").mockResolvedValue({
+            status: 200,
+            data: { success: true, message: "Đã cập nhật", data: savedProfile },
+        });
+        vi.spyOn(httpClient, "post")
+            .mockRejectedValueOnce(apiError("VAL-001", "Không ghi nhận được cân nặng.", 400))
+            .mockResolvedValueOnce({
+                status: 200,
+                data: { success: true, message: "Đã ghi nhận", data: progressResponse },
+            });
+        const user = userEvent.setup();
+
+        renderPage();
+        await user.click(await screen.findByRole("button", { name: "Chỉnh sửa" }));
+        await user.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
+
+        const retry = await screen.findByRole("button", { name: "Thử ghi cân nặng lại" });
+        expect(screen.getByRole("status")).toHaveTextContent("Hồ sơ đã lưu nhưng chưa ghi nhận được cân nặng.");
+        expect(screen.getByRole("heading", { name: "Thể trạng và mục tiêu" })).toBeInTheDocument();
+
+        await user.click(retry);
+
+        await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(2));
+        expect(await screen.findByText("Đã ghi nhận cân nặng hôm nay.")).toBeInTheDocument();
     });
 
     it("không gửi PUT khi ngày sinh ở tương lai", async () => {

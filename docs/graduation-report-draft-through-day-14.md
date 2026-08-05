@@ -225,11 +225,11 @@ Ba mươi bốn Acceptance Criteria theo cấu trúc Given–When–Then đượ
 | Mục tiêu | Lưu hồ sơ thể chất và dinh dưỡng làm đầu vào cho tính toán và recommendation |
 | Tác nhân chính | Member |
 | Tiền điều kiện | Member đã xác thực bằng JWT |
-| Hậu điều kiện | Cập nhật `member_profiles`, các collection liên quan và Body Progress trong ngày |
+| Hậu điều kiện | Cập nhật `member_profiles` và collection; sau đó Frontend ghi Body Progress qua API độc lập |
 | Business Rule | BR-13, BR-22, BR-23 |
 | RESTful API | `PUT /api/v1/member/profile` |
 
-**Luồng chính:** Member nhập thông tin giới tính, ngày sinh, chiều cao, cân nặng, mục tiêu, trình độ, mức hoạt động, số ngày tập, thời lượng buổi tập, thiết bị, nhóm cơ ưu tiên, hạn chế vận động và thông tin dinh dưỡng. Backend kiểm tra dữ liệu, lưu hồ sơ, tính BMI, BMR, TDEE, calories và các chất dinh dưỡng đa lượng, sau đó cập nhật Body Progress của ngày nghiệp vụ.
+**Luồng chính:** Member nhập thông tin giới tính, ngày sinh, chiều cao, cân nặng, mục tiêu, trình độ, mức hoạt động, số ngày tập, thời lượng buổi tập, thiết bị, nhóm cơ ưu tiên, hạn chế vận động và thông tin dinh dưỡng. Backend Profile kiểm tra dữ liệu, lưu hồ sơ, tính BMI, BMR, TDEE, calories và các chất dinh dưỡng đa lượng rồi trả response. Frontend tiếp tục gọi API Body Progress bằng cân nặng vừa lưu và ngày nghiệp vụ Việt Nam. Hai API có transaction độc lập; lỗi Progress không rollback hoặc làm mất trạng thái Profile đã lưu và có thể retry riêng.
 
 **Luồng ngoại lệ:** Chiều cao hoặc cân nặng không dương; ngày sinh ở tương lai; số ngày tập ngoài 1–7; số bữa ngoài 1–6; enum hoặc collection sai quy định đều trả `VAL-001` và HTTP 400. Hệ thống lấy Member từ Principal, không nhận `memberId` tùy ý từ Client.
 
@@ -811,7 +811,7 @@ Frontend bổ sung `MemberLayout` với điều hướng Tổng quan và Hồ s�
 
 API client gọi `/member/profile` qua Axios instance dùng base URL `/api/v1` và tự gắn Bearer token từ auth session. Client kiểm tra cấu trúc response trước khi sử dụng và phân biệt `PROF-001`, `ACC-004`, `ACC-005`, `ACC-006`, `NETWORK-001` và `SYS-001`.
 
-Trang Profile có loading state, empty state “Chưa hoàn thiện hồ sơ”, read-only overview, lỗi kết nối và nút thử lại. CTA hoàn thiện hồ sơ được hiển thị nhưng chưa kích hoạt vì luồng PUT thuộc Ngày 13. Giao diện không hiển thị BMI, BMR hoặc TDEE giả.
+Trang Profile có loading state, empty state “Chưa hoàn thiện hồ sơ”, form cập nhật, lỗi kết nối và nút thử lại. Sau khi lưu thành công, giao diện hiển thị các chỉ số BMI, BMR, TDEE và mục tiêu dinh dưỡng do Backend tính toán; không tự tính hoặc hiển thị dữ liệu giả. Từ Ngày 14, Frontend tiếp tục gửi cân nặng hiện tại sang `POST /api/v1/member/body-progress` bằng một request độc lập và có nút thử lại nếu request ghi tiến trình thất bại.
 
 ### 4.5.3. Kết quả targeted test
 
@@ -868,3 +868,44 @@ validation, cache update và chống submit lặp. Không có failure hoặc err
 Backend đồng thời validate đủ 8 Flyway migration và khởi tạo Hibernate thành
 công trên MySQL 8.0.44. Full regression, production build và manual localhost
 được dành cho ngày Local QA M2, đúng phạm vi kế hoạch.
+
+## 4.7. Hiện thực Body Progress và tích hợp M2 Ngày 14
+
+### 4.7.1. Thiết kế dữ liệu và atomic upsert
+
+`BodyProgress` lưu cân nặng theo Member và ngày nghiệp vụ. Bảng
+`body_progress` sử dụng khóa duy nhất `(member_id, record_date)` với tên
+`uk_body_progress_member_date`, nhờ đó mỗi Member chỉ có tối đa một bản ghi
+trong một ngày. Repository thực thi một câu lệnh MySQL nguyên tử `INSERT ... ON
+DUPLICATE KEY UPDATE`; cách này tránh race condition của quy trình kiểm tra rồi
+insert khi hai request cùng đến. Body Progress không cascade xóa từ User hoặc
+Profile nhằm bảo toàn lịch sử.
+
+### 4.7.2. Service, ownership và timezone nghiệp vụ
+
+Service lấy Member ID từ `AuthenticatedUserPrincipal`, không nhận ID chủ sở hữu
+từ client. `AccountStatusGuard` và role `ROLE_MEMBER` được kiểm tra trước nghiệp
+vụ. `Clock` được chuyển sang `Asia/Ho_Chi_Minh` để từ chối `recordDate` trong
+tương lai theo ngày nghiệp vụ, không phụ thuộc timezone mặc định của JVM. POST
+thực hiện upsert trong transaction; GET chỉ tải lịch sử của Member hiện hành và
+sắp xếp `recordDate` tăng dần.
+
+### 4.7.3. Tích hợp Profile và giao diện
+
+Profile và Body Progress vẫn là hai API độc lập. Sau khi PUT Profile thành
+công, frontend dùng cân nặng trong response và ngày Việt Nam để gọi POST Body
+Progress. Nếu bước thứ hai thất bại, Profile không bị báo là rollback hoặc mất
+dữ liệu; giao diện hiển thị lỗi riêng và cho phép retry cùng payload. Trang
+Progress đồng thời cung cấp form ghi nhận, lịch sử, widget cân nặng mới nhất và
+các trạng thái loading, empty, error, success.
+
+### 4.7.4. Kết quả kiểm thử Ngày 14
+
+Năm lớp test Backend cung cấp 18 trường hợp cho Entity, native upsert, Service,
+Controller và Integration trên MySQL. Full regression đạt 271 test, Flyway
+validate tám migration và Hibernate khởi tạo thành công. Frontend targeted
+Profile/Progress đạt 30 test, bao phủ validation, cache, chuỗi Profile →
+Progress và retry độc lập. Full Frontend regression đạt 75 test và production
+build thành công. OpenAPI hiện thực 10 operation M1–M2; Postman có 29 request
+Auth/RBAC/Admin/Profile/Progress và không chứa credential thật. Kiểm thử thủ
+công localhost được dành cho gate M2 Ngày 15.

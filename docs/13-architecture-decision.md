@@ -4,7 +4,7 @@
 
 Tài liệu này chốt kiến trúc hiện thực cho MVP sau khi đối chiếu phạm vi, Business Rules, API Contract, thiết kế database/JPA và nền tảng Backend đã khởi tạo. Đây là tài liệu bổ sung cho các đặc tả hiện có; không thay thế các hợp đồng tại File 02–12.
 
-**Quyết định:** dự án sử dụng **Modular Layered Monolith**: một ứng dụng Spring Boot triển khai theo module nghiệp vụ, giao tiếp REST/JWT với React và lưu dữ liệu MySQL 8 qua JPA/Flyway. Đây là kiến trúc phù hợp với phạm vi 9 tuần, 32 API hợp đồng, 25 bảng vật lý và các luồng có transaction rõ ràng của MVP.
+**Quyết định:** dự án sử dụng **Modular Layered Monolith**: một ứng dụng Spring Boot triển khai theo module nghiệp vụ, giao tiếp REST/JWT với React + TypeScript và lưu dữ liệu MySQL 8 qua JPA/Flyway. Đây là kiến trúc phù hợp với phạm vi 9 tuần, 32 API hợp đồng, 25 bảng vật lý và các luồng có transaction rõ ràng của MVP.
 
 Kiến trúc đề xuất ban đầu được giữ về hướng tổng thể, nhưng áp dụng các điều chỉnh bắt buộc sau:
 
@@ -162,10 +162,11 @@ Các dependency hiện có (Web, Validation, JPA, Security, MySQL, Flyway, Actua
 | Recommendation/AI | `resilience4j-spring-boot3`, HTTP client và provider SDK/adapter đã chọn. |
 | Integration test database | Testcontainers MySQL cho Flyway, unique generated keys và concurrency. |
 
-Frontend đã được khởi tạo bằng React + Vite. Luồng Register dùng `TanStack Query`
-cho mutation/server state, React Hook Form + Zod cho form, Axios cho HTTP client và
-React Router cho điều hướng; không cần Redux cho MVP. Auth state dùng Context hoặc
-Zustand khi triển khai Login và route guard ở các ngày tiếp theo.
+Frontend sử dụng React + TypeScript + Vite. Register, Login, Admin Users, Member
+Profile và Body Progress dùng `TanStack Query` cho server state, React Hook Form
++ Zod cho form, Axios cho HTTP client và React Router cho điều hướng. Auth state
+dùng `AuthContext`; `PublicOnlyRoute`, `ProtectedRoute` và `RoleRoute` đã hoàn
+thành trong M1. Không cần Redux/Zustand cho phạm vi hiện tại của MVP.
 
 Ngoài phạm vi: refresh token, OAuth2 login, Redis, cache phân tán, payment gateway thật, messaging broker, real-time notification, microservices và full Clean Architecture.
 

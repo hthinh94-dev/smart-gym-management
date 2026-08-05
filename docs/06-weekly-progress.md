@@ -581,3 +581,49 @@ chuyển sang Profile update và Calculator của Ngày 13.
 Profile Update, Calculator và giao diện Profile đã đồng bộ; full regression,
 production build và manual localhost được giữ cho ngày Local QA M2 theo kế
 hoạch.
+
+---
+
+## Ngày 14 — Body Progress và tích hợp M2 (05/08/2026)
+
+### Đã triển khai source
+
+- [x] Thêm Entity `BodyProgress` kế thừa `BaseEntity`, liên kết User bằng
+  `member_id` và giữ unique constraint `uk_body_progress_member_date` đã có
+  trong migration V7.
+- [x] Repository dùng atomic MySQL upsert `INSERT ... ON DUPLICATE KEY UPDATE`;
+  không dùng chuỗi `find → insert` có race condition.
+- [x] Thêm request/response DTO, validation cân nặng dương, ngày bắt buộc và
+  chặn ngày tương lai theo `Asia/Ho_Chi_Minh`.
+- [x] Service lấy owner từ `AuthenticatedUserPrincipal`, chạy
+  `AccountStatusGuard`, chỉ cho `ROLE_MEMBER`, dùng transaction và không trả
+  Entity trực tiếp.
+- [x] Hoàn thiện `POST` và `GET /api/v1/member/body-progress`, OpenAPI bearer
+  contract và response `200/400/401/403`.
+- [x] Frontend có form, lịch sử, widget cân nặng gần nhất, loading/error/empty/
+  success state và cache update-in-place.
+- [x] Sau khi Profile PUT thành công, frontend gửi Progress bằng cân nặng trong
+  response và ngày nghiệp vụ Việt Nam. Hai request độc lập; nếu Progress lỗi,
+  Profile vẫn giữ trạng thái đã lưu và người dùng có thể retry riêng.
+- [x] API Draft và Postman được đồng bộ với contract Ngày 14; analytics theo
+  tuần được giữ cho giai đoạn Progress Analytics sau M2.
+- [x] Postman M1–M2 có 29 request: 21 request Auth/RBAC/Admin của M1, 2 request
+  Profile/Calculator và 6 request Body Progress; collection không chứa
+  credential hoặc token thật.
+
+### Kiểm thử và minh chứng
+
+- [x] 18 test Body Progress bao phủ Entity, Repository, Service, Controller và
+  Integration trên MySQL: insert, upsert cùng ngày, không trùng dòng, hai ngày,
+  validation, ownership, Guard, timezone và bảo toàn lịch sử.
+- [x] Full Backend regression: 271 test pass, 0 failure, 0 error; Flyway validate
+  đủ 8 migration và Hibernate khởi tạo thành công trên MySQL 8.0.44.
+- [x] Frontend targeted Profile/Progress: 30 test pass, gồm ngày tương lai,
+  cân nặng không dương, Profile success → Progress và retry riêng khi Progress
+  lỗi.
+- [x] Full Frontend regression: 75 test pass, 0 failure; Vite production build
+  thành công sau khi hoàn tất source và tích hợp Profile → Progress.
+
+**Kết luận:** Source Ngày 14 đã hoàn thành và contract Backend/Frontend đồng
+bộ. Full manual localhost và gate M2 tiếp tục được thực hiện trong Ngày 15 theo
+kế hoạch, không mở rộng thêm feature trong Ngày 14.
