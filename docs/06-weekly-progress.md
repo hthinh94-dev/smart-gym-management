@@ -627,3 +627,28 @@ hoạch.
 **Kết luận:** Source Ngày 14 đã hoàn thành và contract Backend/Frontend đồng
 bộ. Full manual localhost và gate M2 tiếp tục được thực hiện trong Ngày 15 theo
 kế hoạch, không mở rộng thêm feature trong Ngày 14.
+
+---
+
+## Bổ sung sau Ngày 14 — Mở rộng Profile và Body Progress (06/08/2026)
+
+- [x] Mở rộng mục tiêu thể chất thành `MUSCLE_GAIN`, `WEIGHT_GAIN`, `FAT_LOSS`,
+  `WEIGHT_LOSS`; cho phép chọn tối đa hai mục tiêu và giữ mục tiêu chính ở
+  `fitnessGoal` để tính calo tương thích với công thức cũ.
+- [x] Thêm `target_weight_kg` và kiểm tra hướng tăng/giảm cân ở cả Zod và
+  Service; bổ sung ghi chú `mobility_limit_notes` tự nhập tối đa 500 ký tự.
+- [x] Thêm danh sách `member_fitness_goals`, tùy chọn thực phẩm phổ biến và
+  hỗ trợ chọn tất cả thiết bị, nhóm cơ, hạn chế vận động trong Frontend.
+- [x] Thêm `muscle_mass_kg` và `fat_mass_kg` tùy chọn vào `body_progress`; các
+  trường cũ vẫn được giữ nguyên khi request cập nhật cùng ngày không gửi hai
+  giá trị này.
+- [x] BMI trả thêm phân loại `UNDERWEIGHT`, `NORMAL`, `OVERWEIGHT`, `OBESE`;
+  giao diện tách rõ phần chỉ số, chỉ tiêu dinh dưỡng và hiển thị tiến độ đạt
+  cân nặng mục tiêu.
+- [x] Body Progress lấy bản ghi sớm nhất làm cân nặng ban đầu; thông báo và
+  từng dòng lịch sử hiển thị tăng/giảm so với baseline, đồng thời hiển thị rõ
+  cân nặng ban đầu cạnh tiêu đề cột `Cân nặng`.
+- [x] Widget đặt dòng xanh `Còn cách mục tiêu X.XX kg` hoặc trạng thái đã đạt
+  ngay dưới cân nặng hiện tại; khối cân nặng mục tiêu chỉ giữ con số đích.
+- [x] Flyway V9–V10 validate thành công; full regression đạt 274 Backend test,
+  80 Frontend test và Vite production build pass.

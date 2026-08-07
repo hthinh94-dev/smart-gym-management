@@ -273,7 +273,10 @@ exception parser hoặc tên class Java.
       "dateOfBirth": "1998-05-15",
       "heightCm": 175.0,
       "weightKg": 70.0,
-      "fitnessGoal": "BULK",
+      "fitnessGoal": "MUSCLE_GAIN",
+      "fitnessGoals": ["MUSCLE_GAIN", "FAT_LOSS"],
+      "targetWeightKg": null,
+      "mobilityLimitNotes": "Hạn chế xoay vai trái",
       "fitnessLevel": "BEGINNER",
       "activityLevel": "MODERATELY_ACTIVE",
       "workoutDaysPerWeek": 4,
@@ -290,6 +293,7 @@ exception parser hoặc tên class Java.
     },
     "calculatedTargets": {
       "bmi": 22.86,
+      "bmiCategory": "NORMAL",
       "bmr": 1658.75,
       "tdee": 2571.06,
       "dailyCaloriesKcal": 2871.06,
@@ -328,7 +332,10 @@ exception parser hoặc tên class Java.
   "dateOfBirth": "1998-05-15",
   "heightCm": 175.0,
   "weightKg": 72.5,
-  "fitnessGoal": "BULK",
+  "fitnessGoal": "WEIGHT_LOSS",
+  "fitnessGoals": ["WEIGHT_LOSS", "FAT_LOSS"],
+  "targetWeightKg": 68.0,
+  "mobilityLimitNotes": "Hạn chế xoay vai trái",
   "fitnessLevel": "BEGINNER",
   "activityLevel": "MODERATELY_ACTIVE",
   "workoutDaysPerWeek": 4,
@@ -355,7 +362,10 @@ exception parser hoặc tên class Java.
       "dateOfBirth": "1998-05-15",
       "heightCm": 175.0,
       "weightKg": 72.5,
-      "fitnessGoal": "BULK",
+      "fitnessGoal": "WEIGHT_LOSS",
+      "fitnessGoals": ["WEIGHT_LOSS", "FAT_LOSS"],
+      "targetWeightKg": 68.0,
+      "mobilityLimitNotes": "Hạn chế xoay vai trái",
       "fitnessLevel": "BEGINNER",
       "activityLevel": "MODERATELY_ACTIVE",
       "workoutDaysPerWeek": 4,
@@ -372,6 +382,7 @@ exception parser hoặc tên class Java.
     },
     "calculatedTargets": {
       "bmi": 23.67,
+      "bmiCategory": "NORMAL",
       "bmr": 1683.75,
       "tdee": 2609.81,
       "dailyCaloriesKcal": 2909.81,
@@ -2023,7 +2034,9 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
 ```json
 {
   "weightKg": 72.2,
-  "recordDate": "2026-07-15"
+  "recordDate": "2026-07-15",
+  "muscleMassKg": 34.5,
+  "fatMassKg": 18.2
 }
 ```
 
@@ -2037,6 +2050,8 @@ Nếu Fallback được kích hoạt do AI trả sai JSON Schema, chứa `exerci
     "memberId": 101,
     "recordDate": "2026-07-15",
     "weightKg": 72.0,
+    "muscleMassKg": 34.5,
+    "fatMassKg": 18.2,
     "createdAt": "2026-07-15T07:30:00Z",
     "updatedAt": "2026-07-15T18:00:00Z"
   }
@@ -2065,6 +2080,8 @@ update từ HTTP status và response không có trường `isUpdated`.
 ### GET /api/v1/member/body-progress
 **Mô tả:** Lấy toàn bộ lịch sử cân nặng của Member hiện hành, sắp xếp theo `recordDate` tăng dần.
 
+Frontend dùng phần tử đầu tiên của mảng `data` làm cân nặng ban đầu để trình bày tiến độ. Mức tăng/giảm trong bảng được tính so với baseline này; khoảng cách tuyệt đối tới `targetWeightKg` được đặt dưới cân nặng hiện tại. Đây là quy tắc hiển thị của Client và không thay đổi response contract.
+
 **Headers:**
 - `Authorization: Bearer <token>` (Role: MEMBER)
 
@@ -2087,6 +2104,8 @@ update từ HTTP status và response không có trường `isUpdated`.
       "memberId": 101,
       "recordDate": "2026-07-15",
       "weightKg": 72.0,
+      "muscleMassKg": 34.5,
+      "fatMassKg": 18.2,
       "createdAt": "2026-07-15T07:30:00Z",
       "updatedAt": "2026-07-15T18:00:00Z"
     }

@@ -42,7 +42,7 @@ sequenceDiagram
 #### A. Dữ liệu đầu vào (Input Payload từ Client)
 Người dùng cập nhật thông tin cá nhân lên Client, dữ liệu được đóng gói thành JSON Payload gửi lên Backend gồm:
 - **Thông số sinh học:** Giới tính (`gender`), ngày sinh (`dateOfBirth`), chiều cao (`heightCm`), cân nặng (`weightKg`).
-- **Mục tiêu & Kinh nghiệm:** Mục tiêu thể chất (`fitnessGoal`: `BULK` / `CUT` / `MAINTAIN`), trình độ luyện tập (`fitnessLevel`: `BEGINNER` / `INTERMEDIATE` / `ADVANCED`), mức độ hoạt động hàng ngày (`activityLevel`: `SEDENTARY` / `LIGHTLY_ACTIVE` / `MODERATELY_ACTIVE` / `VERY_ACTIVE`).
+   - **Mục tiêu & Kinh nghiệm:** Hội viên chọn tối đa hai mục tiêu trong `MUSCLE_GAIN` (tăng cơ), `WEIGHT_GAIN` (tăng cân), `FAT_LOSS` (giảm mỡ) và `WEIGHT_LOSS` (giảm cân). `fitnessGoal` là mục tiêu chính, đứng đầu `fitnessGoals` và được dùng để tính calo; `targetWeightKg` bắt buộc khi chọn tăng/giảm cân. Trình độ luyện tập (`fitnessLevel`: `BEGINNER` / `INTERMEDIATE` / `ADVANCED`) và mức độ hoạt động hàng ngày (`activityLevel`: `SEDENTARY` / `LIGHTLY_ACTIVE` / `MODERATELY_ACTIVE` / `VERY_ACTIVE`) vẫn giữ nguyên.
 - **Ràng buộc thời gian:** Tần suất tập luyện (`workoutDaysPerWeek`: số buổi/tuần), thời lượng tối đa mỗi buổi (`maxSessionMinutes`).
 - **Ràng buộc vật lý & Y tế:** Thiết bị tập luyện khả dụng (`availableEquipment`), các nhóm cơ ưu tiên (`targetMuscleGroups`), chấn thương hoặc hạn chế vận động (`injuryConstraints` — ánh xạ sang `contraindicationTags` khi lọc Exercise Whitelist).
 - **Dữ liệu dinh dưỡng:** Chế độ ăn (`dietaryPreference`: `OMNIVORE` / `VEGETARIAN` / `VEGAN`), dị ứng thực phẩm (`foodAllergies`), thực phẩm loại trừ (`excludedFoods`), số bữa mong muốn/ngày (`mealsPerDay`).
@@ -55,6 +55,7 @@ Tầng Backend đảm nhận vai trò bộ lọc bảo mật, xử lý số li�
    - Nhân hệ số vận động để ra chỉ số tiêu thụ năng lượng hàng ngày TDEE.
    - Tính toán lượng Calorie mục tiêu dựa trên TDEE và mục tiêu tập luyện (ví dụ: thâm hụt 300-500 kcal cho việc giảm mỡ, thặng dư 200-300 kcal cho việc tăng cơ).
    - Phân bổ chính xác khối lượng các chất đa lượng (Macronutrients) theo gram: Protein (2g - 2.5g trên mỗi kg trọng lượng), Fat (20% - 25% tổng năng lượng), còn lại phân bổ cho Carbohydrate.
+   - Với Body Progress, Backend trả lịch sử theo ngày tăng dần; Frontend dùng phần tử đầu tiên làm cân nặng ban đầu, phần tử cuối làm cân nặng hiện tại và hiển thị khoảng cách tới `targetWeightKg` ngay dưới cân nặng hiện tại.
 3. **Lọc danh mục bài tập khả dụng (Exercise Whitelisting):** Truy vấn cơ sở dữ liệu MySQL, lọc ra danh sách các bài tập phù hợp với thiết bị sẵn có của người dùng và lọc bỏ các bài tập tác động xấu đến vùng chấn thương. Tạo danh sách `exercise_id_whitelist`.
 4. **Xây dựng Prompt an toàn:** Gộp dữ liệu hồ sơ thể trạng, các chỉ số dinh dưỡng vừa tính toán và danh sách ID bài tập được phép sử dụng vào cấu trúc Prompt System/User gửi đi.
 5. **Hậu kiểm dữ liệu (Post-Validation Hook):** Khi nhận được phản hồi từ AI, Backend tiến hành bóc tách thực thể JSON, thực hiện kiểm tra chéo và chuẩn hóa:

@@ -897,7 +897,11 @@ công, frontend dùng cân nặng trong response và ngày Việt Nam để gọ
 Progress. Nếu bước thứ hai thất bại, Profile không bị báo là rollback hoặc mất
 dữ liệu; giao diện hiển thị lỗi riêng và cho phép retry cùng payload. Trang
 Progress đồng thời cung cấp form ghi nhận, lịch sử, widget cân nặng mới nhất và
-các trạng thái loading, empty, error, success.
+các trạng thái loading, empty, error, success. Lịch sử được sắp xếp tăng dần;
+bản ghi đầu tiên là cân nặng ban đầu, bản ghi cuối là cân nặng hiện tại. Mỗi
+dòng lịch sử hiển thị mức tăng/giảm so với cân nặng ban đầu. Khoảng cách tuyệt
+đối tới `targetWeightKg` được đặt bằng chữ xanh ngay dưới cân nặng hiện tại;
+khối cân nặng mục tiêu chỉ hiển thị con số đích để tránh lặp thông tin.
 
 ### 4.7.4. Kết quả kiểm thử Ngày 14
 
@@ -909,3 +913,22 @@ Progress và retry độc lập. Full Frontend regression đạt 75 test và pro
 build thành công. OpenAPI hiện thực 10 operation M1–M2; Postman có 29 request
 Auth/RBAC/Admin/Profile/Progress và không chứa credential thật. Kiểm thử thủ
 công localhost được dành cho gate M2 Ngày 15.
+
+## 4.8. Hoàn thiện Profile và Body Progress sau Ngày 14
+
+Trong vòng local QA ngày 06–07/08/2026, Profile được mở rộng để hỗ trợ tối đa
+hai mục tiêu, cân nặng đích, ghi chú hạn chế vận động tự nhập và danh sách thực
+phẩm phổ biến. Kết quả BMI được phân loại; BMR, TDEE và lượng calo mục tiêu được
+trình bày theo ý nghĩa nghiệp vụ thay vì chỉ hiển thị số.
+
+Body Progress bổ sung khối lượng cơ và khối lượng mỡ tùy chọn. Giao diện phân
+biệt rõ ba mốc: cân nặng ban đầu lấy từ bản ghi `recordDate` sớm nhất, cân nặng
+hiện tại lấy từ bản ghi mới nhất và cân nặng mục tiêu lấy từ Profile. Thông báo
+sau khi lưu và từng dòng lịch sử dùng chênh lệch so với cân nặng ban đầu. Dòng
+`Còn cách mục tiêu X.XX kg` hoặc `Đã đạt cân nặng mục tiêu` nằm ngay dưới cân
+nặng hiện tại; khi đạt mục tiêu hệ thống hiển thị lời chúc mừng và hiệu ứng.
+
+Flyway V9–V10 được validate trên MySQL, full Backend regression đạt 274 test.
+Frontend đạt 80 test, kiểm tra TypeScript không còn lỗi và Vite production build
+thành công. Các tài liệu phạm vi, yêu cầu chức năng, business rule, use case,
+API, database, ORM và kiến trúc đã được đồng bộ với cách tính baseline này.

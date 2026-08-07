@@ -141,7 +141,7 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
 - **Acceptance Criteria (BDD):**
   - **AC-UC_03-01 (Cập nhật thành công):**
     - **Given** hội viên đã đăng nhập với JWT Token hợp lệ.
-    - **When** gửi yêu cầu cập nhật `heightCm = 175.0`, `weightKg = 70.0`, `fitnessGoal = "BULK"`, `fitnessLevel = "BEGINNER"`, `activityLevel = "MODERATELY_ACTIVE"`, `dietaryPreference = "OMNIVORE"`, `foodAllergies = ["PEANUTS"]`, `excludedFoods = ["BEEF"]`, `mealsPerDay = 4`,
+    - **When** gửi yêu cầu cập nhật `heightCm = 175.0`, `weightKg = 70.0`, `fitnessGoal = "MUSCLE_GAIN"`, `fitnessGoals = ["MUSCLE_GAIN", "FAT_LOSS"]`, `fitnessLevel = "BEGINNER"`, `activityLevel = "MODERATELY_ACTIVE"`, `dietaryPreference = "OMNIVORE"`, `foodAllergies = ["PEANUTS"]`, `excludedFoods = ["BEEF"]`, `mealsPerDay = 4`,
     - **Then** hệ thống lưu dữ liệu thành công, trả về HTTP 200 OK chứa các chỉ số sinh học được Backend tính toán định lượng (`bmi`, `bmr`, `tdee`, `dailyCaloriesKcal`, `proteinGrams`, `fatGrams`, `carbGrams`).
   - **AC-UC_03-02 (Cập nhật thất bại do dữ liệu input vượt ngưỡng):**
     - **Given** hội viên điền thông số có `mealsPerDay = 8` (vượt giới hạn quy định từ 1 đến 6 của BR-23) hoặc `activityLevel` sai kiểu Enum.
@@ -434,7 +434,8 @@ Mười Use Case trên mô tả các luồng nghiệp vụ End-to-End quan trọ
   3. Hệ thống lưu cân nặng mới. Nếu hội viên đã nhập cân nặng ngày hôm nay trước đó, hệ thống thực hiện cập nhật ghi đè bản ghi cũ trong ngày (Update-in-place - áp dụng BR-22).
   4. Backend tổng hợp dữ liệu cân nặng, lịch sử mức tạ tối đa theo bài tập và số ngày tập có workout log phân biệt trong từng tuần ISO.
   5. Hệ thống trả về các chuỗi dữ liệu cân nặng, mức tạ và `workoutFrequencyByWeek` sắp xếp tăng dần theo mốc thời gian.
-  6. Client tiếp nhận dữ liệu và vẽ biểu đồ đường trực quan cho Hội viên.
+  6. Client xác định bản ghi sớm nhất là cân nặng ban đầu, hiển thị mốc này cạnh cột cân nặng, tính mức tăng/giảm của từng bản ghi so với baseline và đặt khoảng cách tới mục tiêu ngay dưới cân nặng hiện tại.
+  7. Client tiếp nhận dữ liệu và vẽ biểu đồ đường trực quan cho Hội viên.
 - **Luồng ngoại lệ (Alternative / Exception Flows):**
   - **[Ngoại lệ 09.a] - Truy cập sai sở hữu dữ liệu:**
     - Người dùng cố truy vấn API phân tích tiến độ sử dụng User ID của người dùng khác.

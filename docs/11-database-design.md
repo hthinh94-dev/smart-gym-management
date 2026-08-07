@@ -2,7 +2,7 @@
 
 ## 1. Mục đích tài liệu
 
-Tài liệu này đặc tả thiết kế vật lý của cơ sở dữ liệu cho Hệ thống quản lý phòng gym thông minh trong phạm vi sản phẩm khả dụng tối thiểu. Thiết kế sử dụng MySQL 8 và bao gồm đầy đủ 25 bảng vật lý, kiểu dữ liệu, khóa chính, khóa ngoại, ràng buộc duy nhất, ràng buộc kiểm tra, trường auditing, chỉ mục, chiến lược bảo toàn lịch sử và sơ đồ quan hệ thực thể.
+Tài liệu này đặc tả thiết kế vật lý của cơ sở dữ liệu cho Hệ thống quản lý phòng gym thông minh trong phạm vi sản phẩm khả dụng tối thiểu. Baseline M1–M2 gồm 25 bảng vật lý; phần mở rộng Profile hiện tại bổ sung bảng liên kết `member_fitness_goals`, nên schema local hiện hành có 26 bảng. Tài liệu bao gồm kiểu dữ liệu, khóa chính, khóa ngoại, ràng buộc duy nhất, ràng buộc kiểm tra, trường auditing, chỉ mục, chiến lược bảo toàn lịch sử và sơ đồ quan hệ thực thể.
 
 Tài liệu là nguồn thiết kế cho:
 
@@ -33,7 +33,7 @@ Hệ thống tuân thủ 16 nguyên tắc sau:
 7. **Personal Trainer:** Chỉ khai báo `ROLE_PT` trong bảng vai trò để sẵn sàng mở rộng. MVP không có bảng nghiệp vụ Personal Trainer và không có luồng Admin–Member nào phụ thuộc Personal Trainer.
 8. **Enum:** Giá trị Enum được lưu bằng `VARCHAR` và ánh xạ bằng `EnumType.STRING` để tránh sai lệch khi thay đổi thứ tự Enum trong mã nguồn.
 9. **Thời gian:** `TIMESTAMP` lưu theo UTC. Trường `DATE` phục vụ nghiệp vụ được xác định theo timezone `Asia/Ho_Chi_Minh` trước khi lưu.
-10. **Auditing:** Cả 25 bảng vật lý đều có `created_at` và `updated_at`. Mười sáu bảng ánh xạ Entity dùng Java Persistence Auditing. Chín bảng `@ElementCollection` không có lifecycle callback riêng nên MySQL điền timestamp bằng default/on-update trong cùng transaction với thao tác collection.
+10. **Auditing:** Cả 26 bảng vật lý hiện hành đều có `created_at` và `updated_at`. Mười sáu bảng ánh xạ Entity dùng Java Persistence Auditing; bảng liên kết mục tiêu và các bảng `@ElementCollection` không có lifecycle callback riêng nên MySQL điền timestamp bằng default/on-update trong cùng transaction với thao tác collection.
 11. **Xóa mềm:** `membership_packages` và `exercises` dùng `is_active`; không xóa cứng master data đã được tham chiếu.
 12. **Bảo toàn lịch sử:** Subscription, renewal request, workout plan, workout log, body progress và AI recommendation không bị xóa lan truyền từ User hoặc master data.
 13. **Cascade có kiểm soát:** Chỉ dùng `ON DELETE CASCADE` cho bảng liên kết hoặc thành phần sở hữu hoàn toàn. Dữ liệu lịch sử dùng `ON DELETE RESTRICT`.
@@ -65,6 +65,7 @@ Hệ thống tuân thủ 16 nguyên tắc sau:
 | 2 | `roles` | Auth | Lưu ba vai trò xác thực của hệ thống. |
 | 3 | `user_roles` | Auth | Liên kết nhiều-nhiều giữa User và Role. |
 | 4 | `member_profiles` | Profile | Lưu hồ sơ thể chất, mục tiêu và cấu hình dinh dưỡng. |
+| 4a | `member_fitness_goals` | Profile | Lưu tối đa hai mục tiêu thể chất của mỗi hồ sơ. |
 | 5 | `member_available_equipment` | Profile | Lưu thiết bị hội viên có thể sử dụng. |
 | 6 | `member_target_muscle_groups` | Profile | Lưu nhóm cơ hội viên ưu tiên. |
 | 7 | `member_injury_constraints` | Profile | Lưu hạn chế vận động dùng để lọc bài tập. |
@@ -151,7 +152,9 @@ Hệ thống tuân thủ 16 nguyên tắc sau:
 | `date_of_birth` | DATE | NOT NULL | Ngày sinh dùng để tính tuổi. |
 | `height_cm` | DECIMAL(5,2) | NOT NULL, CHECK (`height_cm > 0`) | Chiều cao theo centimet. |
 | `weight_kg` | DECIMAL(6,2) | NOT NULL, CHECK (`weight_kg > 0`) | Cân nặng theo kilogram. |
-| `fitness_goal` | VARCHAR(20) | NOT NULL, CHECK (`fitness_goal IN ('BULK','CUT','MAINTAIN')`) | Mục tiêu thể chất. |
+| `target_weight_kg` | DECIMAL(6,2) | NULL, CHECK nếu có phải lớn hơn 0 | Cân nặng đích cho mục tiêu tăng hoặc giảm cân. |
+| `mobility_limit_notes` | VARCHAR(500) | NULL | Hạn chế vận động tự nhập đã trim; không thay thế các tag chuẩn. |
+| `fitness_goal` | VARCHAR(20) | NOT NULL, CHECK mục tiêu hợp lệ | Mục tiêu chính dùng để tính calo; danh sách đầy đủ nằm ở `member_fitness_goals`. |
 | `fitness_level` | VARCHAR(20) | NOT NULL, CHECK (`fitness_level IN ('BEGINNER','INTERMEDIATE','ADVANCED')`) | Trình độ tập luyện. |
 | `activity_level` | VARCHAR(30) | NOT NULL, CHECK (`activity_level IN ('SEDENTARY','LIGHTLY_ACTIVE','MODERATELY_ACTIVE','VERY_ACTIVE')`) | Hệ số hoạt động để tính TDEE. |
 | `workout_days_per_week` | TINYINT | NOT NULL, CHECK (`workout_days_per_week BETWEEN 1 AND 7`) | Số buổi tập mỗi tuần. |
@@ -165,7 +168,17 @@ Hệ thống tuân thủ 16 nguyên tắc sau:
 
 **Application Validation:** `date_of_birth` không được ở tương lai. Giới hạn chi tiết chiều cao, cân nặng và thời lượng được kiểm tra tại Data Transfer Object; database bảo vệ điều kiện dương.
 
-#### 4.2.2. Bảng `member_available_equipment`
+#### 4.2.2. Bảng `member_fitness_goals`
+
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
+|---|---|---|---|
+| `member_profile_id` | BIGINT | NOT NULL, FOREIGN KEY → `member_profiles.id`, ON DELETE CASCADE | Hồ sơ sở hữu mục tiêu. |
+| `fitness_goal` | VARCHAR(20) | NOT NULL, CHECK mục tiêu hợp lệ | Một trong tối đa hai mục tiêu đã chọn. |
+| `created_at` / `updated_at` | TIMESTAMP(6) | NOT NULL, DB default/on-update | Audit thời điểm của liên kết mục tiêu. |
+
+**Primary Key:** `pk_member_fitness_goals(member_profile_id, fitness_goal)`.
+
+#### 4.2.3. Bảng `member_available_equipment`
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 |---|---|---|---|
@@ -176,7 +189,7 @@ Hệ thống tuân thủ 16 nguyên tắc sau:
 
 **Primary Key:** `pk_member_available_equipment(member_profile_id, equipment)`.
 
-#### 4.2.3. Bảng `member_target_muscle_groups`
+#### 4.2.4. Bảng `member_target_muscle_groups`
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 |---|---|---|---|
@@ -187,7 +200,7 @@ Hệ thống tuân thủ 16 nguyên tắc sau:
 
 **Primary Key:** `pk_member_target_muscle_groups(member_profile_id, muscle_group)`.
 
-#### 4.2.4. Bảng `member_injury_constraints`
+#### 4.2.5. Bảng `member_injury_constraints`
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 |---|---|---|---|
@@ -198,7 +211,7 @@ Hệ thống tuân thủ 16 nguyên tắc sau:
 
 **Primary Key:** `pk_member_injury_constraints(member_profile_id, constraint_tag)`.
 
-#### 4.2.5. Bảng `member_food_allergies`
+#### 4.2.6. Bảng `member_food_allergies`
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 |---|---|---|---|
@@ -211,7 +224,7 @@ Hệ thống tuân thủ 16 nguyên tắc sau:
 
 **Application Validation:** Tối đa 10 phần tử; mỗi phần tử không quá 50 ký tự; không chứa phần tử rỗng.
 
-#### 4.2.6. Bảng `member_excluded_foods`
+#### 4.2.7. Bảng `member_excluded_foods`
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 |---|---|---|---|
@@ -608,12 +621,16 @@ ON DELETE CASCADE
 | `member_id` | BIGINT | NOT NULL, FOREIGN KEY → `users.id`, ON DELETE RESTRICT | Member sở hữu dữ liệu. |
 | `record_date` | DATE | NOT NULL | Ngày nghiệp vụ theo timezone `Asia/Ho_Chi_Minh`. |
 | `weight_kg` | DECIMAL(6,2) | NOT NULL, CHECK (`weight_kg > 0`) | Cân nặng theo kilogram. |
+| `muscle_mass_kg` | DECIMAL(6,2) | NULL, CHECK nếu có phải lớn hơn 0 | Khối lượng cơ tùy chọn. |
+| `fat_mass_kg` | DECIMAL(6,2) | NULL, CHECK nếu có phải lớn hơn 0 | Khối lượng mỡ tùy chọn. |
 | `created_at` | TIMESTAMP(6) | NOT NULL | Thời điểm tạo theo UTC. |
 | `updated_at` | TIMESTAMP(6) | NOT NULL | Thời điểm cập nhật theo UTC. |
 
 **Unique Constraint:** `uk_body_progress_member_date(member_id, record_date)`.
 
-Nếu cùng khóa nghiệp vụ đã tồn tại, Service dùng atomic upsert `INSERT ... ON DUPLICATE KEY UPDATE` để cập nhật `weight_kg` và `updated_at` thay vì insert bản ghi thứ hai. Unique constraint là điểm đồng bộ hóa cuối cùng cho hai request đồng thời.
+Nếu cùng khóa nghiệp vụ đã tồn tại, Service dùng atomic upsert `INSERT ... ON DUPLICATE KEY UPDATE` để cập nhật `weight_kg`, các trường thành phần nếu được gửi và `updated_at` thay vì insert bản ghi thứ hai. Khi request không gửi khối lượng cơ/mỡ, giá trị cũ được giữ nguyên. Unique constraint là điểm đồng bộ hóa cuối cùng cho hai request đồng thời.
+
+`body_progress` chỉ lưu dữ liệu gốc theo ngày; cân nặng ban đầu và mức tăng/giảm so với baseline là giá trị suy ra ở Frontend từ bản ghi có `record_date` sớm nhất, không thêm cột snapshot hoặc bảng audit.
 
 ---
 
@@ -694,7 +711,7 @@ Số dòng meal của một recommendation phải bằng `member_profiles.meals_
 | `RoleName` | `roles.name` | `ROLE_ADMIN`, `ROLE_MEMBER`, `ROLE_PT` |
 | `AccountStatus` | `users.account_status` | `ACTIVE`, `LOCKED`, `DISABLED` |
 | `Gender` | `member_profiles.gender` | `MALE`, `FEMALE` |
-| `FitnessGoal` | `member_profiles.fitness_goal`, `workout_plans.goal` | `BULK`, `CUT`, `MAINTAIN` |
+| `FitnessGoal` | `member_profiles.fitness_goal`, `member_fitness_goals.fitness_goal`, `workout_plans.goal` | `MUSCLE_GAIN`, `WEIGHT_GAIN`, `FAT_LOSS`, `WEIGHT_LOSS` và giá trị legacy tương thích |
 | `FitnessLevel` | `member_profiles.fitness_level` | `BEGINNER`, `INTERMEDIATE`, `ADVANCED` |
 | `ActivityLevel` | `member_profiles.activity_level` | `SEDENTARY`, `LIGHTLY_ACTIVE`, `MODERATELY_ACTIVE`, `VERY_ACTIVE` |
 | `DietaryPreference` | `member_profiles.dietary_preference` | `OMNIVORE`, `VEGETARIAN`, `VEGAN` |
@@ -756,6 +773,9 @@ Không thêm `GUEST` vào `RoleName`. Nếu bổ sung Enum mới trong quá trì
 - `workout_logs.actual_rpe`: từ 1.0 đến 10.0 theo BR-09B.
 - `workout_logs.weight_used_kg`: lớn hơn hoặc bằng 0 theo BR-09B.
 - `body_progress.weight_kg`: lớn hơn 0.
+- `member_profiles.target_weight_kg`: nếu có phải lớn hơn 0; mục tiêu tăng/giảm cân còn phải đúng hướng so với `weight_kg`.
+- `member_profiles.mobility_limit_notes`: tối đa 500 ký tự.
+- `body_progress.muscle_mass_kg`, `body_progress.fat_mass_kg`: nếu có phải lớn hơn 0.
 
 ### 6.3. Ràng buộc liên bảng tại Service
 
@@ -883,7 +903,7 @@ Các unique constraint đã tự tạo unique index nên không tạo index trù
 
 ## 10. Sơ đồ quan hệ thực thể
 
-Sơ đồ sau biểu diễn đủ 25 bảng vật lý. Ký hiệu `||` là đúng một, `o|` là không hoặc một, `o{` là không hoặc nhiều và `|{` là một hoặc nhiều.
+Sơ đồ sau biểu diễn baseline 25 bảng và phần mở rộng `member_fitness_goals` của schema local hiện hành. Ký hiệu `||` là đúng một, `o|` là không hoặc một, `o{` là không hoặc nhiều và `|{` là một hoặc nhiều.
 
 ```mermaid
 erDiagram
@@ -892,6 +912,7 @@ erDiagram
     roles ||--o{ user_roles : assigned_to
 
     member_profiles ||--o{ member_available_equipment : has
+    member_profiles ||--o{ member_fitness_goals : selects
     member_profiles ||--o{ member_target_muscle_groups : targets
     member_profiles ||--o{ member_injury_constraints : declares
     member_profiles ||--o{ member_food_allergies : declares
@@ -949,13 +970,13 @@ erDiagram
 
 File này được xem là hoàn thành khi thỏa mãn đồng thời:
 
-- Có đúng 25 bảng vật lý thuộc 8 phân hệ.
+- Baseline có 25 bảng vật lý; schema local hiện hành có thêm `member_fitness_goals` thành 26 bảng thuộc 8 phân hệ.
 - Mỗi bảng có khóa chính rõ ràng.
 - Mỗi quan hệ có khóa ngoại và hành vi xóa.
-- Cả 25 bảng có `created_at`, `updated_at`.
+- Cả 26 bảng hiện hành có `created_at`, `updated_at`.
 - Không có `ROLE_GUEST` hoặc bảng nghiệp vụ Personal Trainer trong MVP.
 - Có `account_status` phục vụ AccountStatusGuard.
-- Có năm collection table Profile và bốn collection table Exercise.
+- Có sáu collection/link table Profile và bốn collection table Exercise.
 - Có `subscription_renewal_requests` tách khỏi `member_subscriptions`.
 - Có unique key chống hai ACTIVE subscription, hai PENDING renewal và hai ACTIVE workout plan.
 - Planned values và actual values được tách và giới hạn đúng.

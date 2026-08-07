@@ -2,7 +2,7 @@
 
 ## 1. Mục đích
 
-Tài liệu này quy định cách ánh xạ 25 bảng vật lý trong `docs/11-database-design.md` thành 16 Java Entity và 9 bảng `@ElementCollection` bằng Hibernate/Spring Data JPA. Nội dung bao gồm annotation, Fetch Strategy, Cascade Strategy, Optimistic/Pessimistic Locking, Soft Delete và transaction boundary. Tài liệu là căn cứ để hiện thực tầng Persistence mà không vi phạm Business Rules, Use Case và API Contract đã chốt.
+Tài liệu này quy định cách ánh xạ baseline 25 bảng vật lý trong `docs/11-database-design.md` thành 16 Java Entity và 9 bảng `@ElementCollection` bằng Hibernate/Spring Data JPA. Schema local hiện hành bổ sung `member_fitness_goals` thành bảng collection thứ 10, tương ứng tổng cộng 26 bảng. Nội dung bao gồm annotation, Fetch Strategy, Cascade Strategy, Optimistic/Pessimistic Locking, Soft Delete và transaction boundary. Tài liệu là căn cứ để hiện thực tầng Persistence mà không vi phạm Business Rules, Use Case và API Contract đã chốt.
 
 ---
 
@@ -1685,6 +1685,8 @@ Optional<BodyProgress> findByMember_IdAndRecordDate(Long memberId, LocalDate rec
 List<BodyProgress> findByMember_IdOrderByRecordDateAsc(Long memberId);
 }
 ```
+
+`findByMember_IdOrderByRecordDateAsc` cung cấp thứ tự ổn định để Frontend lấy phần tử đầu tiên làm cân nặng ban đầu và hiển thị mức tăng/giảm so với baseline. Đây là dữ liệu dẫn xuất ở tầng hiển thị, không làm thay đổi Entity hoặc bảng `body_progress`.
 
 ```java
 @Service

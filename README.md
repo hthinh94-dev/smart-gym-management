@@ -10,8 +10,9 @@ Backend kiểm duyệt.
 Dự án đã hoàn tất nghiệm thu local **Milestone M1 - Authentication, Security,
 OpenAPI và React Skeleton** ngày 01/08/2026, đã gắn tag `v0.1.0-m1-auth`.
 Source **Milestone M2 - Member Profile, Calculator và Body Progress nền** đã
-hoàn thành đến hết Ngày 14 (05/08/2026); Ngày 15 dành cho manual local QA và
-đóng tag M2.
+hoàn thành đến hết Ngày 14 (05/08/2026); phần mở rộng hồ sơ và theo dõi thành
+phần cơ thể hiện đã được tích hợp local sau M2. Ngày 15 dành cho manual local
+QA và đóng tag M2.
 
 Nền M1:
 
@@ -55,17 +56,22 @@ Nền M1:
 Source M2 hiện tại:
 
 - `GET/PUT /api/v1/member/profile` dùng Principal ownership,
-  `AccountStatusGuard`, `PROF-001`, BR-23 và năm collection table.
+  `AccountStatusGuard`, `PROF-001`, BR-23; hỗ trợ tối đa hai mục tiêu,
+  cân nặng mục tiêu, ghi chú hạn chế vận động tự nhập và các lựa chọn phổ biến
+  cho dị ứng/thực phẩm loại trừ.
 - `BiometricCalculationService` tính BMI, BMR, TDEE, calories và macros bằng
   `Clock`/timezone Việt Nam; calculated targets chỉ trả trong response.
-- `GET/POST /api/v1/member/body-progress` lưu lịch sử cân nặng, chặn ngày tương
-  lai và atomic upsert theo `(member_id, record_date)` đúng BR-22.
+- `GET/POST /api/v1/member/body-progress` lưu lịch sử cân nặng, tùy chọn khối
+  lượng cơ/mỡ (kg), chặn ngày tương lai và atomic upsert theo
+  `(member_id, record_date)` đúng BR-22.
 - Frontend có Profile Form, calculated targets, Body Progress form/history/widget
-  và luồng Profile thành công → Progress; lỗi Progress có retry độc lập.
-- Regression hiện tại có 271 Backend test và 75 Frontend test pass; Vite
+  và luồng Profile thành công → Progress; lịch sử lấy bản ghi sớm nhất làm cân
+  nặng ban đầu để hiển thị tăng/giảm theo baseline; lỗi Progress có retry độc lập.
+- Regression hiện tại có 274 Backend test và 80 Frontend test pass; Vite
   production build thành công. OpenAPI hiện có 10 operation M1–M2.
 - Postman hiện có 29 request, gồm 21 request M1, 2 request Profile và 6 request
-  Body Progress.
+  Body Progress; payload mẫu đã bao phủ mục tiêu kép, cân nặng đích, ghi chú
+  mobility và khối lượng cơ/mỡ tùy chọn.
 
 Membership và AI API chưa được triển khai. Deploy staging chưa nằm trong phạm vi
 nghiệm thu local hiện tại. Thứ tự tiếp theo được quản lý tại
@@ -120,7 +126,7 @@ smart-gym-management/
 
 Phân loại file:
 
-- `backend/src/**`, `backend/pom.xml`, Maven Wrapper và 8 migration là thành phần
+- `backend/src/**`, `backend/pom.xml`, Maven Wrapper và 10 migration là thành phần
   chạy thực tế của Backend.
 - `database/schema-draft.sql` là tài liệu DDL tổng hợp; Flyway migration vẫn là
   nguồn thực thi schema khi ứng dụng chạy.
@@ -188,7 +194,7 @@ cd backend
 Regression backend hiện tại sau khi hoàn tất source Ngày 14:
 
 ```text
-Tests run: 271, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 274, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -199,8 +205,8 @@ Chạy riêng test M2 trước khi chạy regression toàn bộ:
 .\mvnw.cmd clean test
 ```
 
-Toàn bộ test M1 tiếp tục pass. Flyway validate đủ 8 migration và Hibernate khởi
-tạo `EntityManagerFactory` thành công trên MySQL 8.0.44.
+Toàn bộ test M1 tiếp tục pass. Flyway validate đủ 10 migration hiện hành và
+Hibernate khởi tạo `EntityManagerFactory` thành công trên MySQL 8.0.44.
 
 Frontend:
 
@@ -211,7 +217,7 @@ npm run test -- --run
 npm run build
 ```
 
-Kết quả xác nhận hiện tại: 75 test Vitest pass và Vite production build thành công.
+Kết quả xác nhận hiện tại: 80 test Vitest pass và Vite production build thành công.
 
 Gate M1 local ngày 01/08/2026 cũng xác nhận Frontend phục vụ được các route
 `/login`, `/register`, `/member`, `/admin/users`; API health `UP`, OpenAPI có đúng

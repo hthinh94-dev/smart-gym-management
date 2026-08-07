@@ -85,7 +85,7 @@ Tài liệu này thực hiện phân rã các nhóm chức năng trong phạm vi
 **Mức ưu tiên:** Must-have
 **Actor:** Member
 **Mô tả:** Hội viên cập nhật mục tiêu thể chất mong muốn và trình độ tập luyện hiện tại của mình để hệ thống điều chỉnh thông số Calorie/Macro đích và chuẩn bị cho yêu cầu gợi ý AI.
-**Input chính:** `fitnessGoal` (Enum: BULK, CUT, MAINTAIN), `fitnessLevel` (Enum: BEGINNER, INTERMEDIATE, ADVANCED)
+**Input chính:** `fitnessGoals` (tối đa 2 giá trị: MUSCLE_GAIN, WEIGHT_GAIN, FAT_LOSS, WEIGHT_LOSS), `fitnessGoal` (mục tiêu chính), `targetWeightKg` khi tăng/giảm cân, `fitnessLevel` (Enum: BEGINNER, INTERMEDIATE, ADVANCED)
 **Output:** Cập nhật thông tin mục tiêu trong hồ sơ thể chất và trả về các chỉ số dinh dưỡng mới tương ứng.
 **Business Rules liên quan:** BR-13 (Quyền sở hữu dữ liệu), BR-23 (Kiểm duyệt hồ sơ thể chất).
 **Ghi chú kỹ thuật:** `fitnessGoal` sẽ ảnh hưởng đến việc thặng dư hoặc thâm hụt calorie đích trong công thức tính toán.
@@ -350,7 +350,7 @@ Tuổi (Age) được tính theo số năm đã hoàn tất bằng cách so sán
 **Output:** `dailyCaloriesKcal`, `proteinGrams`, `fatGrams`, `carbGrams` mục tiêu.
 **Business Rules liên quan:** BR-09C (Backend sở hữu tính toán).
 **Ghi chú kỹ thuật:**
-- *Calories*: `BULK` (+300 kcal), `CUT` (-500 kcal), `MAINTAIN` (giữ nguyên TDEE).
+- *Calories*: mục tiêu chính `BULK`/`MUSCLE_GAIN`/`WEIGHT_GAIN` (+300 kcal), `CUT`/`FAT_LOSS`/`WEIGHT_LOSS` (-500 kcal), `MAINTAIN` (giữ nguyên TDEE).
 - *Protein*: chốt cố định `2.2g * weightKg` trong MVP.
 - *Fat*: chốt cố định `25%` tổng lượng Calories, sau đó chia `9` để đổi sang gram.
 - *Carbohydrate*: Lượng calories còn lại chia cho 4 (1g Carb = 4 kcal).
@@ -382,9 +382,9 @@ Toàn bộ kết quả BMI, BMR, TDEE, Calories và Macronutrients được làm
 **Actor:** Member
 **Mô tả:** Hội viên ghi nhận cân nặng hiện tại hàng ngày để theo dõi sự biến đổi thể trạng theo thời gian thực tế.
 **Input chính:** `weightKg`, `recordDate` (ngày ghi nhận)
-**Output:** Bản ghi `BodyProgress` được lưu vào database kèm timestamp cập nhật tự động.
+**Output:** Bản ghi `BodyProgress` được lưu vào database kèm timestamp cập nhật tự động; giao diện hiển thị cân nặng ban đầu, mức tăng/giảm của từng bản ghi so với baseline và khoảng cách tới mục tiêu ngay dưới cân nặng hiện tại.
 **Business Rules liên quan:** BR-13 (Quyền sở hữu), BR-22 (Chỉ có duy nhất 1 bản ghi thể trạng trong ngày).
-**Ghi chú kỹ thuật:** Lưu `recordDate` bằng SQL `DATE` theo timezone nghiệp vụ `Asia/Ho_Chi_Minh`; các timestamp audit lưu UTC. Ràng buộc duy nhất áp dụng trên `(memberId, recordDate)`.
+**Ghi chú kỹ thuật:** Lưu `recordDate` bằng SQL `DATE` theo timezone nghiệp vụ `Asia/Ho_Chi_Minh`; các timestamp audit lưu UTC. Ràng buộc duy nhất áp dụng trên `(memberId, recordDate)`. Baseline là bản ghi có `recordDate` sớm nhất trong lịch sử của Member; nếu chưa có lịch sử thì dùng cân nặng hồ sơ cho widget, không tạo bản ghi giả.
 
 ### [FR-PROGRESS-02] Member cập nhật lại tiến độ trong cùng ngày
 **Mức ưu tiên:** Must-have

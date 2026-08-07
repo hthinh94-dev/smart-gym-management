@@ -4,7 +4,7 @@
 
 Tài liệu này chốt kiến trúc hiện thực cho MVP sau khi đối chiếu phạm vi, Business Rules, API Contract, thiết kế database/JPA và nền tảng Backend đã khởi tạo. Đây là tài liệu bổ sung cho các đặc tả hiện có; không thay thế các hợp đồng tại File 02–12.
 
-**Quyết định:** dự án sử dụng **Modular Layered Monolith**: một ứng dụng Spring Boot triển khai theo module nghiệp vụ, giao tiếp REST/JWT với React + TypeScript và lưu dữ liệu MySQL 8 qua JPA/Flyway. Đây là kiến trúc phù hợp với phạm vi 9 tuần, 32 API hợp đồng, 25 bảng vật lý và các luồng có transaction rõ ràng của MVP.
+**Quyết định:** dự án sử dụng **Modular Layered Monolith**: một ứng dụng Spring Boot triển khai theo module nghiệp vụ, giao tiếp REST/JWT với React + TypeScript và lưu dữ liệu MySQL 8 qua JPA/Flyway. Đây là kiến trúc phù hợp với phạm vi 9 tuần, 32 API hợp đồng, baseline 25 bảng vật lý và phần mở rộng Profile hiện hành thành 26 bảng, cùng các luồng có transaction rõ ràng của MVP.
 
 Kiến trúc đề xuất ban đầu được giữ về hướng tổng thể, nhưng áp dụng các điều chỉnh bắt buộc sau:
 
@@ -167,6 +167,8 @@ Profile và Body Progress dùng `TanStack Query` cho server state, React Hook Fo
 + Zod cho form, Axios cho HTTP client và React Router cho điều hướng. Auth state
 dùng `AuthContext`; `PublicOnlyRoute`, `ProtectedRoute` và `RoleRoute` đã hoàn
 thành trong M1. Không cần Redux/Zustand cho phạm vi hiện tại của MVP.
+
+Trang Body Progress giữ dữ liệu gốc từ Backend, lấy bản ghi sớm nhất theo ngày làm baseline và tính nhãn tăng/giảm ở Frontend. Cân nặng mục tiêu vẫn là một chỉ tiêu độc lập; khoảng cách tới mục tiêu được trình bày dưới cân nặng hiện tại, không dùng mục tiêu để thay thế cân nặng ban đầu.
 
 Ngoài phạm vi: refresh token, OAuth2 login, Redis, cache phân tán, payment gateway thật, messaging broker, real-time notification, microservices và full Clean Architecture.
 
