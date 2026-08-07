@@ -678,3 +678,54 @@ kế hoạch, không mở rộng thêm feature trong Ngày 14.
 
 **Kết luận:** M2 đã hoàn tất local và đủ điều kiện commit, push, gắn tag
 `v0.2.0-m2-profile`. Deploy vẫn tuân theo Deploy Gate 1 sau M3.
+
+---
+
+## Ngày 16 — Landing Page và Membership Package (07/08/2026)
+
+### Phạm vi đã hoàn thành
+
+- [x] Tạo Landing Page tại `/` cho Guest, gồm Smart Gym header, hero visual,
+  CTA Login/Register, benefits, package preview và footer.
+- [x] Landing gọi `GET /api/v1/packages` qua Axios/React Query; không hard-code
+  package và không hiển thị package inactive.
+- [x] Bổ sung loading, error + retry và empty state cho danh mục package.
+- [x] Khi đang restore session hoặc đã đăng nhập, Landing không hiển thị sai
+  luồng Guest; người dùng được chuyển theo role về khu vực phù hợp.
+- [x] Thêm `MembershipPackage` entity kế thừa `BaseEntity`, đối chiếu đúng
+  bảng `membership_packages` từ Flyway V3, không tạo migration trùng.
+- [x] Thêm Repository với public active-only query, Admin query active/inactive,
+  tìm ID, normalized name và sort ổn định.
+- [x] Thêm normalize tên bằng trim, gom khoảng trắng và lowercase; unique
+  constraint được bắt để xử lý cả race condition giữa hai request.
+- [x] Thêm public Package API và Admin Package API:
+  `GET /api/v1/packages`, `GET/POST /api/v1/admin/packages`,
+  `PUT/DELETE /api/v1/admin/packages/{id}`.
+- [x] Admin CRUD yêu cầu `ROLE_ADMIN`, gọi `AccountStatusGuard`, không cho
+  client tự gán `isActive`, DELETE chỉ soft inactive và giữ lịch sử liên kết.
+- [x] Đồng bộ error code `SUB-002`, `SUB-007`, `VAL-001`, `ACC-005` và
+  `AUTH-002` với Error Registry, API Draft và Frontend parser.
+- [x] Frontend Admin Package có list, create, update, deactivate, confirm,
+  validation, loading/error/empty/success state và React Query cache invalidation.
+
+### Kiểm thử Ngày 16
+
+- [x] Backend targeted: **29/29 test pass**, gồm Entity, Repository, Service,
+  Controller, RBAC, OpenAPI, normalize, duplicate, soft inactive và rollback
+  create/update trên MySQL thật.
+- [x] Flyway validate đủ 10 migration; schema version 10; Hibernate validate
+  thành công với MySQL 8.0.44.
+- [x] Frontend targeted: **21/21 test pass**, gồm Landing, package API,
+  Package Preview, Admin create/update/deactivate, validation, retry, empty
+  state, duplicate submit và Member route protection.
+- [x] Vite production build thành công.
+- [x] Live local `GET http://localhost:8080/api/v1/packages` trả dữ liệu thật
+  từ MySQL; Landing `http://localhost:5173` hiển thị package active.
+- [x] OpenAPI có đủ public package operation và Admin package CRUD operation.
+- [x] Không triển khai Subscription, Approval, Renewal, SubscriptionGuard hoặc
+  expiry reminder trong Ngày 16; các phần này giữ đúng lịch Ngày 17-19.
+
+**Kết luận:** Ngày 16 hoàn thành phần coding và targeted verification của M3.
+Backend, Frontend, database schema, API Draft, Functional Requirements,
+RBAC, OpenAPI và package response contract đã đồng bộ. Full local QA M1-M3
+và Deploy Gate được giữ cho Ngày 20/21 theo kế hoạch; chưa deploy trong Ngày 16.

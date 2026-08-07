@@ -1,0 +1,12 @@
+import axios from "axios";
+import { httpClient } from "../../../../lib/httpClient";
+import { isPackage, isPackageError, MembershipPackageApiError } from "../../../membership/api/membershipPackageApi";
+import type { AdminMembershipPackage, MembershipPackageInput, PackageSuccess } from "../../../membership/types/membershipPackage.types";
+
+function isAdminPackage(value: unknown): value is AdminMembershipPackage { return isPackage(value) && typeof (value as AdminMembershipPackage).isActive === "boolean"; }
+function success<T>(value: unknown, check: (data: unknown) => data is T): value is PackageSuccess<T> { return typeof value === "object" && value !== null && (value as { success?: unknown }).success === true && typeof (value as { message?: unknown }).message === "string" && check((value as { data?: unknown }).data); }
+async function call<T>(request: () => Promise<{ status: number; data: unknown }>, check: (data: unknown) => data is T): Promise<PackageSuccess<T>> { try { const response = await request(); if (response.status >= 200 && response.status < 300 && success(response.data, check)) return response.data; throw new MembershipPackageApiError({ success: false, errorCode: "SYS-001", message: "Admin package response does not match the contract." }); } catch (error) { if (error instanceof MembershipPackageApiError) throw error; if (axios.isAxiosError(error) && error.response && isPackageError(error.response.data)) throw new MembershipPackageApiError(error.response.data); throw new MembershipPackageApiError({ success: false, errorCode: "NETWORK-001", message: "Unable to connect to package service." }); } }
+export function getAdminPackages() { return call(() => httpClient.get("/admin/packages"), (data): data is AdminMembershipPackage[] => Array.isArray(data) && data.every(isAdminPackage)); }
+export function createAdminPackage(payload: MembershipPackageInput) { return call(() => httpClient.post("/admin/packages", payload), isAdminPackage); }
+export function updateAdminPackage(id: number, payload: MembershipPackageInput) { return call(() => httpClient.put(`/admin/packages/${id}`, payload), isAdminPackage); }
+export function deactivateAdminPackage(id: number) { return call(() => httpClient.delete(`/admin/packages/${id}`), (data): data is AdminMembershipPackage => typeof data === "object" && data !== null && (data as { id?: unknown }).id === id && (data as { isActive?: unknown }).isActive === false); }

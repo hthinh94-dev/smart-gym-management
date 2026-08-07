@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AdminUsersPage } from "../features/admin/pages/AdminUsersPage";
+import { AdminPackagesPage } from "../features/admin/packages/pages/AdminPackagesPage";
+import { LandingPage } from "../pages/LandingPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { useAuth } from "../features/auth/hooks/useAuth";
@@ -45,10 +47,11 @@ export function AppRouter() {
                     <Route path="/admin" element={<AdminLayout />}>
                         <Route index element={<Navigate to="users" replace />} />
                         <Route path="users" element={<AdminUsersPage />} />
+                        <Route path="packages" element={<AdminPackagesPage />} />
                     </Route>
                 </Route>
             </Route>
-            <Route path="/" element={<RootRedirect />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="*" element={<RootRedirect />} />
         </Routes>
     );

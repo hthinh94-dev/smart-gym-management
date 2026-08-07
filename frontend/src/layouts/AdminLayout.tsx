@@ -31,6 +31,9 @@ export function AdminLayout() {
                     <NavLink to="/admin/users" className={({ isActive }) => isActive ? "active" : ""}>
                         Quản lý tài khoản
                     </NavLink>
+                    <NavLink to="/admin/packages" className={({ isActive }) => isActive ? "active" : ""}>
+                        Quản lý gói tập
+                    </NavLink>
                 </nav>
 
                 <div className="admin-sidebar-footer">

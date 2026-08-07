@@ -34,6 +34,16 @@ public enum ErrorCode {
             HttpStatus.NOT_FOUND,
             "Hồ sơ thể trạng chưa được hoàn thiện."
     ),
+    MEMBERSHIP_PACKAGE_NOT_FOUND(
+            "SUB-002",
+            HttpStatus.NOT_FOUND,
+            "Không tìm thấy gói tập."
+    ),
+    MEMBERSHIP_PACKAGE_NAME_ALREADY_EXISTS(
+            "SUB-007",
+            HttpStatus.CONFLICT,
+            "Tên gói tập đã tồn tại."
+    ),
     VALIDATION_ERROR(
             "VAL-001",
             HttpStatus.BAD_REQUEST,

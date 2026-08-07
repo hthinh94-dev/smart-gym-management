@@ -106,6 +106,12 @@ push và gắn tag `v0.2.0-m2-profile`.
 | **Ngày 19 - 10/08** | Guard, expiry reminder và tích hợp M3 | `SubscriptionGuard`; query `1..30` ngày; quan hệ PT-Member tối thiểu; rà OpenAPI/Postman/query | Admin expiry list; PT read-only assigned member; hoàn thiện Landing/Membership desktop/laptop | Targeted guard, mốc 30/1/0 ngày và PT ownership tests; hoàn thiện source M3 |
 | **Ngày 20 - 11/08** | **Local QA và fix M3** | Không thêm feature; full Backend regression M1-M3; Flyway, scheduler và query verification; sửa lỗi | Full Frontend test/build; test thủ công Landing/Auth/Profile/Membership/Admin/PT trên localhost; sửa lỗi | Dành trọn ngày test/fix; cập nhật docs/ảnh/Postman; tag `v0.3.0-m3-membership` khi pass |
 
+**Kết quả thực tế Ngày 16 (07/08/2026):** Landing Page, public Package API,
+Admin Package CRUD, normalize tên, soft inactive và targeted verification đã
+hoàn thành. Backend đạt 29/29 targeted tests; Frontend đạt 21/21 targeted tests
+và Vite production build pass. Full local QA M1-M3, Subscription lifecycle và
+Deploy Gate vẫn chưa được tính là hoàn thành và tiếp tục theo các Ngày 17-21.
+
 ### Deploy Gate 1 - M1 đến M3
 
 | Ngày | Công việc | Gate bắt buộc |

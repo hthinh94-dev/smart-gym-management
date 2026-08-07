@@ -1,0 +1,11 @@
+import axios from "axios";
+import { httpClient } from "../../../lib/httpClient";
+import type { MembershipPackage, PackageErrorCode, PackageErrorResponse, PackageSuccess } from "../types/membershipPackage.types";
+
+const codes = new Set<PackageErrorCode>(["SUB-002", "SUB-007", "VAL-001", "ACC-004", "ACC-005", "ACC-006", "AUTH-002", "NETWORK-001", "SYS-001"]);
+export function isRecord(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object"; }
+export function isPackage(value: unknown): value is MembershipPackage { return isRecord(value) && Number.isInteger(value.id) && typeof value.name === "string" && Number.isInteger(value.durationDays) && typeof value.price === "number" && typeof value.description === "string"; }
+function isSuccess(value: unknown): value is PackageSuccess<MembershipPackage[]> { return isRecord(value) && value.success === true && typeof value.message === "string" && Array.isArray(value.data) && value.data.every(isPackage); }
+export function isPackageError(value: unknown): value is PackageErrorResponse { return isRecord(value) && value.success === false && typeof value.errorCode === "string" && codes.has(value.errorCode as PackageErrorCode) && typeof value.message === "string"; }
+export class MembershipPackageApiError extends Error { errorCode: PackageErrorCode; details: Record<string, unknown>; constructor(value: PackageErrorResponse) { super(value.message); this.name = "MembershipPackageApiError"; this.errorCode = value.errorCode; this.details = value.details ?? {}; } }
+export async function getMembershipPackages(): Promise<MembershipPackage[]> { try { const response = await httpClient.get("/packages"); if (response.status >= 200 && response.status < 300 && isSuccess(response.data)) return response.data.data; throw new MembershipPackageApiError({ success: false, errorCode: "SYS-001", message: "Package response does not match the contract." }); } catch (error) { if (error instanceof MembershipPackageApiError) throw error; if (axios.isAxiosError(error) && error.response && isPackageError(error.response.data)) throw new MembershipPackageApiError(error.response.data); throw new MembershipPackageApiError({ success: false, errorCode: "NETWORK-001", message: "Unable to load membership packages." }); } }

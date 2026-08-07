@@ -9,6 +9,7 @@ import com.thinh.smartgym.auth.dto.admin.UnlockUserResponse;
 import com.thinh.smartgym.common.response.ApiResponse;
 import com.thinh.smartgym.common.response.PageResponse;
 import com.thinh.smartgym.member.dto.MemberProfileResponse;
+import com.thinh.smartgym.membership.dto.MembershipPackageResponse;
 import com.thinh.smartgym.progress.dto.BodyProgressResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -41,6 +42,16 @@ public final class OpenApiResponseSchemas {
 
     public static final class BodyProgressListSuccessResponse
             extends ApiResponse<java.util.List<BodyProgressResponse>> {
+    }
+
+    @Schema(name = "MembershipPackageSuccessResponse")
+    public static final class MembershipPackageSuccessResponse
+            extends ApiResponse<MembershipPackageResponse> {
+    }
+
+    @Schema(name = "MembershipPackageListSuccessResponse")
+    public static final class MembershipPackageListSuccessResponse
+            extends ApiResponse<java.util.List<MembershipPackageResponse>> {
     }
 
     @Schema(name = "AdminUserPageSuccessResponse")

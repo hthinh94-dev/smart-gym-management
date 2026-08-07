@@ -1041,3 +1041,144 @@ theo mục tiêu.
 **Kết luận M2:** Milestone M2 đã hoàn tất local, không còn lỗi P0/P1 và đủ điều
 kiện commit, push, gắn tag `v0.2.0-m2-profile`. Deploy được giữ đến Deploy Gate
 1 sau M3.
+
+## 4.10. Hiện thực M3 Ngày 16 - Landing Page và Membership Package
+
+### 4.10.1. Phạm vi triển khai
+
+Ngày 16 chuyển hệ thống từ nền tảng hồ sơ hội viên sang phần trải nghiệm công
+khai và danh mục gói tập. Phạm vi được giới hạn ở Landing Page, public Package
+API và Admin Package CRUD. Chưa triển khai Subscription, Approval, Renewal,
+SubscriptionGuard hoặc expiry reminder; các nội dung này thuộc Ngày 17-19 và
+được kiểm thử toàn bộ tại Local QA M3 Ngày 20 theo kế hoạch.
+
+### 4.10.2. Thiết kế Landing Page
+
+Landing Page được đặt tại route `/` và là màn hình đầu tiên dành cho Guest. Giao
+diện được thiết kế cho desktop/laptop, gồm header thương hiệu Smart Gym, hero
+visual lĩnh vực gym, CTA đăng nhập/đăng ký, lợi ích chính, preview danh mục gói
+tập và footer tối thiểu.
+
+Danh sách package không được hard-code ở Frontend. Landing gọi
+`GET /api/v1/packages` thông qua Axios client và React Query. Ba trạng thái
+loading, error có nút retry và empty được tách riêng. Khi session đang được khôi
+phục, Landing chưa gọi API; khi người dùng đã đăng nhập, route `/` chuyển về
+khu vực tương ứng với role thay vì hiển thị lại Landing.
+
+Hình ảnh hero được lưu tại `frontend/public/images/smart-gym-hero.jpg`. CTA
+`Login`, `Register` và các liên kết nội bộ dùng React Router; không tạo dữ liệu
+package giả để thay thế response từ Backend.
+
+### 4.10.3. Entity và persistence Membership Package
+
+Bảng `membership_packages` đã tồn tại từ Flyway V3 nên Ngày 16 chỉ thêm ORM
+mapping, không sửa migration cũ và không tạo migration trùng. Entity
+`MembershipPackage` kế thừa `BaseEntity` và ánh xạ:
+
+| Java property | Database column | Kiểu dữ liệu | Quy tắc |
+|---|---|---|---|
+| `id` | `id` | `BIGINT` | Primary key, auto increment |
+| `name` | `name` | `VARCHAR(100)` | Tên hiển thị, bắt buộc |
+| `normalizedName` | `normalized_name` | `VARCHAR(100)` | Unique, dùng để kiểm tra trùng |
+| `description` | `description` | `VARCHAR(1000)` | Có thể null |
+| `durationDays` | `duration_days` | `SMALLINT` | Từ 1 đến 3650 |
+| `price` | `price` | `DECIMAL(12,2)` | Không âm |
+| `active`/`isActive()` | `is_active` | `TINYINT(1)` | Mặc định true |
+| `createdAt` | `created_at` | `TIMESTAMP(6)` | Audit, không đổi khi update |
+| `updatedAt` | `updated_at` | `TIMESTAMP(6)` | Audit cập nhật |
+
+Package bị ngừng bán được xử lý bằng soft inactive: chỉ cập nhật
+`is_active = false`, không xóa cứng. Vì vậy các subscription trong tương lai
+vẫn có thể tham chiếu package cũ và giữ snapshot theo thiết kế nghiệp vụ.
+
+### 4.10.4. Normalize tên package
+
+Service chuẩn hóa tên theo thứ tự trim khoảng trắng đầu/cuối, gom nhiều khoảng
+trắng liên tiếp thành một khoảng trắng và chuyển lowercase bằng `Locale.ROOT`.
+Ví dụ `" Gói  Cơ Bản 1 Tháng "` được lưu với tên hiển thị đã trim và
+`normalizedName = "gói cơ bản 1 tháng"`. Logic duy nhất không dựa trên tên hiển
+thị mà dựa trên unique constraint `uk_membership_packages_normalized_name`.
+
+Service kiểm tra trùng trước khi ghi để trả `SUB-007`. Trường hợp hai request
+đồng thời cùng vượt qua bước kiểm tra, `saveAndFlush` bắt
+`DataIntegrityViolationException` và ánh xạ về cùng `SUB-007`; exception
+runtime được ném ra ngoài transaction để rollback toàn bộ thao tác.
+
+### 4.10.5. Public Package API
+
+Endpoint `GET /api/v1/packages` được permit trong `SecurityConfiguration`,
+không yêu cầu JWT và chỉ truy vấn package active theo thứ tự ổn định
+`durationDays`, sau đó `id`. Controller không trả Entity trực tiếp mà trả
+`MembershipPackageResponse` với các trường công khai:
+
+- `id`.
+- `name`.
+- `durationDays`.
+- `price`.
+- `description`.
+
+`normalizedName`, thông tin audit và trạng thái nội bộ không được đưa vào public
+response. Khi description trong database là null, response trả chuỗi rỗng để
+giữ đúng kiểu dữ liệu mà Frontend parser yêu cầu.
+
+### 4.10.6. Admin Package CRUD và bảo mật
+
+Admin có thể xem cả package active/inactive qua endpoint hỗ trợ
+`GET /api/v1/admin/packages`, tạo package bằng POST, cập nhật metadata bằng PUT
+và ngừng bán bằng DELETE soft inactive. Các endpoint Admin nằm dưới
+`/api/v1/admin/**`, yêu cầu `ROLE_ADMIN` và tiếp tục gọi `AccountStatusGuard` để
+token cũ của Admin bị khóa hoặc vô hiệu hóa không thể thao tác.
+
+Request tạo/cập nhật chỉ nhận `name`, `durationDays`, `price`, `description`;
+client không thể tự gán `isActive`. Package mới active mặc định. Update không
+thay đổi `createdAt`, không tự kích hoạt lại package inactive và không làm thay
+đổi subscription hiện có.
+
+Contract lỗi được thống nhất với nghiệp vụ:
+
+| Trường hợp | HTTP | Error code |
+|---|---:|---|
+| Dữ liệu sai | 400 | `VAL-001` |
+| Không tìm thấy package | 404 | `SUB-002` |
+| Tên normalized bị trùng | 409 | `SUB-007` |
+| Guest gọi Admin API | 401 | `ACC-005` |
+| Member gọi Admin API | 403 | `AUTH-002` |
+
+### 4.10.7. Kết quả kiểm thử targeted Ngày 16
+
+Backend chạy theo đúng lệnh targeted của kế hoạch:
+
+```powershell
+cd backend
+.\mvnw.cmd "-Dtest=MembershipPackageTest,MembershipPackageRepositoryTest,MembershipPackageServiceTest,MembershipPackageControllerTest" test
+```
+
+Kết quả: **29/29 test pass**, không failure, error hoặc skipped. Bộ test bao
+phủ entity mặc định active, public active-only query, soft inactive, unique
+constraint, normalize tên, validation duration/price, SUB-002/SUB-007, RBAC,
+OpenAPI và rollback transaction create/update trên MySQL thật.
+
+Frontend chạy targeted test:
+
+```powershell
+cd frontend
+npm.cmd test -- src/pages/LandingPage.test.tsx src/features/membership src/features/admin/packages
+npm.cmd run build
+```
+
+Kết quả: **21/21 test pass** và Vite production build thành công. Test bao phủ
+Landing CTA/package loading/error/empty, API contract, Admin create/update/soft
+inactive, form validation, duplicate submit và Member bị chặn khỏi Admin
+Package route.
+
+Live local kiểm tra thêm `GET http://localhost:8080/api/v1/packages` trả
+`success = true` và Landing tại `http://localhost:5173` hiển thị package từ
+MySQL. CORS sử dụng origin chuẩn `http://localhost:5173`, không dùng wildcard.
+
+### 4.10.8. Kết luận Ngày 16
+
+Ngày 16 hoàn thành phần coding và targeted verification của M3. Backend,
+Frontend, Flyway V3, API Draft, Functional Requirements, Security/RBAC và
+OpenAPI đã thống nhất cho Package Catalog. Full local QA M1-M3, Subscription
+lifecycle và Deploy Gate vẫn được giữ đúng kế hoạch cho các ngày tiếp theo; M3
+chưa được deploy trong Ngày 16.
