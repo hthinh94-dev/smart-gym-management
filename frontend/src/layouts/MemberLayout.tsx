@@ -1,8 +1,11 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/hooks/useAuth";
+import type { RoleName } from "../features/auth/types/auth.types";
 
-function roleLabel(role: "ROLE_MEMBER" | "ROLE_PT" | undefined) {
-    return role === "ROLE_PT" ? "Huấn luyện viên" : "Hội viên";
+function roleLabel(role: RoleName | undefined) {
+    if (role === "ROLE_PT") return "Huấn luyện viên";
+    if (role === "ROLE_ADMIN") return "Quản trị viên";
+    return "Hội viên";
 }
 
 export function MemberLayout() {

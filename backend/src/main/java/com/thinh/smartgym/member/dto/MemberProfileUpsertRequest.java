@@ -20,6 +20,7 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -69,6 +70,39 @@ public record MemberProfileUpsertRequest(
         @NotNull(message = "Số bữa mỗi ngày là bắt buộc.")
         @Min(value = 1, message = "Số bữa mỗi ngày phải từ 1 đến 6.")
         @Max(value = 6, message = "Số bữa mỗi ngày phải từ 1 đến 6.")
-        Integer mealsPerDay
+        Integer mealsPerDay,
+        @Size(max = 2, message = "Bạn chỉ có thể chọn tối đa 2 mục tiêu.")
+        List<@NotNull FitnessGoal> fitnessGoals,
+        @Positive(message = "Cân nặng mục tiêu phải lớn hơn 0.")
+        @Digits(integer = 4, fraction = 2, message = "Cân nặng mục tiêu tối đa 4 chữ số nguyên và 2 chữ số thập phân.")
+        BigDecimal targetWeightKg,
+        @Size(max = 500, message = "Hạn chế vận động tự nhập tối đa 500 ký tự.")
+        String mobilityLimitNotes
 ) {
+
+    public MemberProfileUpsertRequest(
+            Gender gender,
+            LocalDate dateOfBirth,
+            BigDecimal heightCm,
+            BigDecimal weightKg,
+            FitnessGoal fitnessGoal,
+            FitnessLevel fitnessLevel,
+            ActivityLevel activityLevel,
+            Integer workoutDaysPerWeek,
+            Integer maxSessionMinutes,
+            Set<Equipment> availableEquipment,
+            Set<MuscleGroup> targetMuscleGroups,
+            Set<ContraindicationTag> injuryConstraints,
+            DietaryPreference dietaryPreference,
+            Set<String> foodAllergies,
+            Set<String> excludedFoods,
+            Integer mealsPerDay
+    ) {
+        this(
+                gender, dateOfBirth, heightCm, weightKg, fitnessGoal, fitnessLevel,
+                activityLevel, workoutDaysPerWeek, maxSessionMinutes, availableEquipment,
+                targetMuscleGroups, injuryConstraints, dietaryPreference, foodAllergies,
+                excludedFoods, mealsPerDay, List.of(fitnessGoal), null, null
+        );
+    }
 }

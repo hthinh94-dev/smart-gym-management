@@ -39,6 +39,7 @@ import java.time.Instant;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -198,6 +199,48 @@ class MemberProfileServiceTest {
     }
 
     @Test
+    @DisplayName("PUT lưu tối đa hai mục tiêu, cân nặng đích và ghi chú mobility")
+    void upsertCurrentProfile_WithExtendedProfileFields_ShouldPersistAndReturnThem() {
+        AuthenticatedUserPrincipal principal = principal(101L, AccountStatus.ACTIVE, RoleName.ROLE_MEMBER);
+        MemberProfile existing = profile(101L);
+        MemberProfileUpsertRequest request = extendedRequest(
+                FitnessGoal.WEIGHT_GAIN,
+                List.of(FitnessGoal.WEIGHT_GAIN, FitnessGoal.MUSCLE_GAIN),
+                new BigDecimal("80.00"),
+                "  Hạn chế xoay vai trái  "
+        );
+        when(memberProfileRepository.findByUser_Id(101L)).thenReturn(Optional.of(existing));
+        when(memberProfileRepository.save(existing)).thenReturn(existing);
+        stubTargets();
+
+        var response = memberProfileService.upsertCurrentProfile(principal, request);
+
+        assertThat(response.bioProfile().fitnessGoals()).containsExactly(FitnessGoal.WEIGHT_GAIN, FitnessGoal.MUSCLE_GAIN);
+        assertThat(response.bioProfile().targetWeightKg()).isEqualByComparingTo("80.00");
+        assertThat(response.bioProfile().mobilityLimitNotes()).isEqualTo("Hạn chế xoay vai trái");
+        assertThat(existing.getFitnessGoal()).isEqualTo(FitnessGoal.WEIGHT_GAIN);
+        assertThat(existing.getTargetWeightKg()).isEqualByComparingTo("80.00");
+    }
+
+    @Test
+    @DisplayName("PUT từ chối cân nặng đích sai hướng trước repository")
+    void upsertCurrentProfile_WithWeightLossTargetAboveCurrent_ShouldReject() {
+        AuthenticatedUserPrincipal principal = principal(101L, AccountStatus.ACTIVE, RoleName.ROLE_MEMBER);
+        MemberProfileUpsertRequest invalid = extendedRequest(
+                FitnessGoal.WEIGHT_LOSS,
+                List.of(FitnessGoal.WEIGHT_LOSS),
+                new BigDecimal("72.50"),
+                null
+        );
+
+        assertThatThrownBy(() -> memberProfileService.upsertCurrentProfile(principal, invalid))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getDetails().toString()).contains("targetWeightKg"));
+
+        verifyNoInteractions(memberProfileRepository, userRepository, biometricCalculationService);
+    }
+
+    @Test
     @DisplayName("PUT ngày sinh tương lai trả VAL-001 trước repository")
     void upsertCurrentProfile_WithFutureDateOfBirth_ShouldReject() {
         AuthenticatedUserPrincipal principal = principal(101L, AccountStatus.ACTIVE, RoleName.ROLE_MEMBER);
@@ -318,6 +361,35 @@ class MemberProfileServiceTest {
                 allergies,
                 excludedFoods,
                 4
+        );
+    }
+
+    private MemberProfileUpsertRequest extendedRequest(
+            FitnessGoal primaryGoal,
+            List<FitnessGoal> goals,
+            BigDecimal targetWeightKg,
+            String mobilityLimitNotes
+    ) {
+        return new MemberProfileUpsertRequest(
+                Gender.MALE,
+                LocalDate.of(1998, 5, 15),
+                new BigDecimal("175.00"),
+                new BigDecimal("72.50"),
+                primaryGoal,
+                FitnessLevel.BEGINNER,
+                ActivityLevel.MODERATELY_ACTIVE,
+                4,
+                90,
+                Set.of(Equipment.BARBELL, Equipment.DUMBBELL),
+                Set.of(MuscleGroup.CHEST, MuscleGroup.BACK),
+                Set.of(ContraindicationTag.LOWER_BACK_LOAD_LIMITED),
+                DietaryPreference.OMNIVORE,
+                Set.of("PEANUTS"),
+                Set.of("BEEF"),
+                4,
+                goals,
+                targetWeightKg,
+                mobilityLimitNotes
         );
     }
 

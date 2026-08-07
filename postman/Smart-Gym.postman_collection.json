@@ -769,6 +769,9 @@
                   "  const body = pm.response.json();",
                   "  pm.expect(body.success).to.eql(true);",
                   "  pm.expect(body.data.bioProfile.weightKg).to.eql(72.2);",
+                  "  pm.expect(body.data.bioProfile.targetWeightKg).to.eql(68.0);",
+                  "  pm.expect(body.data.bioProfile.fitnessGoals).to.eql(['WEIGHT_LOSS', 'FAT_LOSS']);",
+                  "  pm.expect(body.data.bioProfile.mobilityLimitNotes).to.eql('Hạn chế xoay vai trái');",
                   "  pm.expect(body.data.calculatedTargets).to.include.all.keys('bmi', 'bmr', 'tdee', 'dailyCaloriesKcal', 'proteinGrams', 'fatGrams', 'carbGrams');",
                   "  pm.expect(body.data).not.to.have.any.keys('password', 'passwordHash', 'accessToken');",
                   "});"
@@ -784,7 +787,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"gender\": \"MALE\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"heightCm\": 175,\n  \"weightKg\": 72.2,\n  \"fitnessGoal\": \"MAINTAIN\",\n  \"fitnessLevel\": \"BEGINNER\",\n  \"activityLevel\": \"MODERATELY_ACTIVE\",\n  \"workoutDaysPerWeek\": 4,\n  \"maxSessionMinutes\": 75,\n  \"availableEquipment\": [\"BARBELL\", \"DUMBBELL\"],\n  \"targetMuscleGroups\": [\"CHEST\", \"BACK\", \"LEGS\"],\n  \"injuryConstraints\": [],\n  \"dietaryPreference\": \"OMNIVORE\",\n  \"foodAllergies\": [],\n  \"excludedFoods\": [],\n  \"mealsPerDay\": 4\n}"
+              "raw": "{\n  \"gender\": \"MALE\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"heightCm\": 175,\n  \"weightKg\": 72.2,\n  \"fitnessGoal\": \"WEIGHT_LOSS\",\n  \"fitnessGoals\": [\"WEIGHT_LOSS\", \"FAT_LOSS\"],\n  \"targetWeightKg\": 68.0,\n  \"mobilityLimitNotes\": \"Hạn chế xoay vai trái\",\n  \"fitnessLevel\": \"BEGINNER\",\n  \"activityLevel\": \"MODERATELY_ACTIVE\",\n  \"workoutDaysPerWeek\": 4,\n  \"maxSessionMinutes\": 75,\n  \"availableEquipment\": [\"BARBELL\", \"DUMBBELL\"],\n  \"targetMuscleGroups\": [\"CHEST\", \"BACK\", \"LEGS\"],\n  \"injuryConstraints\": [],\n  \"dietaryPreference\": \"OMNIVORE\",\n  \"foodAllergies\": [\"PEANUTS\", \"MILK\"],\n  \"excludedFoods\": [\"BEEF\"],\n  \"mealsPerDay\": 4\n}"
             },
             "url": "{{baseUrl}}/member/profile"
           }
@@ -803,6 +806,8 @@
                   "  pm.expect(body.success).to.eql(true);",
                   "  pm.expect(body.data).to.include.all.keys('memberId', 'bioProfile', 'nutritionProfile', 'calculatedTargets', 'updatedAt');",
                   "  pm.expect(body.data.bioProfile.weightKg).to.eql(72.2);",
+                  "  pm.expect(body.data.bioProfile.targetWeightKg).to.eql(68.0);",
+                  "  pm.expect(body.data.bioProfile.fitnessGoals).to.eql(['WEIGHT_LOSS', 'FAT_LOSS']);",
                   "});"
                 ]
               }
@@ -846,6 +851,8 @@
                   "  pm.expect(body.data).to.include.all.keys('id', 'memberId', 'recordDate', 'weightKg', 'createdAt', 'updatedAt');",
                   "  pm.expect(body.data.recordDate).to.eql(pm.collectionVariables.get('progressDate'));",
                   "  pm.expect(body.data).not.to.have.any.keys('password', 'passwordHash', 'accessToken', 'user');",
+                  "  pm.expect(body.data.muscleMassKg).to.eql(34.5);",
+                  "  pm.expect(body.data.fatMassKg).to.eql(18.2);",
                   "  pm.collectionVariables.set('progressId', String(body.data.id));",
                   "});"
                 ]
@@ -858,7 +865,7 @@
               { "key": "Authorization", "value": "Bearer {{memberToken}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"recordDate\": \"{{progressDate}}\",\n  \"weightKg\": 72.20\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"recordDate\": \"{{progressDate}}\",\n  \"weightKg\": 72.20,\n  \"muscleMassKg\": 34.50,\n  \"fatMassKg\": 18.20\n}" },
             "url": "{{baseUrl}}/member/body-progress"
           }
         },

@@ -14,6 +14,7 @@ const profile: MemberProfile = {
         heightCm: 175,
         weightKg: 70,
         fitnessGoal: "BULK",
+        fitnessGoals: ["BULK"],
         fitnessLevel: "BEGINNER",
         activityLevel: "MODERATELY_ACTIVE",
         workoutDaysPerWeek: 4,
@@ -21,6 +22,7 @@ const profile: MemberProfile = {
         availableEquipment: ["BARBELL", "DUMBBELL", "CABLE"],
         targetMuscleGroups: ["CHEST", "BACK", "LEGS"],
         injuryConstraints: ["LOWER_BACK_LOAD_LIMITED"],
+        mobilityLimitNotes: "Hạn chế xoay vai trái",
     },
     nutritionProfile: {
         dietaryPreference: "OMNIVORE",
@@ -136,9 +138,34 @@ describe("MemberProfilePage", () => {
         expect(screen.getByText("Hạn chế tải vùng lưng dưới")).toBeInTheDocument();
         expect(screen.getByRole("heading", { name: "Thói quen ăn uống" })).toBeInTheDocument();
         expect(screen.getByText("Đậu phộng")).toBeInTheDocument();
-        expect(screen.getByRole("heading", { name: "Chỉ tiêu của bạn" })).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: "Chỉ tiêu cần tăng cơ" })).toBeInTheDocument();
+        expect(screen.getByText(/Hạn chế xoay vai trái/)).toBeInTheDocument();
         expect(screen.getByText("1658.75")).toBeInTheDocument();
         expect(screen.getByText("2571.06")).toBeInTheDocument();
+    });
+
+    it("chọn tất cả thiết bị và gửi đầy đủ lựa chọn", async () => {
+        vi.spyOn(httpClient, "get").mockResolvedValue(successResponse());
+        const update = vi.spyOn(httpClient, "put").mockResolvedValue({
+            status: 200,
+            data: { success: true, message: "Đã cập nhật", data: savedProfile },
+        });
+        vi.spyOn(httpClient, "post").mockResolvedValue({
+            status: 200,
+            data: { success: true, message: "Đã ghi nhận", data: progressResponse },
+        });
+        const user = userEvent.setup();
+
+        renderPage();
+        await user.click(await screen.findByRole("button", { name: "Chỉnh sửa" }));
+        const selectAll = screen.getAllByLabelText("Chọn tất cả");
+        expect(selectAll).toHaveLength(3);
+        await user.click(selectAll[0]);
+        await user.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
+
+        await waitFor(() => expect(update).toHaveBeenCalledWith("/member/profile", expect.objectContaining({
+            availableEquipment: ["BARBELL", "DUMBBELL", "MACHINE", "CABLE", "BENCH"],
+        })));
     });
 
     it("hiển thị lỗi mạng và tải lại thành công", async () => {
@@ -213,7 +240,7 @@ describe("MemberProfilePage", () => {
             foodAllergies: ["PEANUTS"],
             targetMuscleGroups: ["CHEST", "BACK", "LEGS"],
         })));
-        expect(await screen.findByRole("heading", { name: "Chỉ tiêu của bạn" })).toBeInTheDocument();
+        expect(await screen.findByRole("heading", { name: "Chỉ tiêu cần tăng cơ" })).toBeInTheDocument();
         expect(screen.getByText("22.86")).toBeInTheDocument();
         await waitFor(() => expect(httpClient.post).toHaveBeenCalledWith("/member/body-progress", {
             recordDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),

@@ -6,7 +6,9 @@ const validValues: MemberProfileFormValues = {
     dateOfBirth: "1998-05-15",
     heightCm: 175,
     weightKg: 70,
-    fitnessGoal: "BULK",
+    fitnessGoal: "MUSCLE_GAIN",
+    fitnessGoals: ["MUSCLE_GAIN"],
+    targetWeightKg: "",
     fitnessLevel: "BEGINNER",
     activityLevel: "MODERATELY_ACTIVE",
     workoutDaysPerWeek: 4,
@@ -14,6 +16,9 @@ const validValues: MemberProfileFormValues = {
     availableEquipment: ["BARBELL"],
     targetMuscleGroups: ["CHEST"],
     injuryConstraints: [],
+    mobilityLimitNotes: "",
+    foodAllergies: [],
+    excludedFoods: [],
     dietaryPreference: "OMNIVORE",
     foodAllergiesText: "PEANUTS",
     excludedFoodsText: "BEEF",
@@ -54,6 +59,39 @@ describe("memberProfileSchema", () => {
         });
 
         expect(result.success).toBe(false);
+    });
+
+    it("bắt buộc cân nặng đích đúng hướng cho mục tiêu tăng hoặc giảm cân", () => {
+        const gain = memberProfileSchema.safeParse({
+            ...validValues,
+            fitnessGoal: "WEIGHT_GAIN",
+            fitnessGoals: ["WEIGHT_GAIN"],
+            targetWeightKg: 69,
+        });
+        const loss = memberProfileSchema.safeParse({
+            ...validValues,
+            fitnessGoal: "WEIGHT_LOSS",
+            fitnessGoals: ["WEIGHT_LOSS"],
+            targetWeightKg: 70,
+        });
+
+        expect(gain.success).toBe(false);
+        expect(loss.success).toBe(false);
+    });
+
+    it("cho phép tối đa hai mục tiêu và giữ mục tiêu đầu tiên làm mục tiêu chính", () => {
+        const values = {
+            ...validValues,
+            fitnessGoal: "WEIGHT_LOSS" as const,
+            fitnessGoals: ["WEIGHT_LOSS", "FAT_LOSS"] as const,
+            targetWeightKg: 65,
+        };
+
+        const result = memberProfileSchema.safeParse(values);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(toMemberProfileRequest(result.data).fitnessGoal).toBe("WEIGHT_LOSS");
+        }
     });
 
     it("trim, loại control character, phần tử rỗng và giá trị trùng", () => {

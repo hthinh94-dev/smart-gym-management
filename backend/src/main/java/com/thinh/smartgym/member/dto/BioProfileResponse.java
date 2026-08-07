@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 @Schema(description = "Thông tin sinh học và mục tiêu tập luyện của hội viên")
@@ -25,6 +26,9 @@ public record BioProfileResponse(
         BigDecimal weightKg,
         @Schema(example = "BULK")
         FitnessGoal fitnessGoal,
+        List<FitnessGoal> fitnessGoals,
+        @Schema(example = "85.00", nullable = true)
+        BigDecimal targetWeightKg,
         @Schema(example = "BEGINNER")
         FitnessLevel fitnessLevel,
         @Schema(example = "MODERATELY_ACTIVE")
@@ -35,6 +39,30 @@ public record BioProfileResponse(
         Integer maxSessionMinutes,
         Set<Equipment> availableEquipment,
         Set<MuscleGroup> targetMuscleGroups,
-        Set<ContraindicationTag> injuryConstraints
+        Set<ContraindicationTag> injuryConstraints,
+        @Schema(example = "Hạn chế xoay vai trái", nullable = true)
+        String mobilityLimitNotes
 ) {
+
+    public BioProfileResponse(
+            Gender gender,
+            LocalDate dateOfBirth,
+            BigDecimal heightCm,
+            BigDecimal weightKg,
+            FitnessGoal fitnessGoal,
+            FitnessLevel fitnessLevel,
+            ActivityLevel activityLevel,
+            Integer workoutDaysPerWeek,
+            Integer maxSessionMinutes,
+            Set<Equipment> availableEquipment,
+            Set<MuscleGroup> targetMuscleGroups,
+            Set<ContraindicationTag> injuryConstraints
+    ) {
+        this(
+                gender, dateOfBirth, heightCm, weightKg, fitnessGoal,
+                List.of(fitnessGoal), null, fitnessLevel, activityLevel,
+                workoutDaysPerWeek, maxSessionMinutes, availableEquipment,
+                targetMuscleGroups, injuryConstraints, null
+        );
+    }
 }

@@ -1,6 +1,6 @@
 export type Gender = "MALE" | "FEMALE";
 
-export type FitnessGoal = "BULK" | "CUT" | "MAINTAIN";
+export type FitnessGoal = "BULK" | "CUT" | "MAINTAIN" | "MUSCLE_GAIN" | "WEIGHT_GAIN" | "FAT_LOSS" | "WEIGHT_LOSS";
 
 export type FitnessLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
 
@@ -34,6 +34,9 @@ export type BioProfile = {
     heightCm: number;
     weightKg: number;
     fitnessGoal: FitnessGoal;
+    fitnessGoals?: FitnessGoal[];
+    targetWeightKg?: number | null;
+    mobilityLimitNotes?: string | null;
     fitnessLevel: FitnessLevel;
     activityLevel: ActivityLevel;
     workoutDaysPerWeek: number;
@@ -52,6 +55,7 @@ export type NutritionProfile = {
 
 export type CalculatedTargets = {
     bmi: number;
+    bmiCategory?: "UNDERWEIGHT" | "NORMAL" | "OVERWEIGHT" | "OBESE";
     bmr: number;
     tdee: number;
     dailyCaloriesKcal: number;
@@ -60,7 +64,10 @@ export type CalculatedTargets = {
     carbGrams: number;
 };
 
-export type MemberProfileUpsertRequest = BioProfile & NutritionProfile;
+export type MemberProfileUpsertRequest = BioProfile & NutritionProfile & {
+    fitnessGoals: FitnessGoal[];
+    targetWeightKg?: number;
+};
 
 export type MemberProfile = {
     memberId: number;

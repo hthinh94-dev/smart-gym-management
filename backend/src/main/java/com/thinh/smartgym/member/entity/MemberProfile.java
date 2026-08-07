@@ -38,6 +38,7 @@ import org.hibernate.Hibernate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -79,9 +80,30 @@ public class MemberProfile extends BaseEntity {
     @Column(name = "weight_kg", nullable = false, precision = 6, scale = 2)
     private BigDecimal weightKg;
 
+    @Positive
+    @Column(name = "target_weight_kg", precision = 6, scale = 2)
+    private BigDecimal targetWeightKg;
+
+    @Size(max = 500)
+    @Column(name = "mobility_limit_notes", length = 500)
+    private String mobilityLimitNotes;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "fitness_goal", nullable = false, length = 20)
     private FitnessGoal fitnessGoal;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @Size(min = 1, max = 2)
+    @CollectionTable(
+            name = "member_fitness_goals",
+            joinColumns = @JoinColumn(
+                    name = "member_profile_id",
+                    foreignKey = @ForeignKey(name = "fk_member_fitness_goals_profile")
+            )
+    )
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fitness_goal", nullable = false, length = 20)
+    private Set<FitnessGoal> fitnessGoals = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "fitness_level", nullable = false, length = 20)
@@ -203,12 +225,35 @@ public class MemberProfile extends BaseEntity {
             DietaryPreference dietaryPreference,
             Byte mealsPerDay
     ) {
+        this(user, gender, dateOfBirth, heightCm, weightKg, null, fitnessGoal,
+                Set.of(fitnessGoal), fitnessLevel, activityLevel, workoutDaysPerWeek,
+                maxSessionMinutes, dietaryPreference, mealsPerDay);
+    }
+
+    public MemberProfile(
+            User user,
+            Gender gender,
+            LocalDate dateOfBirth,
+            BigDecimal heightCm,
+            BigDecimal weightKg,
+            BigDecimal targetWeightKg,
+            FitnessGoal fitnessGoal,
+            Set<FitnessGoal> fitnessGoals,
+            FitnessLevel fitnessLevel,
+            ActivityLevel activityLevel,
+            Byte workoutDaysPerWeek,
+            Short maxSessionMinutes,
+            DietaryPreference dietaryPreference,
+            Byte mealsPerDay
+    ) {
         this.user = user;
         this.gender = gender;
         this.dateOfBirth = dateOfBirth;
         this.heightCm = heightCm;
         this.weightKg = weightKg;
+        this.targetWeightKg = targetWeightKg;
         this.fitnessGoal = fitnessGoal;
+        this.fitnessGoals = mutableCopy(fitnessGoals);
         this.fitnessLevel = fitnessLevel;
         this.activityLevel = activityLevel;
         this.workoutDaysPerWeek = workoutDaysPerWeek;
@@ -235,11 +280,70 @@ public class MemberProfile extends BaseEntity {
             Set<String> foodAllergies,
             Set<String> excludedFoods
     ) {
+        updateFrom(
+                gender, dateOfBirth, heightCm, weightKg, null, fitnessGoal,
+                Set.of(fitnessGoal), fitnessLevel, activityLevel, workoutDaysPerWeek,
+                maxSessionMinutes, dietaryPreference, mealsPerDay, availableEquipment,
+                targetMuscleGroups, injuryConstraints, foodAllergies, excludedFoods
+        );
+    }
+
+    public void updateFrom(
+            Gender gender,
+            LocalDate dateOfBirth,
+            BigDecimal heightCm,
+            BigDecimal weightKg,
+            BigDecimal targetWeightKg,
+            FitnessGoal fitnessGoal,
+            Set<FitnessGoal> fitnessGoals,
+            FitnessLevel fitnessLevel,
+            ActivityLevel activityLevel,
+            Byte workoutDaysPerWeek,
+            Short maxSessionMinutes,
+            DietaryPreference dietaryPreference,
+            Byte mealsPerDay,
+            Set<Equipment> availableEquipment,
+            Set<MuscleGroup> targetMuscleGroups,
+            Set<ContraindicationTag> injuryConstraints,
+            Set<String> foodAllergies,
+            Set<String> excludedFoods
+    ) {
+        updateFrom(
+                gender, dateOfBirth, heightCm, weightKg, targetWeightKg, fitnessGoal,
+                fitnessGoals, fitnessLevel, activityLevel, workoutDaysPerWeek,
+                maxSessionMinutes, dietaryPreference, mealsPerDay, availableEquipment,
+                targetMuscleGroups, injuryConstraints, foodAllergies, excludedFoods, null
+        );
+    }
+
+    public void updateFrom(
+            Gender gender,
+            LocalDate dateOfBirth,
+            BigDecimal heightCm,
+            BigDecimal weightKg,
+            BigDecimal targetWeightKg,
+            FitnessGoal fitnessGoal,
+            Set<FitnessGoal> fitnessGoals,
+            FitnessLevel fitnessLevel,
+            ActivityLevel activityLevel,
+            Byte workoutDaysPerWeek,
+            Short maxSessionMinutes,
+            DietaryPreference dietaryPreference,
+            Byte mealsPerDay,
+            Set<Equipment> availableEquipment,
+            Set<MuscleGroup> targetMuscleGroups,
+            Set<ContraindicationTag> injuryConstraints,
+            Set<String> foodAllergies,
+            Set<String> excludedFoods,
+            String mobilityLimitNotes
+    ) {
         this.gender = gender;
         this.dateOfBirth = dateOfBirth;
         this.heightCm = heightCm;
         this.weightKg = weightKg;
+        this.targetWeightKg = targetWeightKg;
         this.fitnessGoal = fitnessGoal;
+        replace(this.fitnessGoals, fitnessGoals);
         this.fitnessLevel = fitnessLevel;
         this.activityLevel = activityLevel;
         this.workoutDaysPerWeek = workoutDaysPerWeek;
@@ -251,6 +355,7 @@ public class MemberProfile extends BaseEntity {
         replace(this.injuryConstraints, injuryConstraints);
         replace(this.foodAllergies, foodAllergies);
         replace(this.excludedFoods, excludedFoods);
+        this.mobilityLimitNotes = mobilityLimitNotes;
     }
 
     private <T> void replace(Set<T> target, Set<T> values) {

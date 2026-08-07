@@ -13,9 +13,22 @@ public record BodyProgressResponse(
         @Schema(example = "101") Long memberId,
         @Schema(example = "2026-08-05") LocalDate recordDate,
         @Schema(example = "72.20") BigDecimal weightKg,
+        @Schema(example = "32.50", nullable = true) BigDecimal muscleMassKg,
+        @Schema(example = "16.80", nullable = true) BigDecimal fatMassKg,
         @Schema(type = "string", format = "date-time") Instant createdAt,
         @Schema(type = "string", format = "date-time") Instant updatedAt
 ) {
+
+    public BodyProgressResponse(
+            Long id,
+            Long memberId,
+            LocalDate recordDate,
+            BigDecimal weightKg,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this(id, memberId, recordDate, weightKg, null, null, createdAt, updatedAt);
+    }
 
     public static BodyProgressResponse from(BodyProgress progress) {
         return new BodyProgressResponse(
@@ -23,6 +36,8 @@ public record BodyProgressResponse(
                 progress.getMember().getId(),
                 progress.getRecordDate(),
                 progress.getWeightKg(),
+                progress.getMuscleMassKg(),
+                progress.getFatMassKg(),
                 progress.getCreatedAt(),
                 progress.getUpdatedAt()
         );

@@ -38,11 +38,17 @@ public class BodyProgressService {
         accountStatusGuard.validateAccountStatusByUserId(memberId);
         validateRequest(request);
 
-        bodyProgressRepository.upsertAtomic(
-                memberId,
-                request.recordDate(),
-                request.weightKg()
-        );
+        if (request.muscleMassKg() == null && request.fatMassKg() == null) {
+            bodyProgressRepository.upsertAtomic(memberId, request.recordDate(), request.weightKg());
+        } else {
+            bodyProgressRepository.upsertAtomicWithComposition(
+                    memberId,
+                    request.recordDate(),
+                    request.weightKg(),
+                    request.muscleMassKg(),
+                    request.fatMassKg()
+            );
+        }
 
         BodyProgress progress = bodyProgressRepository
                 .findByMember_IdAndRecordDate(memberId, request.recordDate())
@@ -77,6 +83,12 @@ public class BodyProgressService {
         }
         if (request.weightKg().signum() <= 0) {
             throw validation("weightKg", "Cân nặng phải lớn hơn 0.");
+        }
+        if (request.muscleMassKg() != null && request.muscleMassKg().compareTo(request.weightKg()) > 0) {
+            throw validation("muscleMassKg", "Khối lượng cơ không thể lớn hơn cân nặng.");
+        }
+        if (request.fatMassKg() != null && request.fatMassKg().compareTo(request.weightKg()) > 0) {
+            throw validation("fatMassKg", "Khối lượng mỡ không thể lớn hơn cân nặng.");
         }
         LocalDate today = LocalDate.now(clock.withZone(BUSINESS_ZONE));
         if (request.recordDate().isAfter(today)) {

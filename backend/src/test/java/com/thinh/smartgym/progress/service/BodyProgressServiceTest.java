@@ -87,6 +87,33 @@ class BodyProgressServiceTest {
     }
 
     @Test
+    @DisplayName("Upsert lưu khối lượng cơ và mỡ tùy chọn")
+    void upsert_WithBodyComposition_ShouldUseExtendedAtomicUpsert() {
+        AuthenticatedUserPrincipal principal = principal(101L, RoleName.ROLE_MEMBER);
+        BodyProgress progress = progress(101L, TODAY, "72.20");
+        progress.setMuscleMassKg(new BigDecimal("34.50"));
+        progress.setFatMassKg(new BigDecimal("18.20"));
+        when(bodyProgressRepository.findByMember_IdAndRecordDate(101L, TODAY))
+                .thenReturn(Optional.of(progress));
+
+        BodyProgressResponse response = service.upsertCurrentProgress(
+                principal,
+                new BodyProgressUpsertRequest(
+                        TODAY,
+                        new BigDecimal("72.20"),
+                        new BigDecimal("34.50"),
+                        new BigDecimal("18.20")
+                )
+        );
+
+        verify(bodyProgressRepository).upsertAtomicWithComposition(
+                101L, TODAY, new BigDecimal("72.20"), new BigDecimal("34.50"), new BigDecimal("18.20")
+        );
+        assertThat(response.muscleMassKg()).isEqualByComparingTo("34.50");
+        assertThat(response.fatMassKg()).isEqualByComparingTo("18.20");
+    }
+
+    @Test
     @DisplayName("Ngày tương lai bị từ chối trước khi ghi database")
     void upsert_WithFutureDate_ShouldReject() {
         assertThatThrownBy(() -> service.upsertCurrentProgress(

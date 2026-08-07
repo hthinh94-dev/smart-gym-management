@@ -163,12 +163,11 @@ async function executeAuthRequest<T>(
         throwAuthError("SYS-001", "Hệ thống trả về phản hồi không đúng contract. Vui lòng thử lại.");
     }
 
-    if (status < 200 || status >= 300 || !rawPayload.success) {
-        if (rawPayload.success) {
-            throwAuthError("SYS-001", `${actionLabel} không thành công (HTTP ${status}).`);
-        }
-
+    if (isApiErrorResponse(rawPayload)) {
         throw new AuthApiError(rawPayload);
+    }
+    if (status < 200 || status >= 300) {
+        throwAuthError("SYS-001", `${actionLabel} không thành công (HTTP ${status}).`);
     }
 
     return rawPayload;
@@ -202,12 +201,11 @@ export async function registerMember(values: RegisterFormValues): Promise<ApiSuc
 
     const payload = rawPayload;
 
-    if (status < 200 || status >= 300 || !payload.success) {
-        if (payload.success) {
-            throwAuthError("SYS-001", `Đăng ký không thành công (HTTP ${status}).`);
-        }
-
+    if (isApiErrorResponse(payload)) {
         throw new AuthApiError(payload);
+    }
+    if (status < 200 || status >= 300) {
+        throwAuthError("SYS-001", `Đăng ký không thành công (HTTP ${status}).`);
     }
 
     return payload;

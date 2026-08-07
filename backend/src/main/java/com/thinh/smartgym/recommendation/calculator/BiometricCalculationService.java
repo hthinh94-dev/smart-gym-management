@@ -54,11 +54,14 @@ public class BiometricCalculationService {
                 .subtract(BigDecimal.valueOf(5).multiply(BigDecimal.valueOf(age)))
                 .add(gender == Gender.MALE ? BigDecimal.valueOf(5) : BigDecimal.valueOf(-161));
         BigDecimal tdee = bmr.multiply(activityMultiplier(activityLevel));
-        BigDecimal dailyCalories = switch (fitnessGoal) {
-            case BULK -> tdee.add(BULK_SURPLUS);
-            case CUT -> tdee.subtract(CUT_DEFICIT);
-            case MAINTAIN -> tdee;
-        };
+        BigDecimal dailyCalories;
+        if (fitnessGoal.requiresCalorieSurplus()) {
+            dailyCalories = tdee.add(BULK_SURPLUS);
+        } else if (fitnessGoal.requiresCalorieDeficit()) {
+            dailyCalories = tdee.subtract(CUT_DEFICIT);
+        } else {
+            dailyCalories = tdee;
+        }
 
         BigDecimal protein = PROTEIN_GRAMS_PER_KG.multiply(weight);
         BigDecimal fat = dailyCalories.multiply(FAT_CALORIE_RATIO).divide(FAT_CALORIES_PER_GRAM,

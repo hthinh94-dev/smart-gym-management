@@ -4,7 +4,7 @@ import type { BodyProgressApiErrorResponse, BodyProgressErrorCode, BodyProgressS
 
 const ERROR_CODES = new Set<BodyProgressErrorCode>(["VAL-001", "ACC-004", "ACC-005", "ACC-006", "NETWORK-001", "SYS-001"]);
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object"; }
-function isProgress(value: unknown): value is MemberBodyProgress { return record(value) && typeof value.id === "number" && typeof value.memberId === "number" && typeof value.recordDate === "string" && typeof value.weightKg === "number" && typeof value.createdAt === "string" && typeof value.updatedAt === "string"; }
+function isProgress(value: unknown): value is MemberBodyProgress { return record(value) && typeof value.id === "number" && typeof value.memberId === "number" && typeof value.recordDate === "string" && typeof value.weightKg === "number" && (value.muscleMassKg == null || typeof value.muscleMassKg === "number") && (value.fatMassKg == null || typeof value.fatMassKg === "number") && typeof value.createdAt === "string" && typeof value.updatedAt === "string"; }
 function isError(value: unknown): value is BodyProgressApiErrorResponse { return record(value) && value.success === false && typeof value.errorCode === "string" && ERROR_CODES.has(value.errorCode as BodyProgressErrorCode) && typeof value.message === "string"; }
 function isSuccess<T>(value: unknown, dataCheck: (data: unknown) => data is T): value is BodyProgressSuccess<T> { return record(value) && value.success === true && typeof value.message === "string" && dataCheck(value.data); }
 function throwError(code: BodyProgressErrorCode, message: string): never { throw new BodyProgressApiError({ success: false, errorCode: code, message, details: {} }); }

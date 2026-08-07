@@ -27,7 +27,7 @@ const PROFILE_ERROR_CODES = new Set<MemberProfileErrorCode>([
 ]);
 
 const GENDERS = new Set<Gender>(["MALE", "FEMALE"]);
-const FITNESS_GOALS = new Set<FitnessGoal>(["BULK", "CUT", "MAINTAIN"]);
+const FITNESS_GOALS = new Set<FitnessGoal>(["BULK", "CUT", "MAINTAIN", "MUSCLE_GAIN", "WEIGHT_GAIN", "FAT_LOSS", "WEIGHT_LOSS"]);
 const FITNESS_LEVELS = new Set<FitnessLevel>(["BEGINNER", "INTERMEDIATE", "ADVANCED"]);
 const ACTIVITY_LEVELS = new Set<ActivityLevel>([
     "SEDENTARY",
@@ -87,6 +87,9 @@ function isBioProfile(value: unknown): value is MemberProfile["bioProfile"] {
         && isFiniteNumber(value.heightCm)
         && isFiniteNumber(value.weightKg)
         && isEnumValue(value.fitnessGoal, FITNESS_GOALS)
+        && (value.fitnessGoals == null || (Array.isArray(value.fitnessGoals) && value.fitnessGoals.length > 0 && value.fitnessGoals.length <= 2 && value.fitnessGoals.every((item) => isEnumValue(item, FITNESS_GOALS))))
+        && (value.targetWeightKg == null || isFiniteNumber(value.targetWeightKg))
+        && (value.mobilityLimitNotes == null || typeof value.mobilityLimitNotes === "string")
         && isEnumValue(value.fitnessLevel, FITNESS_LEVELS)
         && isEnumValue(value.activityLevel, ACTIVITY_LEVELS)
         && isInteger(value.workoutDaysPerWeek)

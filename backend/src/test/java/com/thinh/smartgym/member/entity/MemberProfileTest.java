@@ -72,11 +72,17 @@ class MemberProfileTest {
     }
 
     @Test
-    @DisplayName("Enum Profile khớp tuyệt đối CHECK constraint trong V2")
+    @DisplayName("Enum Profile khớp CHECK constraint sau khi mở rộng mục tiêu")
     void profileEnums_ShouldMatchMigrationValues() {
         assertThat(Gender.values()).containsExactly(Gender.MALE, Gender.FEMALE);
         assertThat(FitnessGoal.values()).containsExactly(
-                FitnessGoal.BULK, FitnessGoal.CUT, FitnessGoal.MAINTAIN);
+                FitnessGoal.BULK,
+                FitnessGoal.CUT,
+                FitnessGoal.MAINTAIN,
+                FitnessGoal.MUSCLE_GAIN,
+                FitnessGoal.WEIGHT_GAIN,
+                FitnessGoal.FAT_LOSS,
+                FitnessGoal.WEIGHT_LOSS);
         assertThat(FitnessLevel.values()).containsExactly(
                 FitnessLevel.BEGINNER, FitnessLevel.INTERMEDIATE, FitnessLevel.ADVANCED);
         assertThat(ActivityLevel.values()).containsExactly(

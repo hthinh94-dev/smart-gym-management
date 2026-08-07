@@ -14,7 +14,11 @@ const VALUE_LABELS: Record<string, string> = {
     MALE: "Nam",
     FEMALE: "Nữ",
     BULK: "Tăng cơ",
+    MUSCLE_GAIN: "Tăng cơ",
+    WEIGHT_GAIN: "Tăng cân",
     CUT: "Giảm mỡ",
+    FAT_LOSS: "Giảm mỡ",
+    WEIGHT_LOSS: "Giảm cân",
     MAINTAIN: "Duy trì",
     BEGINNER: "Mới bắt đầu",
     INTERMEDIATE: "Trung cấp",
@@ -46,7 +50,13 @@ const VALUE_LABELS: Record<string, string> = {
     WRIST_FLEXION_LIMITED: "Hạn chế gập cổ tay",
     NECK_LOAD_LIMITED: "Hạn chế tải vùng cổ",
     PEANUTS: "Đậu phộng",
+    MILK: "Sữa",
+    EGGS: "Trứng",
+    SHRIMP: "Tôm",
     BEEF: "Thịt bò",
+    CHICKEN: "Thịt gà",
+    SEAFOOD: "Hải sản",
+    SOY: "Đậu nành",
 };
 
 function labelFor(value: string) {
@@ -159,7 +169,8 @@ function ProfileOverview({ profile, onEdit }: { profile: MemberProfile; onEdit: 
                     <div><dt>Ngày sinh</dt><dd>{formatDate(bioProfile.dateOfBirth)}</dd></div>
                     <div><dt>Chiều cao</dt><dd>{bioProfile.heightCm} cm</dd></div>
                     <div><dt>Cân nặng</dt><dd>{bioProfile.weightKg} kg</dd></div>
-                    <div><dt>Mục tiêu</dt><dd>{labelFor(bioProfile.fitnessGoal)}</dd></div>
+                    <div><dt>Mục tiêu</dt><dd><ValueList values={bioProfile.fitnessGoals ?? [bioProfile.fitnessGoal]} /></dd></div>
+                    <div><dt>Cân nặng mục tiêu</dt><dd>{bioProfile.targetWeightKg ? `${bioProfile.targetWeightKg} kg` : "Chưa đặt"}</dd></div>
                     <div><dt>Trình độ</dt><dd>{labelFor(bioProfile.fitnessLevel)}</dd></div>
                     <div><dt>Mức vận động</dt><dd>{labelFor(bioProfile.activityLevel)}</dd></div>
                     <div><dt>Lịch tập</dt><dd>{bioProfile.workoutDaysPerWeek} buổi / tuần</dd></div>
@@ -178,11 +189,12 @@ function ProfileOverview({ profile, onEdit }: { profile: MemberProfile; onEdit: 
                     <div>
                         <h3>Hạn chế vận động</h3>
                         <ValueList values={bioProfile.injuryConstraints} emptyLabel="Không có hạn chế" />
+                        {bioProfile.mobilityLimitNotes && <p className="profile-custom-value">Khác: {bioProfile.mobilityLimitNotes}</p>}
                     </div>
                 </div>
             </section>
 
-            <CalculatedTargets targets={profile.calculatedTargets} />
+            <CalculatedTargets targets={profile.calculatedTargets} goals={bioProfile.fitnessGoals ?? [bioProfile.fitnessGoal]} targetWeightKg={bioProfile.targetWeightKg} />
 
             <section className="profile-section" aria-labelledby="nutritionProfileTitle">
                 <header>

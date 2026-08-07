@@ -53,10 +53,30 @@ public class BodyProgress extends BaseEntity {
     @Column(name = "weight_kg", nullable = false, precision = 6, scale = 2)
     private BigDecimal weightKg;
 
+    @Positive
+    @Column(name = "muscle_mass_kg", precision = 6, scale = 2)
+    private BigDecimal muscleMassKg;
+
+    @Positive
+    @Column(name = "fat_mass_kg", precision = 6, scale = 2)
+    private BigDecimal fatMassKg;
+
     public BodyProgress(User member, LocalDate recordDate, BigDecimal weightKg) {
+        this(member, recordDate, weightKg, null, null);
+    }
+
+    public BodyProgress(
+            User member,
+            LocalDate recordDate,
+            BigDecimal weightKg,
+            BigDecimal muscleMassKg,
+            BigDecimal fatMassKg
+    ) {
         this.member = Objects.requireNonNull(member, "member must not be null");
         this.recordDate = Objects.requireNonNull(recordDate, "recordDate must not be null");
         this.weightKg = Objects.requireNonNull(weightKg, "weightKg must not be null");
+        this.muscleMassKg = muscleMassKg;
+        this.fatMassKg = fatMassKg;
     }
 
     @Override

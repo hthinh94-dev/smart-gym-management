@@ -2279,7 +2279,7 @@ a {
 .profile-section > header h2 {
     margin: 0;
     color: #edf2f8;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 800;
 }
 
@@ -2309,7 +2309,7 @@ a {
 
 .profile-data-grid dt {
     color: #7f8fa7;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 800;
     text-transform: uppercase;
 }
@@ -2317,7 +2317,7 @@ a {
 .profile-data-grid dd {
     margin: 8px 0 0;
     color: #e0e7f0;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
@@ -2340,7 +2340,7 @@ a {
 .profile-collection-grid h3 {
     margin: 0 0 13px;
     color: #aab7c9;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 800;
 }
 
@@ -2356,7 +2356,7 @@ a {
 .profile-value-list li {
     padding: 5px 8px;
     color: #c5d0de;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     background: #111c2e;
     border: 1px solid #3c4b62;
@@ -2365,7 +2365,14 @@ a {
 
 .profile-value-empty {
     color: #72829a;
-    font-size: 11px;
+    font-size: 13px;
+}
+
+.profile-custom-value {
+    margin: 12px 0 0;
+    color: #d0d9e6;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 .profile-nutrition-summary {
@@ -2433,13 +2440,13 @@ a {
 .profile-form-heading h2 {
     margin: 4px 0 0;
     color: #fff;
-    font-size: 24px;
+    font-size: 30px;
 }
 
 .profile-form-heading > p,
 .profile-form small {
     color: #91a2b8;
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .profile-form-grid {
@@ -2451,7 +2458,7 @@ a {
 .profile-form label,
 .profile-collection-field legend {
     color: #b9c8da;
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 800;
 }
 
@@ -2467,7 +2474,7 @@ a {
     border: 1px solid #4c607a;
     border-radius: 4px;
     font: inherit;
-    font-size: 13px;
+    font-size: 15px;
 }
 
 .profile-form input::placeholder { color: #71839b; }
@@ -2504,6 +2511,7 @@ a {
 
 .profile-form-text-grid { margin-top: 22px; }
 .profile-form-text-grid small { display: block; margin-top: 6px; }
+.profile-mobility-note { display: block; margin-top: 22px; }
 
 .profile-form-actions {
     display: flex;
@@ -2533,8 +2541,41 @@ a {
     background: rgba(20, 141, 90, .18);
     border: 1px solid #19c875;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 14px;
 }
+
+.profile-select-all {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 11px;
+    color: #d6ff00 !important;
+    background: rgba(214, 255, 0, .08);
+    border: 1px solid rgba(214, 255, 0, .38);
+    border-radius: 4px;
+}
+
+.profile-collection-field small,
+.profile-food-field small,
+.profile-form .optional-label {
+    display: block;
+    margin-top: 8px;
+    color: #91a2b8;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.profile-food-field {
+    min-width: 0;
+    padding: 16px;
+    background: #152238;
+    border: 1px solid #34455c;
+}
+
+.profile-food-field legend { padding: 0 4px; }
+.profile-food-field input[type="text"] { margin-top: 14px; }
+.profile-food-options { margin-top: 8px; }
 
 .profile-success-notice a { color: #d6ff00; font-weight: 800; }
 .profile-success-notice button {
@@ -2556,15 +2597,21 @@ a {
 .calculated-targets { margin-top: 18px; }
 .calculated-target-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .calculated-target { min-height: 92px; padding: 14px; background: #101b2d; border-left: 3px solid #d6ff00; }
-.calculated-target span, .calculated-target small { display: block; color: #91a2b8; font-size: 10px; font-weight: 700; }
+.calculated-target span, .calculated-target small { display: block; color: #91a2b8; font-size: 13px; font-weight: 700; }
 .calculated-target strong { display: block; margin: 10px 0 3px; color: #d6ff00; font-size: 22px; }
+.calculated-target em { display: block; margin-top: 8px; color: #c7d2e0; font-size: 12px; font-style: normal; line-height: 1.4; }
+.calculated-results { margin-bottom: 18px; }
+.calculated-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.target-weight-note { margin: 16px 0 0; color: #c7d2e0; font-size: 15px; }
+.target-weight-note strong { color: #d6ff00; }
 
 .body-progress-page { max-width: 1160px; }
 .progress-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; margin-top: 24px; }
 .progress-form, .progress-latest, .progress-history, .progress-empty, .progress-loading { padding: 24px; background: #1b2a3f; border: 1px solid #34455c; }
 .progress-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.progress-form label { color: #b9c8da; font-size: 12px; font-weight: 800; }
-.progress-form input { display: block; width: 100%; height: 44px; margin-top: 8px; padding: 0 12px; color: #eaf0f8; background: #101b2d; border: 1px solid #4c607a; border-radius: 4px; font: inherit; font-size: 13px; }
+.progress-form label { color: #b9c8da; font-size: 14px; font-weight: 800; }
+.progress-form input { display: block; width: 100%; height: 46px; margin-top: 8px; padding: 0 12px; color: #eaf0f8; background: #101b2d; border: 1px solid #4c607a; border-radius: 4px; font: inherit; font-size: 15px; }
+.progress-form .optional-label { display: block; margin-top: 4px; color: #91a2b8; font-size: 12px; font-weight: 500; }
 .progress-form button { margin-top: 22px; }
 .progress-form input:focus-visible { outline: 3px solid rgba(55, 145, 255, .35); outline-offset: 2px; }
 .progress-field-error { display: block; margin: 6px 0 0; color: #ff8b8b; font-size: 11px; }
@@ -2576,6 +2623,18 @@ a {
 .progress-latest h2 { margin: 6px 0 24px; color: #fff; font-size: 19px; }
 .progress-latest strong { display: block; color: #d6ff00; font-size: 30px; }
 .progress-latest span { margin-top: 8px; }
+.progress-target-summary { margin-top: 24px; padding-top: 18px; border-top: 1px solid #34455c; }
+.progress-target-summary span { margin: 0; color: #b9c8da; font-size: 13px; }
+.progress-target-summary strong { margin-top: 6px; font-size: 24px; }
+.progress-current-target-distance { display: block; margin-top: 10px; color: #4ee18a; font-size: 13px; line-height: 1.4; }
+.progress-initial-weight { margin-top: 22px; padding-top: 16px; border-top: 1px solid #34455c; }
+.progress-initial-weight span { margin: 0; color: #b9c8da; font-size: 13px; }
+.progress-initial-weight strong { margin-top: 6px; color: #fff; font-size: 22px; }
+.progress-feedback { margin-top: 18px; padding: 15px 18px; color: #d6ff00; background: rgba(214, 255, 0, .1); border: 1px solid rgba(214, 255, 0, .4); border-radius: 4px; font-size: 15px; font-weight: 800; }
+.progress-celebration { position: relative; overflow: hidden; margin-top: 18px; padding: 22px; color: #fff; background: #1b493f; border: 1px solid #4ee18a; border-radius: 6px; text-align: center; animation: celebration-pop .55s ease-out both; }
+.progress-celebration strong { display: block; color: #d6ff00; font-size: 24px; }
+.progress-celebration p { margin: 7px 0 0; font-size: 15px; }
+.progress-celebration span { display: block; color: #d6ff00; font-size: 20px; letter-spacing: 14px; animation: celebration-sparkle 1.4s ease-in-out infinite alternate; }
 .progress-history, .progress-empty { margin-top: 18px; }
 .progress-history .member-section-heading { margin-bottom: 18px; }
 .progress-history h2, .progress-empty h2 { margin: 4px 0 0; color: #fff; font-size: 22px; }
@@ -2584,8 +2643,21 @@ a {
 .progress-table-wrap th, .progress-table-wrap td { padding: 13px 15px; text-align: left; border-bottom: 1px solid #2c3c53; font-size: 12px; }
 .progress-table-wrap th { color: #91a2b8; background: #152238; text-transform: uppercase; }
 .progress-table-wrap td { color: #d6deea; }
+.progress-table-wrap td strong { display: block; color: #f5f8fc; font-size: 14px; }
+.progress-initial-header { display: block; margin-top: 5px; color: #91a2b8; font-size: 11px; font-weight: 600; text-transform: none; }
+.progress-baseline-difference { display: block; margin-top: 5px; color: #d6ff00; font-size: 11px; line-height: 1.4; }
 .progress-table-wrap tr:last-child td { border-bottom: 0; }
 .progress-empty p { color: #91a2b8; font-size: 13px; }
+
+@keyframes celebration-pop {
+    from { opacity: 0; transform: translateY(10px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes celebration-sparkle {
+    from { opacity: .45; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(-2px); }
+}
 
 @media (max-height: 760px) {
     .profile-page {
