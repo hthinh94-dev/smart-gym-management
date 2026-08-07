@@ -9,10 +9,10 @@ Backend kiểm duyệt.
 
 Dự án đã hoàn tất nghiệm thu local **Milestone M1 - Authentication, Security,
 OpenAPI và React Skeleton** ngày 01/08/2026, đã gắn tag `v0.1.0-m1-auth`.
-Source **Milestone M2 - Member Profile, Calculator và Body Progress nền** đã
-hoàn thành đến hết Ngày 14 (05/08/2026); phần mở rộng hồ sơ và theo dõi thành
-phần cơ thể hiện đã được tích hợp local sau M2. Ngày 15 dành cho manual local
-QA và đóng tag M2.
+**Milestone M2 - Member Profile, Calculator và Body Progress nền** đã hoàn tất
+gate local Ngày 15 (07/08/2026), gồm phần mở rộng hồ sơ và theo dõi thành phần
+cơ thể. Source, contract, regression tự động và manual localhost QA đã đạt;
+milestone đủ điều kiện commit, push và gắn tag `v0.2.0-m2-profile`.
 
 Nền M1:
 

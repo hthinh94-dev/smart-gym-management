@@ -652,3 +652,29 @@ kế hoạch, không mở rộng thêm feature trong Ngày 14.
   ngay dưới cân nặng hiện tại; khối cân nặng mục tiêu chỉ giữ con số đích.
 - [x] Flyway V9–V10 validate thành công; full regression đạt 274 Backend test,
   80 Frontend test và Vite production build pass.
+
+---
+
+## Ngày 15 — Local QA, fix và đóng gate M2 (07/08/2026)
+
+- [x] Đối chiếu đầy đủ contract Profile, Calculator và Body Progress với DTO,
+  Entity, Service, Flyway V1–V10, Frontend type/schema và Postman.
+- [x] Full Backend regression đạt 274/274 test, không failure/error/skipped;
+  Flyway validate 10 migration, schema version 10 và Hibernate validate thành
+  công trên MySQL 8.0.44.
+- [x] Full Frontend regression đạt 80/80 test; TypeScript compile và Vite
+  production build thành công.
+- [x] Manual localhost QA Auth/RBAC/Profile/Calculator/Body Progress, Swagger
+  và Postman đã được xác nhận thành công; không còn lỗi P0/P1.
+- [x] Đồng bộ DDL tổng hợp và ERD với `member_fitness_goals`,
+  `target_weight_kg`, `mobility_limit_notes`, `muscle_mass_kg` và
+  `fat_mass_kg`.
+- [x] Body Progress phân biệt cân nặng ban đầu, hiện tại và mục tiêu; mức
+  tăng/giảm dùng baseline đầu tiên, còn khoảng cách mục tiêu nằm ngay dưới cân
+  nặng hiện tại.
+- [x] Hoàn thiện Chương 4 báo cáo với bảng 23 test case M2, kết quả gate, defect
+  log, ảnh minh chứng Profile/Calculator/Body Progress/Swagger và bảng tiến độ
+  Ngày 15.
+
+**Kết luận:** M2 đã hoàn tất local và đủ điều kiện commit, push, gắn tag
+`v0.2.0-m2-profile`. Deploy vẫn tuân theo Deploy Gate 1 sau M3.

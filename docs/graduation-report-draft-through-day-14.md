@@ -59,7 +59,7 @@ Mục tiêu của đề tài là xây dựng một hệ thống Web hỗ trợ q
 
 Sau khi hoàn thành, đề tài dự kiến cung cấp một hệ thống Web có khả năng vận hành khép kín cho quản trị viên và hội viên. Quản trị viên có thể quản lý tài khoản, gói tập, subscription và thư viện bài tập. Hội viên có thể cập nhật hồ sơ, đăng ký hoặc gia hạn gói tập, nhận giáo án, ghi nhật ký và theo dõi tiến độ. Vai trò PT được chuẩn bị trong cơ chế phân quyền để phục vụ khả năng mở rộng sau giai đoạn MVP.
 
-Về kỹ thuật, hệ thống dự kiến sử dụng React cho Frontend, Spring Boot 3.4.3 và Java 21 cho Backend, MySQL 8 cho cơ sở dữ liệu. Frontend và Backend trao đổi thông qua 32 RESTful API dưới tiền tố `/api/v1`. Cơ sở dữ liệu gồm 25 bảng vật lý, được quản lý bằng Flyway và ánh xạ bằng JPA Hibernate.
+Về kỹ thuật, hệ thống sử dụng React cho Frontend, Spring Boot 3.4.3 và Java 21 cho Backend, MySQL 8 cho cơ sở dữ liệu. Frontend và Backend trao đổi thông qua RESTful API dưới tiền tố `/api/v1`. Baseline thiết kế gồm 25 bảng vật lý; phần mở rộng Profile ở M2 bổ sung `member_fitness_goals`, đưa schema hiện hành lên 26 bảng được quản lý bằng Flyway và ánh xạ bằng JPA Hibernate.
 
 Hệ thống dự kiến triển khai xác thực JWT stateless, phân quyền theo vai trò và kiểm tra trạng thái tài khoản tại thời điểm xử lý request. Chức năng AI được xây dựng theo mô hình Hybrid, có kiểm tra JSON Schema, exercise whitelist, giới hạn nghiệp vụ và fallback. Sản phẩm cuối cùng dự kiến được đóng gói bằng Docker Compose, có tài liệu OpenAPI, dữ liệu mẫu và bộ kiểm thử cho các luồng nghiệp vụ quan trọng.
 
@@ -474,7 +474,7 @@ Controller tiếp nhận request, thực hiện validation đầu vào, lấy Pr
 
 Database sử dụng MySQL 8 với InnoDB, `utf8mb4` và `utf8mb4_unicode_ci`. Tên bảng, cột, constraint và index dùng `snake_case`; thuộc tính Java dùng `camelCase`. Bảng Entity nghiệp vụ dùng khóa chính `BIGINT AUTO_INCREMENT`; bảng liên kết và collection dùng khóa ghép có ý nghĩa nghiệp vụ.
 
-Enum được lưu bằng `VARCHAR` và ánh xạ bằng `EnumType.STRING`. Audit timestamp sử dụng `TIMESTAMP(6)` theo UTC; ngày nghiệp vụ dùng SQL `DATE` được xác định theo `Asia/Ho_Chi_Minh`. Cả 25 bảng đều có `created_at` và `updated_at`.
+Enum được lưu bằng `VARCHAR` và ánh xạ bằng `EnumType.STRING`. Audit timestamp sử dụng `TIMESTAMP(6)` theo UTC; ngày nghiệp vụ dùng SQL `DATE` được xác định theo `Asia/Ho_Chi_Minh`. Cả 26 bảng hiện hành đều có `created_at` và `updated_at`.
 
 ### 3.2.2. Phân rã Flyway Migration
 
@@ -488,16 +488,18 @@ Enum được lưu bằng `VARCHAR` và ánh xạ bằng `EnumType.STRING`. Audi
 | V6 | AI recommendation và meal suggestion | 2 |
 | V7 | Body Progress | 1 |
 | V8 | Seed `ROLE_ADMIN`, `ROLE_MEMBER`, `ROLE_PT` | 0 |
-| **Tổng cộng** | | **25** |
+| V9 | Mục tiêu kép, cân nặng đích và thành phần cơ/mỡ | 1 |
+| V10 | Ghi chú hạn chế vận động tự nhập | 0 |
+| **Tổng cộng hiện hành** | | **26** |
 
 Flyway là nguồn sở hữu DDL duy nhất. Migration đã áp dụng không được sửa; thay đổi schema phải tạo migration mới. Hibernate chỉ chạy `validate` để phát hiện sai lệch giữa Entity và schema.
 
-### 3.2.3. Danh sách 25 bảng vật lý
+### 3.2.3. Danh sách 26 bảng vật lý hiện hành
 
 | Phân hệ | Bảng |
 |---|---|
 | Auth | `users`, `roles`, `user_roles` |
-| Profile | `member_profiles`, `member_available_equipment`, `member_target_muscle_groups`, `member_injury_constraints`, `member_food_allergies`, `member_excluded_foods` |
+| Profile | `member_profiles`, `member_fitness_goals`, `member_available_equipment`, `member_target_muscle_groups`, `member_injury_constraints`, `member_food_allergies`, `member_excluded_foods` |
 | Membership | `membership_packages`, `member_subscriptions`, `subscription_renewal_requests` |
 | Exercise | `exercises`, `exercise_secondary_muscles`, `exercise_equipment`, `exercise_target_body_regions`, `exercise_contraindication_tags` |
 | Workout Plan | `workout_plans`, `workout_days`, `workout_plan_exercises` |
@@ -511,7 +513,7 @@ Flyway là nguồn sở hữu DDL duy nhất. Migration đã áp dụng không �
 |---|---|---|
 | `users` – `member_profiles` | `1 – 0..1` | Một User có thể chưa hoàn thiện hồ sơ; mỗi Member Profile thuộc đúng một User. |
 | `users` – `user_roles` – `roles` | `1 – 0..N – 1` | `user_roles` phân rã quan hệ nhiều-nhiều giữa User và Role, đồng thời lưu auditing. |
-| `member_profiles` – năm bảng collection | `1 – 0..N` | Thiết bị, nhóm cơ, hạn chế vận động, dị ứng và thực phẩm loại trừ phụ thuộc hoàn toàn vào hồ sơ. |
+| `member_profiles` – sáu bảng collection | `1 – 0..N` | Mục tiêu, thiết bị, nhóm cơ, hạn chế vận động, dị ứng và thực phẩm loại trừ phụ thuộc hoàn toàn vào hồ sơ. |
 | `users`/`membership_packages` – `member_subscriptions` | `1 – 0..N` | Mỗi Subscription thuộc một Member và một Package; một Member có thể có nhiều bản ghi theo lịch sử nhưng chỉ một bản hợp lệ tại một thời điểm. |
 | `users` – `member_subscriptions` qua người duyệt/người hủy | `0..1 – 0..N` | Người duyệt hoặc hủy là Admin tùy chọn trên mỗi Subscription; một Admin có thể xử lý nhiều bản ghi. |
 | `member_subscriptions` – `subscription_renewal_requests` | `1 – 0..N` | Một Subscription có thể được gia hạn nhiều lần theo lịch sử nhưng chỉ có một Renewal Request `PENDING` tại một thời điểm. |
@@ -534,7 +536,9 @@ Generated column kết hợp unique constraint bảo đảm mỗi Member có t�
 
 Check constraint bảo vệ enum, trạng thái và giới hạn dữ liệu. Các bảng dễ xung đột gồm `member_subscriptions`, `subscription_renewal_requests` và `workout_plans` có cột `version` phục vụ Optimistic Locking.
 
-Thiết kế vật lý đã được đối chiếu với metadata MySQL 8, ghi nhận đúng 25 bảng, 54 CHECK constraints, 34 khóa ngoại và 18 unique constraints. Các số liệu này được dùng làm baseline để kiểm tra Flyway Migration và ORM Mapping.
+Baseline V1–V8 đã được đối chiếu với metadata MySQL 8, ghi nhận 25 bảng, 54
+CHECK constraints, 34 khóa ngoại và 18 unique constraints. Sau V9–V10, gate M2
+xác nhận schema version 10 có 26 bảng; Flyway và Hibernate validate thành công.
 
 ### 3.2.6. Bảo toàn lịch sử (History Retention)
 
@@ -546,13 +550,13 @@ Thiết kế này giữ được subscription, workout plan, workout log, Body P
 
 ### 3.3.1. BaseEntity và JPA Auditing
 
-Thiết kế ORM xác định 16 bảng nghiệp vụ được ánh xạ thành Entity kế thừa `BaseEntity` để quản lý `createdAt` và `updatedAt`. `@CreatedDate` ghi thời điểm tạo; `@LastModifiedDate` ghi thời điểm cập nhật. Chín bảng collection không có vòng đời độc lập được thiết kế bằng `@ElementCollection`; timestamp của các bảng này do MySQL điền trong cùng transaction. Phạm vi đã hiện thực tại Ngày 4 mới gồm các Entity thuộc phân hệ Auth và được trình bày riêng ở Chương 4.
+Thiết kế ORM xác định 16 bảng nghiệp vụ được ánh xạ thành Entity kế thừa `BaseEntity` để quản lý `createdAt` và `updatedAt`. `@CreatedDate` ghi thời điểm tạo; `@LastModifiedDate` ghi thời điểm cập nhật. Mười bảng collection hiện hành không có vòng đời độc lập được thiết kế bằng `@ElementCollection`; timestamp của các bảng này do MySQL điền trong cùng transaction.
 
 ### 3.3.2. Danh sách Entity và Element Collection
 
 Danh sách thiết kế gồm 16 Entity: `User`, `Role`, `UserRole`, `MemberProfile`, `MembershipPackage`, `MemberSubscription`, `SubscriptionRenewalRequest`, `Exercise`, `WorkoutPlan`, `WorkoutDay`, `WorkoutPlanExercise`, `WorkoutSession`, `WorkoutLog`, `BodyProgress`, `AiRecommendation` và `NutritionMealSuggestion`.
 
-Chín collection tables gồm năm bảng của Member Profile và bốn bảng metadata của Exercise. Cách ánh xạ này phù hợp với các tập giá trị không có vòng đời độc lập, đồng thời giữ schema chuẩn hóa để lọc theo thiết bị, nhóm cơ và chống chỉ định.
+Mười collection tables gồm sáu bảng của Member Profile và bốn bảng metadata của Exercise. Cách ánh xạ này phù hợp với các tập giá trị không có vòng đời độc lập, đồng thời giữ schema chuẩn hóa để lọc theo mục tiêu, thiết bị, nhóm cơ và chống chỉ định.
 
 ### 3.3.3. Mapping phân hệ Auth
 
@@ -662,7 +666,7 @@ Không tạo phân vùng PT trong Sitemap của MVP. `ROLE_PT` chỉ tồn tại
 
 Ngày 12 chỉ triển khai persistence và API đọc. Các chỉ số BMI, BMR, TDEE, calories và chất dinh dưỡng đa lượng chưa được ghép vào response vì thuộc Calculator Ngày 13. Member mới chưa có hồ sơ là trạng thái hợp lệ; hệ thống không tự sinh dữ liệu thể trạng giả.
 
-### 3.8.2. Ánh xạ Entity và năm collection table
+### 3.8.2. Ánh xạ Entity và sáu collection table hiện hành
 
 Một User có tối đa một `MemberProfile`, được bảo vệ bằng unique constraint `uk_member_profiles_user(user_id)`. Quan hệ JPA dùng `@OneToOne(fetch = LAZY)` và không cascade remove User. Entity kế thừa `BaseEntity` để sử dụng timestamp auditing.
 
@@ -687,7 +691,7 @@ Frontend sử dụng React, TypeScript, React Router, TanStack Query và Axios. 
 | Hạng mục | Trạng thái | Minh chứng hiện có |
 |---|---|---|
 | Đặc tả yêu cầu và API | Đã hoàn thành thiết kế | 44 FR, 14 NFR, 10 Use Case, 34 Acceptance Criteria và 32 API contract |
-| Cơ sở dữ liệu vật lý | Đã hiện thực | Tám Flyway Migration tạo 25 bảng và seed ba role hệ thống |
+| Cơ sở dữ liệu vật lý | Đã hiện thực | Mười Flyway Migration tạo 26 bảng, mở rộng Profile/Progress và seed ba role hệ thống |
 | ORM | Hiện thực một phần | `BaseEntity`, hai Enum, ba Entity Auth, một Embeddable ID và hai Repository |
 | Security/JWT | Đã hoàn thành phần nền | Security Filter Chain, JWT, UserDetails, Account Status Guard và phản hồi 401/403 |
 | RESTful API nghiệp vụ | Chưa hiện thực | Chưa có Register, Login, `/users/me` hoặc controller nghiệp vụ |
@@ -701,7 +705,7 @@ Bảng trạng thái trên được dùng để phân biệt kết quả đã c�
 
 Datasource nhận thông tin kết nối từ `DB_URL` hoặc các biến `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` và `DB_PASSWORD`. Mật khẩu không có fallback trong source code. Kết nối đặt timezone UTC; Hibernate dùng `ddl-auto=validate` và `open-in-view=false`.
 
-Flyway được bật tại `classpath:db/migration`. Tám migration V1–V8 đã tạo đủ 25 bảng vật lý và seed ba role hệ thống. Các migration đã được chạy thành công trên MySQL 8.0.44; Hibernate khởi tạo `EntityManagerFactory` với schema hiện hành.
+Flyway được bật tại `classpath:db/migration`. Mười migration V1–V10 tạo 26 bảng vật lý, seed ba role hệ thống và mở rộng Profile/Body Progress. Các migration đã được chạy thành công trên MySQL 8.0.44; Hibernate khởi tạo `EntityManagerFactory` với schema version 10.
 
 ### 4.2.2. JPA Auditing và ORM Auth đã triển khai
 
@@ -799,7 +803,7 @@ Phạm vi hiện tại vẫn có giới hạn: mới ba Entity Auth được hi�
 
 ### 4.5.1. Backend Profile read model
 
-Backend đã bổ sung tám enum Profile khớp migration V2 và danh mục enum trong thiết kế cơ sở dữ liệu. `MemberProfile` ánh xạ bảng `member_profiles` cùng năm collection table. Các kiểu `BigDecimal`, `LocalDate`, `Byte`, `Short` và `Instant` được chọn theo kiểu dữ liệu vật lý tương ứng; response DTO chuyển các số nguyên nhỏ sang `Integer` để tạo contract JSON ổn định cho Frontend.
+Backend đã bổ sung các enum Profile khớp migration V2 và V9. `MemberProfile` ánh xạ bảng `member_profiles` cùng sáu collection table hiện hành, trong đó `member_fitness_goals` lưu tối đa hai mục tiêu. Các kiểu `BigDecimal`, `LocalDate`, `Byte`, `Short` và `Instant` được chọn theo kiểu dữ liệu vật lý tương ứng; response DTO chuyển các số nguyên nhỏ sang `Integer` để tạo contract JSON ổn định cho Frontend.
 
 `MemberProfileRepository` cung cấp truy vấn theo `user.id`. `MemberProfileService` chạy trong transaction chỉ đọc để các collection lazy được tải trong phạm vi persistence context, sau đó ánh xạ sang `MemberProfileResponse`, `BioProfileResponse` và `NutritionProfileResponse`. Response không serialize JPA Entity, password hash hoặc association nội bộ.
 
@@ -932,3 +936,108 @@ Flyway V9–V10 được validate trên MySQL, full Backend regression đạt 27
 Frontend đạt 80 test, kiểm tra TypeScript không còn lỗi và Vite production build
 thành công. Các tài liệu phạm vi, yêu cầu chức năng, business rule, use case,
 API, database, ORM và kiến trúc đã được đồng bộ với cách tính baseline này.
+
+## 4.9. Kết quả Local QA và đóng Milestone M2 Ngày 15
+
+### 4.9.1. Phạm vi và môi trường kiểm thử
+
+Ngày 07/08/2026, toàn bộ phạm vi M1–M2 được kiểm tra hồi quy trên môi trường
+local gồm Java 23 chạy source compatibility Java 21, Spring Boot 3.4.3, MySQL
+8.0.44 và React/Vite. Backend, Frontend, Swagger và Postman cùng sử dụng contract
+`/api/v1`; không sử dụng dữ liệu sản xuất hoặc đưa credential vào repository.
+
+### 4.9.2. Bảng tổng hợp test case M2
+
+| Mã | Phạm vi | Trường hợp chính | Kết quả mong đợi | Kết quả |
+|---|---|---|---|---|
+| M2-TC-01 | Profile | Member chưa có Profile | Trả `PROF-001`, không sinh dữ liệu giả | Đạt |
+| M2-TC-02 | Profile | Tạo/cập nhật đầy đủ Profile | Dữ liệu được lưu và đọc lại đúng | Đạt |
+| M2-TC-03 | Profile | Chọn tối đa hai mục tiêu | Lưu mục tiêu chính và danh sách không trùng | Đạt |
+| M2-TC-04 | Profile | Chọn đồng thời tăng/giảm cân | Từ chối bằng `VAL-001` | Đạt |
+| M2-TC-05 | Profile | Cân nặng đích sai hướng | Zod và Service cùng từ chối | Đạt |
+| M2-TC-06 | Profile | Select all thiết bị/nhóm cơ/hạn chế | Hiển thị và lưu đủ lựa chọn | Đạt |
+| M2-TC-07 | Profile | Dị ứng/loại trừ phổ biến và tự nhập | Chuẩn hóa, giới hạn phần tử/ký tự | Đạt |
+| M2-TC-08 | Calculator | BMI ở các ngưỡng | Đúng giá trị và phân loại | Đạt |
+| M2-TC-09 | Calculator | Nam/nữ và mức vận động khác nhau | BMR/TDEE đúng công thức | Đạt |
+| M2-TC-10 | Calculator | Tăng cơ/tăng cân/giảm mỡ/giảm cân | Calories theo mục tiêu chính, không hardcode UI | Đạt |
+| M2-TC-11 | Calculator | Macro protein/fat/carb | Làm tròn `HALF_UP` hai chữ số | Đạt |
+| M2-TC-12 | Progress | Thêm bản ghi ngày mới | Lưu đúng owner và ngày Việt Nam | Đạt |
+| M2-TC-13 | Progress | Gửi lại cùng Member/ngày | Atomic update, không sinh dòng trùng | Đạt |
+| M2-TC-14 | Progress | Cân nặng không dương/ngày tương lai | Trả `VAL-001` | Đạt |
+| M2-TC-15 | Progress | Khối lượng cơ/mỡ tùy chọn | Chấp nhận null; từ chối giá trị lớn hơn cân nặng | Đạt |
+| M2-TC-16 | Progress | Lịch sử nhiều ngày | Sắp xếp tăng dần theo `recordDate` | Đạt |
+| M2-TC-17 | Progress | Tính tăng/giảm | So với bản ghi đầu tiên, không so với bản ghi trước | Đạt |
+| M2-TC-18 | Progress | Khoảng cách tới mục tiêu | Hiện dưới cân nặng hiện tại | Đạt |
+| M2-TC-19 | Progress | Đạt/vượt cân nặng mục tiêu | Hiện lời chúc mừng theo hướng mục tiêu | Đạt |
+| M2-TC-20 | Integration | Profile PUT thành công, Progress lỗi | Profile giữ dữ liệu; retry chỉ gửi Progress | Đạt |
+| M2-TC-21 | Security | Guest/Admin gọi API Member | Trả `ACC-005`/`AUTH-002` đúng contract | Đạt |
+| M2-TC-22 | Security | Token Member LOCKED/DISABLED | Guard trả `ACC-004`/`ACC-006` | Đạt |
+| M2-TC-23 | Contract | Swagger/Postman M1–M2 | 10 operation, 29 request, schema thống nhất | Đạt |
+
+### 4.9.3. Kết quả gate tự động và tích hợp
+
+| Gate | Kết quả | Kết luận |
+|---|---|---|
+| Backend clean regression | 274/274 test; 0 failure/error/skipped | Đạt |
+| Flyway và Hibernate | 10 migration; schema version 10; MySQL 8.0.44 | Đạt |
+| Frontend regression | 80/80 test | Đạt |
+| TypeScript/Vite | Compile và production build thành công | Đạt |
+| OpenAPI | Health/API docs HTTP 200; 10 operation | Đạt |
+| Postman | 29 request M1–M2, không chứa token/credential thật | Đạt |
+| Manual localhost | Auth/RBAC/Profile/Calculator/Progress | Đạt |
+
+### 4.9.4. Danh sách lỗi phát hiện và kết quả sửa
+
+| Mã lỗi QA | Mức | Hiện tượng | Cách sửa | Trạng thái |
+|---|---|---|---|---|
+| M2-QA-01 | P1 | Mục tiêu Profile cũ chưa đủ bốn lựa chọn nghiệp vụ | Mở rộng enum, DTO, persistence và UI; giữ legacy compatibility | Đã sửa |
+| M2-QA-02 | P1 | Chưa có cân nặng mục tiêu và kiểm tra hướng tăng/giảm | Thêm `target_weight_kg`, Zod và Service validation | Đã sửa |
+| M2-QA-03 | P2 | Thiết bị, nhóm cơ, hạn chế thiếu thao tác chọn tất cả | Bổ sung Select all và hiển thị đầy đủ ở Profile | Đã sửa |
+| M2-QA-04 | P2 | Dị ứng/loại trừ/hạn chế thiếu lựa chọn phổ biến hoặc ô tự nhập | Bổ sung preset và text input có giới hạn | Đã sửa |
+| M2-QA-05 | P1 | BMI/BMR/TDEE và calories chưa diễn giải rõ nghiệp vụ | Tách khu vực chỉ số/chỉ tiêu, thêm BMI category và nhãn ý nghĩa | Đã sửa |
+| M2-QA-06 | P1 | Body Progress chưa lưu khối lượng cơ/mỡ | Thêm cột V9, DTO, Entity, native upsert, UI và test | Đã sửa |
+| M2-QA-07 | P1 | Thông báo thay đổi cân nặng có thể hiểu là so với lần trước | Chuẩn hóa baseline là bản ghi sớm nhất và thêm regression test | Đã sửa |
+| M2-QA-08 | P2 | Khoảng cách mục tiêu bị lặp dưới khối mục tiêu | Chỉ đặt dòng xanh dưới cân nặng hiện tại | Đã sửa |
+| M2-QA-09 | P2 | Nhãn tùy chọn cơ/mỡ dính vào tiêu đề field | Điều chỉnh layout/spacing ổn định | Đã sửa |
+| M2-QA-10 | P1 | DDL tổng hợp và ERD chưa phản ánh V9–V10 | Đồng bộ thành 26 bảng và cập nhật mapping | Đã sửa |
+
+Không còn lỗi P0/P1 mở sau lượt chạy gate cuối.
+
+### 4.9.5. Minh chứng giao diện và API
+
+![Profile Form với mục tiêu, Select all và dữ liệu tùy chọn](evidence/m2/m2-profile-form.png)
+
+**Hình 4.9.1.** Profile Form sau khi bổ sung mục tiêu kép, cân nặng đích,
+Select all và dữ liệu tự nhập.
+
+![Profile và kết quả Calculator](evidence/m2/m2-profile-calculator-result.png)
+
+**Hình 4.9.2.** Profile sau lưu cùng BMI category, BMR, TDEE và chỉ tiêu calories
+theo mục tiêu.
+
+![Body Progress sau sửa baseline và mục tiêu](evidence/m2/m2-body-progress-result.png)
+
+**Hình 4.9.3.** Body Progress phân biệt cân nặng ban đầu, hiện tại, mục tiêu và
+đặt khoảng cách mục tiêu dưới cân nặng hiện tại.
+
+![Swagger M1-M2](evidence/m2/m2-swagger-openapi.png)
+
+**Hình 4.9.4.** Swagger hiển thị bearer authorization và 10 operation M1–M2.
+
+### 4.9.6. Bảng tiến độ Ngày 15
+
+| Đầu việc | Kết quả | Trạng thái |
+|---|---|---|
+| Đóng băng source và kiểm tra Git/env | Không track `.env`; bảo toàn file ngoài phạm vi | Hoàn thành |
+| Full Backend regression | 274/274 test | Hoàn thành |
+| Full Frontend regression/build | 80/80 test; build pass | Hoàn thành |
+| Manual Auth/RBAC | Guest/Member/Admin/Guard đúng contract | Hoàn thành |
+| Manual Profile/Calculator | Validation, persistence và công thức đúng | Hoàn thành |
+| Manual Body Progress | Upsert, baseline, target, cơ/mỡ đúng | Hoàn thành |
+| Desktop/laptop QA | Không còn lỗi layout đã ghi nhận | Hoàn thành |
+| Swagger/Postman | 10 operation; 29 request | Hoàn thành |
+| Tài liệu và báo cáo | Contract, DDL, ERD, test và ảnh đã đồng bộ | Hoàn thành |
+
+**Kết luận M2:** Milestone M2 đã hoàn tất local, không còn lỗi P0/P1 và đủ điều
+kiện commit, push, gắn tag `v0.2.0-m2-profile`. Deploy được giữ đến Deploy Gate
+1 sau M3.

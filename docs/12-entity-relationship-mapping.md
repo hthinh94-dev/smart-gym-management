@@ -1410,7 +1410,9 @@ Bốn Collection của Exercise lần lượt dùng `Set<MuscleGroup>`, `Set<Equ
 
 ## 5. Cascade và Fetch Strategy
 
-Bảng dưới đây liệt kê toàn bộ quan hệ của 25 bảng và chiến lược thiết kế JPA tương ứng:
+Bảng dưới đây liệt kê toàn bộ quan hệ của baseline 25 bảng và phần mở rộng
+`member_fitness_goals`, tương ứng 26 bảng hiện hành, cùng chiến lược thiết kế
+JPA:
 
 | Thực thể gốc | Thực thể liên quan | Annotation JPA | Fetch Type | Cascade Type | Lý do lựa chọn thiết kế |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -1678,6 +1680,27 @@ int upsertAtomic(
     @Param("memberId") Long memberId,
     @Param("recordDate") LocalDate recordDate,
     @Param("weightKg") BigDecimal weightKg
+);
+
+@Modifying(flushAutomatically = true, clearAutomatically = true)
+@Query(value = """
+    INSERT INTO body_progress (
+        member_id, record_date, weight_kg, muscle_mass_kg, fat_mass_kg
+    ) VALUES (
+        :memberId, :recordDate, :weightKg, :muscleMassKg, :fatMassKg
+    )
+    ON DUPLICATE KEY UPDATE
+        weight_kg = :weightKg,
+        muscle_mass_kg = :muscleMassKg,
+        fat_mass_kg = :fatMassKg,
+        updated_at = CURRENT_TIMESTAMP(6)
+    """, nativeQuery = true)
+int upsertAtomicWithComposition(
+    @Param("memberId") Long memberId,
+    @Param("recordDate") LocalDate recordDate,
+    @Param("weightKg") BigDecimal weightKg,
+    @Param("muscleMassKg") BigDecimal muscleMassKg,
+    @Param("fatMassKg") BigDecimal fatMassKg
 );
 
 Optional<BodyProgress> findByMember_IdAndRecordDate(Long memberId, LocalDate recordDate);
@@ -2060,7 +2083,7 @@ public class MembershipPackage {
 
 | Tiêu chí | Kết quả yêu cầu |
 | :--- | :--- |
-| Bảng vật lý | 25/25 bảng được truy vết trong Mục 9. |
+| Bảng vật lý | 26/26 bảng hiện hành được truy vết trong Mục 9, gồm `member_fitness_goals`. |
 | Entity JPA | 16 Entity: `User`, `Role`, `UserRole`, `MemberProfile`, `MembershipPackage`, `MemberSubscription`, `SubscriptionRenewalRequest`, `Exercise`, `WorkoutPlan`, `WorkoutDay`, `WorkoutPlanExercise`, `WorkoutSession`, `WorkoutLog`, `BodyProgress`, `AiRecommendation`, `NutritionMealSuggestion`. |
 | Collection table | 9/9 `@ElementCollection`, timestamp do MySQL quản lý bằng default/on-update. |
 | Fetch | Mọi `@ManyToOne`, `@OneToMany`, `@OneToOne` đều khai báo LAZY tường minh. |

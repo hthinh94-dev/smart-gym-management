@@ -78,7 +78,7 @@ Tài liệu này xác lập các tiêu chí đo lường chất lượng hệ th
 
 ### [NFR-12] - Tài liệu API tự động (Automated API Documentation)
 - **Mô tả:** Toàn bộ REST API endpoint phải được mô tả tự động qua Swagger UI để phục vụ quá trình kiểm thử và trình diễn đồ án.
-- **Hiện thực hóa kỹ thuật:** Tích hợp thư viện **SpringDoc OpenAPI** (`springdoc-openapi-starter-webmvc-ui`). Truy cập tại `http://localhost:8080/swagger-ui.html`. Thêm annotation `@Operation` và `@ApiResponse` cho các endpoint quan trọng.
+- **Hiện thực hóa kỹ thuật:** Tích hợp thư viện **SpringDoc OpenAPI** (`springdoc-openapi-starter-webmvc-ui`). Truy cập tại `http://localhost:8080/swagger-ui/index.html`. Thêm annotation `@Operation` và `@ApiResponse` cho các endpoint quan trọng.
 
 ---
 

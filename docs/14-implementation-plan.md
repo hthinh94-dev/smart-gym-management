@@ -89,6 +89,13 @@ contract và Axios Bearer interceptor. Full regression đạt 271 Backend test v
 toàn M2 và tag `v0.2.0-m2-profile` vẫn là gate Ngày 15, chưa được ghi nhận hoàn
 thành sớm.
 
+**Trạng thái Ngày 15 (07/08/2026):** gate local M2 đã hoàn tất. Backend đạt
+274/274 test, Flyway validate 10 migration trên schema version 10 và Hibernate
+validate thành công. Frontend đạt 80/80 test, TypeScript và Vite production
+build pass. Manual Profile/Calculator/Body Progress, Auth/RBAC, Swagger và
+Postman đã được xác nhận thành công; không còn lỗi P0/P1. M2 đủ điều kiện commit,
+push và gắn tag `v0.2.0-m2-profile`.
+
 ### M3 - Landing Page, Membership và SubscriptionGuard
 
 | Ngày | Trọng tâm | Backend | Frontend | Test/QA và đầu ra |

@@ -30,13 +30,22 @@ erDiagram
         DATE date_of_birth "Date of birth"
         DECIMAL height_cm "Height in cm"
         DECIMAL weight_kg "Weight in kg"
-        VARCHAR fitness_goal "BULK, CUT, MAINTAIN"
+        DECIMAL target_weight_kg "Optional target weight in kg"
+        VARCHAR mobility_limit_notes "Optional custom movement limitation, max 500"
+        VARCHAR fitness_goal "Primary profile goal; legacy values remain compatible"
         VARCHAR fitness_level "BEGINNER, INTERMEDIATE, ADVANCED"
         VARCHAR activity_level "SEDENTARY, LIGHTLY_ACTIVE, MODERATELY_ACTIVE, VERY_ACTIVE"
         TINYINT workout_days_per_week "Workout frequency (1-7 days)"
         SMALLINT max_session_minutes "Maximum duration per session"
         VARCHAR dietary_preference "OMNIVORE, VEGETARIAN, VEGAN"
         TINYINT meals_per_day "Meals per day (1-6)"
+        TIMESTAMP created_at "Creation timestamp (UTC)"
+        TIMESTAMP updated_at "Update timestamp (UTC)"
+    }
+
+    member_fitness_goals {
+        BIGINT member_profile_id PK, FK "Composite primary key; FK to member_profiles.id"
+        VARCHAR fitness_goal PK "Up to two selected fitness goals"
         TIMESTAMP created_at "Creation timestamp (UTC)"
         TIMESTAMP updated_at "Update timestamp (UTC)"
     }
@@ -238,6 +247,8 @@ erDiagram
         BIGINT member_id FK "FK to users.id; composite unique with record_date"
         DATE record_date "Composite unique with member_id"
         DECIMAL weight_kg "Weight in kg"
+        DECIMAL muscle_mass_kg "Optional muscle mass in kg"
+        DECIMAL fat_mass_kg "Optional fat mass in kg"
         TIMESTAMP created_at "Creation timestamp (UTC)"
         TIMESTAMP updated_at "Update timestamp (UTC)"
     }
@@ -272,6 +283,7 @@ erDiagram
     roles ||--o{ user_roles : "assigned_to"
 
     member_profiles ||--o{ member_available_equipment : "has"
+    member_profiles ||--o{ member_fitness_goals : "selects"
     member_profiles ||--o{ member_target_muscle_groups : "targets"
     member_profiles ||--o{ member_injury_constraints : "declares"
     member_profiles ||--o{ member_food_allergies : "declares"

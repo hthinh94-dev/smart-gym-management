@@ -1,7 +1,8 @@
 -- schema-draft.sql
 -- Draft database schema for Smart Gym Management System
 -- MySQL 8
--- For design review only. Flyway migrations will be created later.
+-- Consolidated design reference aligned with Flyway V1-V10.
+-- Do not execute this file against an existing Flyway-managed database.
 
 -- Mọi TIMESTAMP được ghi/đọc theo UTC; DATE nghiệp vụ được Backend quy đổi
 -- từ timezone Asia/Ho_Chi_Minh trước khi lưu.
@@ -49,7 +50,7 @@ CREATE TABLE user_roles (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==============================================================================
--- 2. NHÓM PROFILE: member_profiles và 5 bảng Collection phụ
+-- 2. NHÓM PROFILE: member_profiles và 6 bảng Collection phụ
 -- ==============================================================================
 
 CREATE TABLE member_profiles (
@@ -59,6 +60,8 @@ CREATE TABLE member_profiles (
     date_of_birth           DATE            NOT NULL,
     height_cm               DECIMAL(5,2)    NOT NULL,
     weight_kg               DECIMAL(6,2)    NOT NULL,
+    target_weight_kg        DECIMAL(6,2)    NULL,
+    mobility_limit_notes    VARCHAR(500)    NULL,
     fitness_goal            VARCHAR(20)     NOT NULL,
     fitness_level           VARCHAR(20)     NOT NULL,
     activity_level          VARCHAR(30)     NOT NULL,
@@ -72,7 +75,7 @@ CREATE TABLE member_profiles (
     CONSTRAINT uk_member_profiles_user          UNIQUE (user_id),
     CONSTRAINT fk_member_profiles_user          FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT,
     CONSTRAINT chk_member_profiles_gender       CHECK (gender IN ('MALE', 'FEMALE')),
-    CONSTRAINT chk_member_profiles_goal         CHECK (fitness_goal IN ('BULK', 'CUT', 'MAINTAIN')),
+    CONSTRAINT chk_member_profiles_goal         CHECK (fitness_goal IN ('BULK', 'CUT', 'MAINTAIN', 'MUSCLE_GAIN', 'WEIGHT_GAIN', 'FAT_LOSS', 'WEIGHT_LOSS')),
     CONSTRAINT chk_member_profiles_level        CHECK (fitness_level IN ('BEGINNER', 'INTERMEDIATE', 'ADVANCED')),
     CONSTRAINT chk_member_profiles_activity     CHECK (activity_level IN ('SEDENTARY', 'LIGHTLY_ACTIVE', 'MODERATELY_ACTIVE', 'VERY_ACTIVE')),
     CONSTRAINT chk_member_profiles_days         CHECK (workout_days_per_week BETWEEN 1 AND 7),
@@ -80,7 +83,20 @@ CREATE TABLE member_profiles (
     CONSTRAINT chk_member_profiles_dietary      CHECK (dietary_preference IN ('OMNIVORE', 'VEGETARIAN', 'VEGAN')),
     CONSTRAINT chk_member_profiles_meals        CHECK (meals_per_day BETWEEN 1 AND 6),
     CONSTRAINT chk_member_profiles_height       CHECK (height_cm > 0),
-    CONSTRAINT chk_member_profiles_weight       CHECK (weight_kg > 0)
+    CONSTRAINT chk_member_profiles_weight       CHECK (weight_kg > 0),
+    CONSTRAINT chk_member_profiles_target_weight CHECK (target_weight_kg IS NULL OR target_weight_kg > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+
+CREATE TABLE member_fitness_goals (
+    member_profile_id   BIGINT      NOT NULL,
+    fitness_goal        VARCHAR(20) NOT NULL,
+    created_at          TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at          TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    CONSTRAINT pk_member_fitness_goals PRIMARY KEY (member_profile_id, fitness_goal),
+    CONSTRAINT fk_member_fitness_goals_profile FOREIGN KEY (member_profile_id) REFERENCES member_profiles (id) ON DELETE CASCADE,
+    CONSTRAINT chk_member_fitness_goals_value CHECK (fitness_goal IN ('BULK', 'CUT', 'MAINTAIN', 'MUSCLE_GAIN', 'WEIGHT_GAIN', 'FAT_LOSS', 'WEIGHT_LOSS'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
@@ -494,12 +510,16 @@ CREATE TABLE body_progress (
     member_id       BIGINT          NOT NULL,
     record_date     DATE            NOT NULL,
     weight_kg       DECIMAL(6,2)    NOT NULL,
+    muscle_mass_kg  DECIMAL(6,2)    NULL,
+    fat_mass_kg     DECIMAL(6,2)    NULL,
     created_at      TIMESTAMP(6)    NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at      TIMESTAMP(6)    NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     CONSTRAINT pk_body_progress             PRIMARY KEY (id),
     CONSTRAINT fk_body_progress_member      FOREIGN KEY (member_id) REFERENCES users (id) ON DELETE RESTRICT,
     CONSTRAINT uk_body_progress_member_date UNIQUE (member_id, record_date),
-    CONSTRAINT chk_body_progress_weight     CHECK (weight_kg > 0)
+    CONSTRAINT chk_body_progress_weight     CHECK (weight_kg > 0),
+    CONSTRAINT chk_body_progress_muscle_mass CHECK (muscle_mass_kg IS NULL OR muscle_mass_kg > 0),
+    CONSTRAINT chk_body_progress_fat_mass   CHECK (fat_mass_kg IS NULL OR fat_mass_kg > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==============================================================================
