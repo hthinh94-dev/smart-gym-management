@@ -114,7 +114,7 @@ export function UserTable({ users, isLoading, isRefreshing = false, pendingUserI
                         <tr>
                             <td className="table-empty" colSpan={6}>
                                 <strong>Không tìm thấy tài khoản</strong>
-                                <p>Thử thay đổi từ khóa hoặc bộ lọc hiện tại.</p>
+                                <p>Thử thay đổi từ khóa hoặc bộ lọc hiện tại</p>
                             </td>
                         </tr>
                     )}

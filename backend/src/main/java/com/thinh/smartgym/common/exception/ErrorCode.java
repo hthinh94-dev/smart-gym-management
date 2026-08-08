@@ -39,6 +39,26 @@ public enum ErrorCode {
             HttpStatus.NOT_FOUND,
             "Không tìm thấy gói tập."
     ),
+    MEMBERSHIP_PACKAGE_INACTIVE(
+            "SUB-003",
+            HttpStatus.CONFLICT,
+            "Gói tập đã ngừng hoạt động và không thể đăng ký."
+    ),
+    ACTIVE_SUBSCRIPTION_ALREADY_EXISTS(
+            "SUB-004",
+            HttpStatus.CONFLICT,
+            "Bạn đang có gói tập ACTIVE và không thể đăng ký gói mới."
+    ),
+    SUBSCRIPTION_NOT_FOUND(
+            "SUB-005",
+            HttpStatus.NOT_FOUND,
+            "Không tìm thấy Subscription hiện hành của hội viên."
+    ),
+    PENDING_SUBSCRIPTION_ALREADY_EXISTS(
+            "SUB-006",
+            HttpStatus.CONFLICT,
+            "Bạn đã có yêu cầu đăng ký gói tập đang chờ xử lý."
+    ),
     MEMBERSHIP_PACKAGE_NAME_ALREADY_EXISTS(
             "SUB-007",
             HttpStatus.CONFLICT,

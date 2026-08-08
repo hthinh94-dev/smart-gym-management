@@ -91,7 +91,7 @@ export function AdminUsersPage() {
                 <div>
                     <p className="page-eyebrow">Vận hành tài khoản</p>
                     <h1>Quản lý tài khoản</h1>
-                    <p>Tìm kiếm, lọc và xử lý trạng thái truy cập của người dùng.</p>
+                    <p>Tìm kiếm, lọc và xử lý trạng thái truy cập của người dùng</p>
                 </div>
                 <div className="result-count" aria-live="polite">
                     <strong>{pageData?.totalElements ?? 0}</strong>

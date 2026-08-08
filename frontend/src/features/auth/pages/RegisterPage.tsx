@@ -86,14 +86,6 @@ function EyeOffIcon() {
     );
 }
 
-function CheckIcon() {
-    return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M20 6 9 17l-5-5" />
-        </svg>
-    );
-}
-
 function CloseIcon() {
     return (
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -142,12 +134,12 @@ function BrandPanel() {
                     <p className="hero-title">
                         MOVE YOUR BODY,
                         <br />
-                        FEEL ALIVE - IN THE
+                        FEEL ALIVE
                         <br />
-                        GYM, WE THRIVE.
+                        IN THE GYM, WE THRIVE
                     </p>
                     <p className="hero-subtitle">
-                        Lịch tập và dinh dưỡng được cá nhân hóa bằng AI, giúp bạn đạt mục tiêu hiệu quả hơn.
+                        Lịch tập và dinh dưỡng được cá nhân hóa bằng AI, giúp bạn đạt mục tiêu hiệu quả hơn
                     </p>
                 </div>
 
@@ -251,7 +243,7 @@ export function RegisterPage({ onNavigate }: RegisterPageProps) {
             setMessage({
                 type: "success",
                 title: "Đăng Ký Thành Công",
-                description: "Tài khoản của bạn đã được tạo. Đang chuyển hướng đến đăng nhập...",
+                description: "Tài khoản của bạn đã được tạo, đang chuyển hướng đến đăng nhập",
             });
             redirectTimerRef.current = window.setTimeout(() => {
                 navigateTo("/login");
@@ -273,9 +265,6 @@ export function RegisterPage({ onNavigate }: RegisterPageProps) {
                             role="status"
                             aria-live="polite"
                         >
-                            <span className="status-icon">
-                                {message.type === "success" ? <CheckIcon /> : <CloseIcon />}
-                            </span>
                             <div>
                                 <strong>{message.title}</strong>
                                 <p>{message.description}</p>
@@ -393,7 +382,7 @@ export function RegisterPage({ onNavigate }: RegisterPageProps) {
                             disabled={isLoading}
                         >
                             <span className="button-spinner" aria-hidden="true"></span>
-                            <span>{isLoading ? "Đang đăng ký..." : "Đăng Ký Thành Viên Ngay"}</span>
+                            <span>{isLoading ? "Đang đăng ký" : "Đăng Ký Thành Viên Ngay"}</span>
                         </button>
                     </form>
 

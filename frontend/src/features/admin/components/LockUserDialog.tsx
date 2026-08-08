@@ -70,7 +70,7 @@ export function LockUserDialog({ user, isPending, apiError, onClose, onConfirm }
                         }}
                     />
                     <div className="dialog-field-meta">
-                        <small id="lockReasonHelp">Không sử dụng lý do hết hạn gói tập.</small>
+                        <small id="lockReasonHelp">Không sử dụng lý do hết hạn gói tập</small>
                         <small>{reason.length}/{MAX_REASON_LENGTH}</small>
                     </div>
                     {(validationError || apiError) && <p id="lockReasonError" className="dialog-error" role="alert">{validationError || apiError}</p>}
@@ -78,7 +78,7 @@ export function LockUserDialog({ user, isPending, apiError, onClose, onConfirm }
                     <div className="dialog-actions">
                         <button className="secondary-button" type="button" disabled={isPending} onClick={onClose}>Hủy</button>
                         <button className="danger-button" type="submit" disabled={isPending}>
-                            {isPending ? "Đang khóa..." : "Khóa tài khoản"}
+                            {isPending ? "Đang khóa" : "Khóa tài khoản"}
                         </button>
                     </div>
                 </form>

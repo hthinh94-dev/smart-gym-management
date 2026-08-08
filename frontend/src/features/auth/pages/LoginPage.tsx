@@ -23,39 +23,39 @@ type LoginMessage = {
 const loginErrorMessages: Record<AuthErrorCode, LoginMessage> = {
     "ACC-001": {
         title: "Không thể đăng nhập",
-        description: "Thông tin tài khoản không hợp lệ. Vui lòng kiểm tra lại.",
+        description: "Thông tin tài khoản không hợp lệ, vui lòng kiểm tra lại",
     },
     "ACC-002": {
         title: "Không thể đăng nhập",
-        description: "Mật khẩu không hợp lệ. Vui lòng kiểm tra lại.",
+        description: "Mật khẩu không hợp lệ, vui lòng kiểm tra lại",
     },
     "ACC-004": {
         title: "Tài khoản bị khóa",
-        description: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
+        description: "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để được hỗ trợ",
     },
     "ACC-005": {
         title: "Phiên đăng nhập đã hết hạn",
-        description: "Token xác thực không còn hợp lệ. Vui lòng đăng nhập lại.",
+        description: "Token xác thực không còn hợp lệ, vui lòng đăng nhập lại",
     },
     "ACC-006": {
         title: "Tài khoản đã bị vô hiệu hóa",
-        description: "Tài khoản đã bị vô hiệu hóa vĩnh viễn. Vui lòng liên hệ ban quản trị.",
+        description: "Tài khoản đã bị vô hiệu hóa vĩnh viễn, vui lòng liên hệ ban quản trị",
     },
     "ACC-007": {
         title: "Thông tin đăng nhập không đúng",
-        description: "Email hoặc mật khẩu không chính xác. Vui lòng thử lại.",
+        description: "Email hoặc mật khẩu không chính xác, vui lòng thử lại",
     },
     "VAL-001": {
         title: "Dữ liệu chưa hợp lệ",
-        description: "Vui lòng kiểm tra lại email và mật khẩu.",
+        description: "Vui lòng kiểm tra lại email và mật khẩu",
     },
     "SYS-001": {
         title: "Hệ thống chưa sẵn sàng",
-        description: "Không thể xử lý đăng nhập lúc này. Vui lòng thử lại sau.",
+        description: "Không thể xử lý đăng nhập lúc này, vui lòng thử lại sau",
     },
     "NETWORK-001": {
         title: "Không thể kết nối",
-        description: "Không kết nối được backend. Vui lòng kiểm tra mạng và thử lại.",
+        description: "Không kết nối được backend, vui lòng kiểm tra mạng và thử lại",
     },
 };
 
@@ -97,7 +97,7 @@ function errorMessage(error: unknown): LoginMessage {
 
     return {
         title: "Không thể đăng nhập",
-        description: "Đã xảy ra lỗi không xác định. Vui lòng thử lại.",
+            description: "Đã xảy ra lỗi không xác định, vui lòng thử lại",
     };
 }
 
@@ -157,7 +157,7 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
 
                 <header className="form-header compact login-header">
                     <h2>Đăng nhập</h2>
-                    <p>Tiếp tục quản lý lịch tập, gói tập và tiến trình của bạn.</p>
+                    <p>Tiếp tục quản lý lịch tập, gói tập và tiến trình của bạn</p>
                 </header>
 
                 {apiMessage && (
@@ -229,7 +229,7 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
 
                     <button className={`submit-button ${isLoading ? "is-loading" : ""}`} type="submit" disabled={isLoading}>
                         <span className="button-spinner" aria-hidden="true"></span>
-                        <span>{isLoading ? "Đang đăng nhập..." : "Đăng Nhập"}</span>
+                        <span>{isLoading ? "Đang đăng nhập" : "Đăng Nhập"}</span>
                     </button>
                 </form>
 

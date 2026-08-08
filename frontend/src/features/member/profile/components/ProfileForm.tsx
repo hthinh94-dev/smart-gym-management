@@ -134,7 +134,7 @@ export function ProfileForm({ profile, isSaving, error, onCancel, onSubmit }: Pr
                     <p className="page-eyebrow">Cập nhật hồ sơ</p>
                     <h2>Thông tin của bạn</h2>
                 </div>
-                <p>Các trường có dấu * là bắt buộc.</p>
+                <p>Các trường có dấu * là bắt buộc</p>
             </div>
 
             {error instanceof Error && (
@@ -165,7 +165,7 @@ export function ProfileForm({ profile, isSaving, error, onCancel, onSubmit }: Pr
             <label className="profile-mobility-note">
                 Hạn chế vận động khác
                 <input type="text" placeholder="Hoặc tự nhập, phân cách bằng dấu phẩy" {...form.register("mobilityLimitNotes")} />
-                <small>Tối đa 500 ký tự. Nội dung này được lưu cùng hồ sơ của bạn.</small>
+                <small>Tối đa 500 ký tự, nội dung này được lưu cùng hồ sơ của bạn</small>
                 <FieldError message={form.formState.errors.mobilityLimitNotes?.message} />
             </label>
 
@@ -177,7 +177,7 @@ export function ProfileForm({ profile, isSaving, error, onCancel, onSubmit }: Pr
             <div className="profile-form-actions">
                 <button type="button" className="profile-secondary-button" onClick={onCancel} disabled={isSaving}>Hủy</button>
                 <button type="submit" className="profile-primary-button" disabled={isSaving}>
-                    {isSaving ? "Đang lưu..." : "Lưu hồ sơ"}
+                    {isSaving ? "Đang lưu" : "Lưu hồ sơ"}
                 </button>
             </div>
         </form>
@@ -280,7 +280,7 @@ function FoodField({ label, selected, onChange, customName, register, options, e
                 ))}
             </div>
             <input type="text" placeholder="Hoặc tự nhập, phân cách bằng dấu phẩy" {...register(customName)} />
-            <small>Có thể chọn nhiều loại và tự nhập thêm.</small>
+            <small>Có thể chọn nhiều loại và tự nhập thêm</small>
             <FieldError message={error} />
         </fieldset>
     );

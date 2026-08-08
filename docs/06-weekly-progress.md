@@ -690,8 +690,9 @@ kế hoạch, không mở rộng thêm feature trong Ngày 14.
 - [x] Landing gọi `GET /api/v1/packages` qua Axios/React Query; không hard-code
   package và không hiển thị package inactive.
 - [x] Bổ sung loading, error + retry và empty state cho danh mục package.
-- [x] Khi đang restore session hoặc đã đăng nhập, Landing không hiển thị sai
-  luồng Guest; người dùng được chuyển theo role về khu vực phù hợp.
+- [x] Khi đang restore session, Landing không hiển thị sai luồng Guest. Từ Ngày
+  17, ROLE_MEMBER được phép xem Landing để chọn gói và chuyển tới luồng đăng
+  ký; ROLE_ADMIN/ROLE_PT vẫn được chuyển theo khu vực tương ứng.
 - [x] Thêm `MembershipPackage` entity kế thừa `BaseEntity`, đối chiếu đúng
   bảng `membership_packages` từ Flyway V3, không tạo migration trùng.
 - [x] Thêm Repository với public active-only query, Admin query active/inactive,
@@ -729,3 +730,44 @@ kế hoạch, không mở rộng thêm feature trong Ngày 14.
 Backend, Frontend, database schema, API Draft, Functional Requirements,
 RBAC, OpenAPI và package response contract đã đồng bộ. Full local QA M1-M3
 và Deploy Gate được giữ cho Ngày 20/21 theo kế hoạch; chưa deploy trong Ngày 16.
+
+## Ngày 17 — Đăng ký gói tập mới (08/08/2026)
+
+### Phạm vi đã thực hiện
+
+- [x] Thêm `MemberSubscription` ánh xạ bảng `member_subscriptions` từ Flyway V3,
+  không tạo migration trùng.
+- [x] Snapshot tên, thời lượng và giá package tại thời điểm Member gửi yêu cầu;
+  request mới luôn có `status = PENDING`, `startDate = null`, `endDate = null`.
+- [x] Dùng `@Version`, quan hệ lazy không cascade xóa và `toString()` không
+  dereference lazy graph.
+- [x] Thêm repository kiểm tra ACTIVE hợp lệ theo
+  `startDate <= businessDate < endDate`, request PENDING và ownership theo
+  `memberId`; chuẩn bị pessimistic lock cho luồng duyệt Ngày 18.
+- [x] Thêm `POST /api/v1/member/subscriptions` và
+  `GET /api/v1/member/subscriptions/current` với DTO/envelope/OpenAPI chuẩn.
+- [x] Chặn package không tồn tại `SUB-002`, package inactive `SUB-003`, ACTIVE
+  hợp lệ `SUB-004`, current không tồn tại `SUB-005` và PENDING trùng `SUB-006`.
+- [x] Lấy Member ID từ `AuthenticatedUserPrincipal`, kiểm tra ROLE_MEMBER và
+  `AccountStatusGuard`; không nhận Member ID từ request.
+- [x] Dùng unique constraint `uk_member_subscriptions_one_pending` làm lớp
+  bảo vệ cuối cho hai request đồng thời; lỗi duplicate được ánh xạ về `SUB-006`.
+- [x] Frontend có route `/member/subscription`, tải package active, chọn package,
+  chống submit lặp và hiển thị trạng thái PENDING/ACTIVE cùng lỗi nghiệp vụ.
+
+### Kiểm thử Ngày 17
+
+- [x] Backend targeted: **20/20 test pass**, gồm entity, repository MySQL thật,
+  service, controller, RBAC, ownership, biên `endDate` exclusive và concurrent
+  unique constraint.
+- [x] Frontend targeted: **28/28 test pass**; Vite production build pass.
+- [x] Flyway validate đủ 10 migration, schema version 10, Hibernate validate
+  thành công trên MySQL 8.0.44.
+- [x] Live local `GET http://localhost:8080/api/v1/packages` trả HTTP 200;
+  OpenAPI có hai endpoint Member Subscription và Bearer authentication.
+- [x] Không triển khai Approval, Cancel, Renewal, SubscriptionGuard hoặc
+  full local QA trong Ngày 17; các phần đó giữ đúng kế hoạch Ngày 18-20.
+
+**Kết luận:** Ngày 17 hoàn thành phạm vi source và targeted verification.
+Frontend gọi đúng hai endpoint backend qua `httpClient`, route Member và RBAC
+đã liên kết; chưa commit và chưa deploy.

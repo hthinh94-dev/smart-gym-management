@@ -61,6 +61,14 @@
     {
       "key": "progressId",
       "value": ""
+    },
+    {
+      "key": "subscriptionPackageId",
+      "value": ""
+    },
+    {
+      "key": "subscriptionId",
+      "value": ""
     }
   ],
   "item": [
@@ -1007,6 +1015,114 @@
             "header": [],
             "url": "{{baseUrl}}/member/body-progress"
           }
+        }
+      ]
+    },
+    {
+      "name": "Day 17 - Member Subscription Request",
+      "item": [
+        {
+          "name": "01 - List Active Packages",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Active package catalog returns HTTP 200', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "pm.expect(body.success).to.eql(true);",
+                "pm.expect(body.data).to.be.an('array');",
+                "if (body.data.length > 0) pm.collectionVariables.set('subscriptionPackageId', body.data[0].id);"
+              ]
+            }
+          }],
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/packages" }
+        },
+        {
+          "name": "02 - Create New Subscription PENDING",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Create subscription returns HTTP 201', () => pm.response.to.have.status(201));",
+                "const body = pm.response.json();",
+                "pm.expect(body.success).to.eql(true);",
+                "pm.expect(body.data.status).to.eql('PENDING');",
+                "pm.expect(body.data).not.to.have.any.keys('startDate', 'endDate', 'password', 'passwordHash');",
+                "pm.collectionVariables.set('subscriptionId', body.data.subscriptionId);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{memberToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"packageId\": {{subscriptionPackageId}}\n}" },
+            "url": "{{baseUrl}}/member/subscriptions"
+          }
+        },
+        {
+          "name": "03 - Duplicate Pending SUB-006",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Duplicate pending returns HTTP 409 SUB-006', () => {",
+                "  pm.response.to.have.status(409);",
+                "  pm.expect(pm.response.json().errorCode).to.eql('SUB-006');",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{memberToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"packageId\": {{subscriptionPackageId}}\n}" },
+            "url": "{{baseUrl}}/member/subscriptions"
+          }
+        },
+        {
+          "name": "04 - Current Before Approval SUB-005",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Pending is not returned as current ACTIVE', () => {",
+                "  pm.response.to.have.status(404);",
+                "  pm.expect(pm.response.json().errorCode).to.eql('SUB-005');",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{memberToken}}" }],
+            "url": "{{baseUrl}}/member/subscriptions/current"
+          }
+        },
+        {
+          "name": "05 - Missing Token ACC-005",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Missing token returns HTTP 401 ACC-005', () => {",
+                "  pm.response.to.have.status(401);",
+                "  pm.expect(pm.response.json().errorCode).to.eql('ACC-005');",
+                "});"
+              ]
+            }
+          }],
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/member/subscriptions/current" }
         }
       ]
     }

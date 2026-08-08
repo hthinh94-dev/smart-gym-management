@@ -44,13 +44,13 @@ function textCollectionSchema(label: string) {
         if (items.length > 10) {
             context.addIssue({
                 code: "custom",
-                message: `${label} tối đa 10 phần tử.`,
+                message: `${label} tối đa 10 phần tử`,
             });
         }
         if (items.some((item) => item.length > 50)) {
             context.addIssue({
                 code: "custom",
-                message: `Mỗi phần tử ${label.toLowerCase()} tối đa 50 ký tự.`,
+                message: `Mỗi phần tử ${label.toLowerCase()} tối đa 50 ký tự`,
             });
         }
     });
@@ -73,39 +73,39 @@ function hasAtMostTwoDecimalPlaces(value: number) {
 
 export const memberProfileSchema = z.object({
     gender: genderSchema,
-    dateOfBirth: z.iso.date("Ngày sinh không đúng định dạng.")
-        .min(1, "Ngày sinh là bắt buộc.")
+    dateOfBirth: z.iso.date("Ngày sinh không đúng định dạng")
+        .min(1, "Ngày sinh là bắt buộc")
         .refine(
             (value) => value <= businessDateIso(),
-            "Ngày sinh không được ở tương lai.",
+            "Ngày sinh không được ở tương lai",
         ),
     heightCm: z.coerce.number()
-        .positive("Chiều cao phải lớn hơn 0.")
-        .max(999.99, "Chiều cao vượt giới hạn lưu trữ.")
-        .refine(hasAtMostTwoDecimalPlaces, "Chiều cao tối đa 2 chữ số thập phân."),
+        .positive("Chiều cao phải lớn hơn 0")
+        .max(999.99, "Chiều cao vượt giới hạn lưu trữ")
+        .refine(hasAtMostTwoDecimalPlaces, "Chiều cao tối đa 2 chữ số thập phân"),
     weightKg: z.coerce.number()
-        .positive("Cân nặng phải lớn hơn 0.")
-        .max(9999.99, "Cân nặng vượt giới hạn lưu trữ.")
-        .refine(hasAtMostTwoDecimalPlaces, "Cân nặng tối đa 2 chữ số thập phân."),
+        .positive("Cân nặng phải lớn hơn 0")
+        .max(9999.99, "Cân nặng vượt giới hạn lưu trữ")
+        .refine(hasAtMostTwoDecimalPlaces, "Cân nặng tối đa 2 chữ số thập phân"),
     fitnessGoal: fitnessGoalSchema,
     fitnessGoals: z.array(fitnessGoalSchema)
-        .min(1, "Hãy chọn ít nhất một mục tiêu.")
-        .max(2, "Bạn chỉ có thể chọn tối đa 2 mục tiêu."),
+        .min(1, "Hãy chọn ít nhất một mục tiêu")
+        .max(2, "Bạn chỉ có thể chọn tối đa 2 mục tiêu"),
     targetWeightKg: z.preprocess(
         (value) => value === "" || value === null || value === undefined ? undefined : Number(value),
-        z.number().positive("Cân nặng mục tiêu phải lớn hơn 0.").max(9999.99, "Cân nặng mục tiêu vượt giới hạn.").optional(),
+        z.number().positive("Cân nặng mục tiêu phải lớn hơn 0").max(9999.99, "Cân nặng mục tiêu vượt giới hạn").optional(),
     ),
-    mobilityLimitNotes: z.string().max(500, "Hạn chế vận động tự nhập tối đa 500 ký tự."),
+    mobilityLimitNotes: z.string().max(500, "Hạn chế vận động tự nhập tối đa 500 ký tự"),
     fitnessLevel: fitnessLevelSchema,
     activityLevel: activityLevelSchema,
     workoutDaysPerWeek: z.coerce.number()
-        .int("Số buổi tập phải là số nguyên.")
-        .min(1, "Tối thiểu 1 buổi/tuần.")
-        .max(7, "Tối đa 7 buổi/tuần."),
+        .int("Số buổi tập phải là số nguyên")
+        .min(1, "Tối thiểu 1 buổi/tuần")
+        .max(7, "Tối đa 7 buổi/tuần"),
     maxSessionMinutes: z.coerce.number()
-        .int("Thời lượng phải là số nguyên.")
-        .positive("Thời lượng phải lớn hơn 0.")
-        .max(32767, "Thời lượng vượt giới hạn lưu trữ."),
+        .int("Thời lượng phải là số nguyên")
+        .positive("Thời lượng phải lớn hơn 0")
+        .max(32767, "Thời lượng vượt giới hạn lưu trữ"),
     availableEquipment: z.array(equipmentSchema),
     targetMuscleGroups: z.array(muscleGroupSchema),
     injuryConstraints: z.array(contraindicationSchema),
@@ -115,22 +115,22 @@ export const memberProfileSchema = z.object({
     foodAllergiesText: textCollectionSchema("Danh sách dị ứng"),
     excludedFoodsText: textCollectionSchema("Danh sách thực phẩm loại trừ"),
     mealsPerDay: z.coerce.number()
-        .int("Số bữa phải là số nguyên.")
-        .min(1, "Tối thiểu 1 bữa/ngày.")
-        .max(6, "Tối đa 6 bữa/ngày."),
+        .int("Số bữa phải là số nguyên")
+        .min(1, "Tối thiểu 1 bữa/ngày")
+        .max(6, "Tối đa 6 bữa/ngày"),
 }).superRefine((values, context) => {
     const goals = values.fitnessGoals;
     if (!goals.includes(values.fitnessGoal)) {
-        context.addIssue({ code: "custom", path: ["fitnessGoal"], message: "Mục tiêu chính phải nằm trong danh sách đã chọn." });
+        context.addIssue({ code: "custom", path: ["fitnessGoal"], message: "Mục tiêu chính phải nằm trong danh sách đã chọn" });
     }
     if (goals.includes("WEIGHT_GAIN") && goals.includes("WEIGHT_LOSS")) {
-        context.addIssue({ code: "custom", path: ["fitnessGoals"], message: "Không thể đồng thời chọn tăng cân và giảm cân." });
+        context.addIssue({ code: "custom", path: ["fitnessGoals"], message: "Không thể đồng thời chọn tăng cân và giảm cân" });
     }
     if (goals.includes("WEIGHT_GAIN") && (!values.targetWeightKg || values.targetWeightKg <= values.weightKg)) {
-        context.addIssue({ code: "custom", path: ["targetWeightKg"], message: "Cân nặng mục tiêu phải cao hơn cân nặng hiện tại." });
+        context.addIssue({ code: "custom", path: ["targetWeightKg"], message: "Cân nặng mục tiêu phải cao hơn cân nặng hiện tại" });
     }
     if (goals.includes("WEIGHT_LOSS") && (!values.targetWeightKg || values.targetWeightKg >= values.weightKg)) {
-        context.addIssue({ code: "custom", path: ["targetWeightKg"], message: "Cân nặng mục tiêu phải thấp hơn cân nặng hiện tại." });
+        context.addIssue({ code: "custom", path: ["targetWeightKg"], message: "Cân nặng mục tiêu phải thấp hơn cân nặng hiện tại" });
     }
 });
 

@@ -27,14 +27,14 @@ export function UnlockUserDialog({ user, isPending, apiError, onClose, onConfirm
                 </header>
 
                 <p className="dialog-confirm-copy">
-                    Xác nhận mở khóa <strong>{user.fullName}</strong>. Người dùng sẽ có thể đăng nhập và sử dụng lại hệ thống.
+                    Xác nhận mở khóa <strong>{user.fullName}</strong>, người dùng sẽ có thể đăng nhập và sử dụng lại hệ thống
                 </p>
                 {apiError && <p className="dialog-error" role="alert">{apiError}</p>}
 
                 <div className="dialog-actions">
                     <button className="secondary-button" type="button" disabled={isPending} onClick={onClose}>Hủy</button>
                     <button className="success-button" type="button" disabled={isPending} onClick={onConfirm}>
-                        {isPending ? "Đang mở khóa..." : "Mở khóa tài khoản"}
+                        {isPending ? "Đang mở khóa" : "Mở khóa tài khoản"}
                     </button>
                 </div>
             </section>

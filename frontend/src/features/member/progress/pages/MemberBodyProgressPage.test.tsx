@@ -45,7 +45,7 @@ describe("MemberBodyProgressPage", () => {
     it("offers retry when history loading fails", async () => {
         vi.spyOn(httpClient, "get").mockRejectedValue(new Error("offline"));
         renderPage();
-        expect(await screen.findByRole("alert")).toHaveTextContent("Không thể tải lịch sử cân nặng.");
+        expect(await screen.findByRole("alert")).toHaveTextContent("Không thể tải lịch sử cân nặng");
         expect(screen.getByRole("button", { name: "Thử lại" })).toBeInTheDocument();
     });
 });

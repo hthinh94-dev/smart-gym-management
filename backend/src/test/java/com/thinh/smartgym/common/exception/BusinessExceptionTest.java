@@ -69,7 +69,9 @@ class BusinessExceptionTest {
                 .doesNotHaveDuplicates()
                 .containsExactlyInAnyOrder(
                         "ACC-001", "ACC-002", "ACC-004", "ACC-006",
-                        "ACC-007", "PROF-001", "VAL-001", "SYS-001"
+                        "ACC-007", "PROF-001", "SUB-002", "SUB-003",
+                        "SUB-004", "SUB-005", "SUB-006", "SUB-007",
+                        "VAL-001", "SYS-001"
                 );
         assertThat(values).allSatisfy(errorCode -> {
             assertThat(errorCode.getHttpStatus()).isNotNull();

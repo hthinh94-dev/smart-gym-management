@@ -1062,8 +1062,9 @@ tập và footer tối thiểu.
 Danh sách package không được hard-code ở Frontend. Landing gọi
 `GET /api/v1/packages` thông qua Axios client và React Query. Ba trạng thái
 loading, error có nút retry và empty được tách riêng. Khi session đang được khôi
-phục, Landing chưa gọi API; khi người dùng đã đăng nhập, route `/` chuyển về
-khu vực tương ứng với role thay vì hiển thị lại Landing.
+phục, Landing chưa gọi API. Từ Ngày 17, ROLE_MEMBER được phép ở lại route `/`
+để xem package đang hoạt động và chuyển sang luồng đăng ký gói; ROLE_ADMIN và
+ROLE_PT vẫn được chuyển về khu vực tương ứng với role.
 
 Hình ảnh hero được lưu tại `frontend/public/images/smart-gym-hero.jpg`. CTA
 `Login`, `Register` và các liên kết nội bộ dùng React Router; không tạo dữ liệu
@@ -1182,3 +1183,63 @@ Frontend, Flyway V3, API Draft, Functional Requirements, Security/RBAC và
 OpenAPI đã thống nhất cho Package Catalog. Full local QA M1-M3, Subscription
 lifecycle và Deploy Gate vẫn được giữ đúng kế hoạch cho các ngày tiếp theo; M3
 chưa được deploy trong Ngày 16.
+
+## 4.11. Hiện thực M3 Ngày 17 - Đăng ký gói tập mới
+
+Ngày 17 triển khai riêng luồng Member gửi yêu cầu đăng ký package mới. Phạm vi
+không bao gồm phê duyệt, hủy, gia hạn hoặc SubscriptionGuard đầy đủ; các luồng
+đó được giữ cho Ngày 18-19 và local QA M3 ở Ngày 20.
+
+### 4.11.1. Persistence và snapshot
+
+`MemberSubscription` ánh xạ trực tiếp bảng `member_subscriptions` đã có trong
+Flyway V3. Entity giữ liên kết `member` và `membershipPackage`, đồng thời lưu
+độc lập `packageNameSnapshot`, `packageDurationDaysSnapshot` và
+`packagePriceSnapshot`. Vì vậy khi Admin đổi giá, tên hoặc vô hiệu hóa package,
+request đã tạo vẫn giữ đúng dữ liệu tại thời điểm đăng ký. Subscription mới có
+trạng thái `PENDING`, chưa có `startDate`, `endDate` hoặc `approvedAt`; ngày
+hiệu lực chỉ được xác lập trong luồng Approval của Ngày 18.
+
+Entity sử dụng `@Version` cho optimistic locking, quan hệ `ManyToOne` lazy và
+không cascade xóa từ User hoặc MembershipPackage. Hai generated key cùng unique
+constraint `uk_member_subscriptions_one_active` và
+`uk_member_subscriptions_one_pending` tiếp tục là lớp bảo vệ toàn vẹn ở database.
+
+### 4.11.2. Service và API
+
+`MemberSubscriptionService` lấy User ID từ principal, kiểm tra ROLE_MEMBER,
+`AccountStatusGuard`, package tồn tại và package còn active. Service kiểm tra
+subscription ACTIVE hợp lệ theo `status = ACTIVE` và
+`startDate <= businessDate < endDate`, sau đó kiểm tra PENDING trước khi tạo
+snapshot trong cùng transaction. `Clock` được chuyển sang timezone nghiệp vụ
+`Asia/Ho_Chi_Minh`; không gọi trực tiếp thời gian hệ thống trong service.
+
+Hai endpoint đã hiện thực:
+
+| Endpoint | Kết quả |
+|---|---|
+| `POST /api/v1/member/subscriptions` | HTTP 201, tạo request `PENDING` |
+| `GET /api/v1/member/subscriptions/current` | HTTP 200 khi có ACTIVE hợp lệ; `SUB-005` nếu không có |
+
+Response dùng DTO, gồm snapshot tên/giá, trạng thái, thời điểm yêu cầu và các
+ngày hiệu lực khi có. Không trả Entity, password, password hash hoặc lazy graph.
+Các mã lỗi `SUB-002`, `SUB-003`, `SUB-004`, `SUB-005`, `SUB-006`, `ACC-005` và
+`AUTH-002` được giữ đúng API Draft và Error Registry.
+
+### 4.11.3. Frontend và kiểm thử
+
+Frontend thêm API client cho hai endpoint, route `/member/subscription`, danh
+sách package active, chống submit lặp và component hiển thị PENDING/ACTIVE.
+Axios tự gắn Bearer token từ auth session; Member route dùng ROLE_MEMBER nên
+Admin không thể truy cập nhầm luồng. Lỗi package inactive, ACTIVE/PENDING trùng,
+token hết hạn và mất kết nối được chuyển thành trạng thái UI có thể hiểu được.
+
+Backend targeted test đạt **20/20**; trong đó có kiểm thử MySQL thực tế cho biên
+`endDate` exclusive, ownership và hai transaction đồng thời chỉ tạo được một
+PENDING. Frontend targeted test đạt **28/28** và Vite production build pass.
+Live API `GET /api/v1/packages` trả HTTP 200, frontend tại
+`http://localhost:5173` tải được package từ backend `http://localhost:8080`.
+
+**Kết luận Ngày 17:** hoàn thành source và targeted verification cho luồng đăng
+ký mới; không triển khai sớm Approval, Cancel, Renewal, SubscriptionGuard hoặc
+deploy.

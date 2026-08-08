@@ -246,8 +246,8 @@ describe("MemberProfilePage", () => {
             recordDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
             weightKg: 70,
         }));
-        expect(screen.getByRole("status")).toHaveTextContent("Đã lưu hồ sơ.");
-        expect(screen.getByRole("status")).toHaveTextContent("Đã ghi nhận cân nặng hôm nay.");
+        expect(screen.getByRole("status")).toHaveTextContent("Đã lưu hồ sơ");
+        expect(screen.getByRole("status")).toHaveTextContent("Đã ghi nhận cân nặng hôm nay");
     });
 
     it("giữ Profile đã lưu và cho retry riêng khi Progress thất bại", async () => {
@@ -275,7 +275,7 @@ describe("MemberProfilePage", () => {
         await user.click(retry);
 
         await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(2));
-        expect(await screen.findByText("Đã ghi nhận cân nặng hôm nay.")).toBeInTheDocument();
+        expect(await screen.findByText("Đã ghi nhận cân nặng hôm nay")).toBeInTheDocument();
     });
 
     it("không gửi PUT khi ngày sinh ở tương lai", async () => {
@@ -290,7 +290,7 @@ describe("MemberProfilePage", () => {
         await user.type(dateInput, "2099-01-01");
         await user.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
 
-        expect(await screen.findByText("Ngày sinh không được ở tương lai.")).toBeInTheDocument();
+        expect(await screen.findByText("Ngày sinh không được ở tương lai")).toBeInTheDocument();
         expect(put).not.toHaveBeenCalled();
     });
 
@@ -321,8 +321,8 @@ describe("MemberProfilePage", () => {
         const submit = screen.getByRole("button", { name: "Lưu hồ sơ" });
         await user.click(submit);
 
-        await waitFor(() => expect(screen.getByRole("button", { name: "Đang lưu..." })).toBeDisabled());
-        await user.click(screen.getByRole("button", { name: "Đang lưu..." }));
+        await waitFor(() => expect(screen.getByRole("button", { name: "Đang lưu" })).toBeDisabled());
+        await user.click(screen.getByRole("button", { name: "Đang lưu" }));
         expect(put).toHaveBeenCalledTimes(1);
     });
 });

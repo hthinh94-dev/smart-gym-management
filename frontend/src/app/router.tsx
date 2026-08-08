@@ -8,6 +8,7 @@ import { useAuth } from "../features/auth/hooks/useAuth";
 import { MemberHomePage } from "../features/member/pages/MemberHomePage";
 import { MemberProfilePage } from "../features/member/profile/pages/MemberProfilePage";
 import { MemberBodyProgressPage } from "../features/member/progress/pages/MemberBodyProgressPage";
+import { MemberSubscriptionPage } from "../features/membership/subscription/pages/MemberSubscriptionPage";
 import { AdminLayout } from "../layouts/AdminLayout";
 import { MemberLayout } from "../layouts/MemberLayout";
 import { AuthRouteLoading, ProtectedRoute } from "./routes/ProtectedRoute";
@@ -40,6 +41,7 @@ export function AppRouter() {
                         <Route element={<RoleRoute allowedRoles={["ROLE_MEMBER"]} fallbackPath="/member" />}>
                         <Route path="profile" element={<MemberProfilePage />} />
                         <Route path="progress" element={<MemberBodyProgressPage />} />
+                        <Route path="subscription" element={<MemberSubscriptionPage />} />
                         </Route>
                     </Route>
                 </Route>

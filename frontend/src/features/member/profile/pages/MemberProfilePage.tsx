@@ -107,7 +107,7 @@ function ProfileLoadingState() {
             <div className="profile-loading-grid" aria-hidden="true">
                 {Array.from({ length: 8 }, (_, index) => <span key={index} />)}
             </div>
-            <p>Đang tải hồ sơ hội viên...</p>
+            <p>Đang tải hồ sơ hội viên</p>
         </section>
     );
 }
@@ -124,7 +124,7 @@ function ProfileEmptyState({ onStart }: { onStart: () => void }) {
             <button type="button" onClick={onStart}>
                 Hoàn thiện hồ sơ
             </button>
-            <small>Chưa có dữ liệu giả nào được tạo cho tài khoản này.</small>
+            <small>Chưa có dữ liệu giả nào được tạo cho tài khoản này</small>
         </section>
     );
 }
@@ -244,7 +244,7 @@ export function MemberProfilePage() {
         mutationFn: updateMemberProfile,
         onSuccess: (response) => {
             queryClient.setQueryData(PROFILE_QUERY_KEY, response);
-            setSaveMessage("Đã lưu hồ sơ.");
+            setSaveMessage("Đã lưu hồ sơ");
             setIsEditing(false);
             const progressRequest = {
                 recordDate: getVietnamBusinessDate(),
@@ -265,7 +265,7 @@ export function MemberProfilePage() {
                 <div>
                     <p className="page-eyebrow">Hồ sơ hội viên</p>
                     <h1>Thông tin thể trạng</h1>
-                    <p>Dữ liệu nền được dùng cho các tính toán và đề xuất tập luyện của Smart Gym.</p>
+                    <p>Dữ liệu nền được dùng cho các tính toán và đề xuất tập luyện của Smart Gym</p>
                 </div>
                 {!isEditing && profileQuery.data && <span className="profile-readonly-label">Hồ sơ của bạn</span>}
             </header>
@@ -273,8 +273,8 @@ export function MemberProfilePage() {
             {saveMessage && (
                 <div className="profile-success-notice" role="status">
                     <span>{saveMessage}</span>
-                    {progressMutation.isPending && <span>Đang ghi nhận cân nặng hôm nay...</span>}
-                    {progressMutation.isSuccess && <span>Đã ghi nhận cân nặng hôm nay.</span>}
+                    {progressMutation.isPending && <span>Đang ghi nhận cân nặng hôm nay</span>}
+                    {progressMutation.isSuccess && <span>Đã ghi nhận cân nặng hôm nay</span>}
                     {progressMutation.isError && (
                         <span>
                             Hồ sơ đã lưu nhưng chưa ghi nhận được cân nặng. {progressMutation.error.message}

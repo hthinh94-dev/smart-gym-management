@@ -5,7 +5,7 @@ export function AuthRouteLoading() {
     return (
         <main className="route-loading" role="status" aria-live="polite">
             <div className="route-loading-bar" aria-hidden="true"></div>
-            <p>Đang khôi phục phiên đăng nhập...</p>
+            <p>Đang khôi phục phiên đăng nhập</p>
         </main>
     );
 }

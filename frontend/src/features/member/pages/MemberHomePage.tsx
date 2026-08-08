@@ -21,7 +21,7 @@ export function MemberHomePage() {
                 <div>
                     <p className="page-eyebrow">{currentRoleLabel}</p>
                     <h1>Xin chào, {user?.fullName}</h1>
-                    <p>Tài khoản của bạn đã được xác thực và sẵn sàng sử dụng trên Smart Gym.</p>
+                    <p>Tài khoản của bạn đã được xác thực và sẵn sàng sử dụng trên Smart Gym</p>
                 </div>
                 <span className={`member-status status-${user?.accountStatus.toLowerCase() ?? "active"}`}>
                     {accountStatusLabel(user?.accountStatus)}

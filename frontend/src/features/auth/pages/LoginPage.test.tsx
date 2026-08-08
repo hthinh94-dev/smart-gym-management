@@ -100,8 +100,8 @@ describe("LoginPage", () => {
 
         await user.click(screen.getByRole("button", { name: /^đăng nhập$/i }));
 
-        expect(await screen.findByText("Email là bắt buộc.")).toBeInTheDocument();
-        expect(screen.getByText("Mật khẩu là bắt buộc.")).toBeInTheDocument();
+        expect(await screen.findByText("Email là bắt buộc")).toBeInTheDocument();
+        expect(screen.getByText("Mật khẩu là bắt buộc")).toBeInTheDocument();
         expect(postMock).not.toHaveBeenCalled();
     });
 
